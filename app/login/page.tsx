@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
 export default function LoginPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL; // ✅ Leer la URL del backend desde las variables de entorno
-  const router = useRouter(); // ✅ Para redirigir después del login
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const router = useRouter();
 
   const [form, setForm] = useState({
     email: "",
@@ -15,15 +16,16 @@ export default function LoginPage() {
   });
 
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Limpiar errores antes de enviar
+    setError("");
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -35,26 +37,23 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Error en el login");
+        setError(data.message || "Credenciales incorrectas");
+        return;
       }
 
-      localStorage.setItem("token", data.token); // ✅ Guardar el token en localStorage
-      alert("Inicio de sesión exitoso");
-      router.push("/dashboard"); // ✅ Redirigir al usuario a su dashboard
-    } catch (error: any) {
-      setError(error.message);
+      localStorage.setItem("token", data.token);
+      router.push("/dashboard");
+    } catch (error) {
+      setError("Error de conexión con el servidor");
     }
   };
 
   return (
     <section className="h-screen flex justify-center items-center">
       <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-3xl font-bold text-text font-bigShouldersText text-center">
+        <h2 className="text-3xl font-bold text-text text-center">
           Iniciar Sesión
         </h2>
-
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="email"
@@ -65,17 +64,27 @@ export default function LoginPage() {
             required
             className="border p-3 rounded-md w-full"
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Contraseña"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="border p-3 rounded-md w-full"
-          />
-
-          {/* ✅ Checkbox de "Mantener sesión iniciada" */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Contraseña"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="border p-3 rounded-md w-full pr-10"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-3 right-3 cursor-pointer"
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5 text-gray-600" />
+              ) : (
+                <EyeIcon className="h-5 w-5 text-gray-600" />
+              )}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -88,16 +97,16 @@ export default function LoginPage() {
               Mantener sesión iniciada
             </label>
           </div>
-
-          {/* Botón de Inicio de Sesión */}
           <button
             type="submit"
-            className="bg-primary text-white px-4 py-3 rounded-lg font-workSans hover:bg-red-600"
+            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600"
           >
             Iniciar Sesión
           </button>
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
         </form>
-        {/* Enlace a Registro */}
         <p className="mt-4 text-gray-600 text-center">
           ¿No tienes cuenta?{" "}
           <Link href="/register" className="text-primary hover:underline">

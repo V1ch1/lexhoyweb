@@ -17,63 +17,25 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  const [errors, setErrors] = useState({
-    passwordMatch: false,
-    passwordStrength: false,
-    acceptTerms: false,
-  });
-
-  const [apiError, setApiError] = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // 🔹 Estado para mostrar/ocultar contraseña
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // 🔹 Para confirmar contraseña
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const isValidPassword = (password: string) => {
-    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-      password
-    );
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    setForm((prevForm) => {
-      const updatedForm = {
-        ...prevForm,
-        [name]: type === "checkbox" ? checked : value,
-      };
-
-      // Actualizar errores en tiempo real
-      setErrors({
-        passwordMatch: updatedForm.password !== updatedForm.confirmPassword, // ✅ Solo muestra error si NO coinciden
-        passwordStrength: !isValidPassword(updatedForm.password),
-        acceptTerms: !updatedForm.acceptTerms,
-      });
-
-      return updatedForm;
-    });
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setApiError("");
+    setError("");
     setSuccess(false);
 
-    // Validaciones previas
     if (form.password !== form.confirmPassword) {
-      setErrors((prev) => ({ ...prev, passwordMatch: true }));
+      setError("Las contraseñas no coinciden");
       return;
     }
-    if (!isValidPassword(form.password)) {
-      setErrors((prev) => ({ ...prev, passwordStrength: true }));
-      return;
-    }
-    if (!form.acceptTerms) {
-      setErrors((prev) => ({ ...prev, acceptTerms: true }));
-      return;
-    }
-
-    console.log("Enviando datos a:", `${API_URL}/auth/register`);
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -87,36 +49,24 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
-        setApiError(data.message || "Error desconocido en el registro");
+        setError(data.message || "Error en el registro");
         return;
       }
 
       setSuccess(true);
-      alert("Registro exitoso, ahora puedes iniciar sesión");
-      router.push("/login");
+      setTimeout(() => router.push("/login"), 1500);
     } catch (error) {
-      setApiError("Error de conexión con el servidor");
+      setError("Error de conexión con el servidor");
     }
   };
 
   return (
     <section className="h-screen flex justify-center items-center">
       <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-3xl font-bold text-text font-bigShouldersText text-center">
+        <h2 className="text-3xl font-bold text-text text-center">
           Crear Cuenta
         </h2>
-
-        {apiError && (
-          <p className="text-red-500 text-sm text-center">{apiError}</p>
-        )}
-        {success && (
-          <p className="text-green-500 text-sm text-center">
-            Registro exitoso, redirigiendo...
-          </p>
-        )}
-
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="text"
@@ -136,8 +86,6 @@ export default function RegisterPage() {
             required
             className="border p-3 rounded-md w-full"
           />
-
-          {/* 🔹 Input de contraseña con ojito */}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -148,26 +96,17 @@ export default function RegisterPage() {
               required
               className="border p-3 rounded-md w-full pr-10"
             />
-            <button
-              type="button"
+            <span
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              className="absolute top-3 right-3 cursor-pointer"
             >
               {showPassword ? (
-                <EyeSlashIcon className="h-5 w-5" />
+                <EyeSlashIcon className="h-5 w-5 text-gray-600" />
               ) : (
-                <EyeIcon className="h-5 w-5" />
+                <EyeIcon className="h-5 w-5 text-gray-600" />
               )}
-            </button>
+            </span>
           </div>
-          {errors.passwordStrength && (
-            <p className="text-red-500 text-sm">
-              La contraseña debe tener al menos 8 caracteres, una mayúscula, un
-              número y un símbolo.
-            </p>
-          )}
-
-          {/* 🔹 Input de confirmación de contraseña con ojito */}
           <div className="relative">
             <input
               type={showConfirmPassword ? "text" : "password"}
@@ -178,25 +117,17 @@ export default function RegisterPage() {
               required
               className="border p-3 rounded-md w-full pr-10"
             />
-            <button
-              type="button"
+            <span
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              className="absolute top-3 right-3 cursor-pointer"
             >
               {showConfirmPassword ? (
-                <EyeSlashIcon className="h-5 w-5" />
+                <EyeSlashIcon className="h-5 w-5 text-gray-600" />
               ) : (
-                <EyeIcon className="h-5 w-5" />
+                <EyeIcon className="h-5 w-5 text-gray-600" />
               )}
-            </button>
+            </span>
           </div>
-          {errors.passwordMatch && (
-            <p className="text-red-500 text-sm">
-              Las contraseñas no coinciden.
-            </p>
-          )}
-
-          {/* ✅ Checkbox obligatorio */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -216,26 +147,27 @@ export default function RegisterPage() {
               </Link>
             </label>
           </div>
-          {errors.acceptTerms && (
-            <p className="text-red-500 text-sm">
-              Debes aceptar la política de privacidad.
-            </p>
-          )}
-
           <button
             type="submit"
-            className="bg-primary text-white px-4 py-3 rounded-lg font-workSans hover:bg-red-600"
+            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600"
           >
             Registrarse
           </button>
+          <p className="mt-2 text-gray-600 text-center">
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="text-primary hover:underline">
+              Login aquí
+            </Link>
+          </p>
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
+          {success && (
+            <p className="text-green-500 text-sm text-center mt-2">
+              Registro exitoso. Redirigiendo...
+            </p>
+          )}
         </form>
-
-        <p className="mt-4 text-gray-600 text-center">
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            Inicia sesión
-          </Link>
-        </p>
       </div>
     </section>
   );
