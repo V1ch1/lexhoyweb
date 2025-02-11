@@ -5,7 +5,7 @@ export default function Navbar() {
     <nav className="bg-white shadow-md h-32 px-6 flex justify-between items-center">
       {/* Logo con Big Shoulders Inline Text */}
       <Link href="/">
-        <h1 className="text-4xl font-bold text-text font-bigShouldersInline">
+        <h1 className="text-5xl font-bold text-text font-bigShouldersInlineText">
           Lexhoy Leads
         </h1>
       </Link>

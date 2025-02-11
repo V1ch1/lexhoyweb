@@ -5,27 +5,38 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
+// Tipado de la variable "form" y "error"
+interface FormState {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+
 export default function LoginPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     email: "",
     password: "",
     rememberMe: false,
   });
 
-  const [error, setError] = useState("");
+  // Tipo de error como string
+  const [error, setError] = useState<string>("");
+
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) => {
+  // Tipado del evento de cambio
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
-  const handleSubmit = async (e) => {
+  // Tipado del evento de submit
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(""); // Limpiar error antes de hacer la petición
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -43,7 +54,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", data.token);
       router.push("/dashboard");
-    } catch (error) {
+    } catch {
       setError("Error de conexión con el servidor");
     }
   };
@@ -103,6 +114,8 @@ export default function LoginPage() {
           >
             Iniciar Sesión
           </button>
+
+          {/* Usamos el valor del error solo si tiene contenido */}
           {error && (
             <p className="text-red-500 text-sm text-center mt-2">{error}</p>
           )}

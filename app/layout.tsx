@@ -8,10 +8,10 @@ import Navbar from "@/components/Navbar";
 import "./globals.css";
 
 // Fuente para el logo (Big Shoulders Inline Text)
-const bigShouldersInline = Big_Shoulders_Inline_Text({
+export const bigShouldersInlineText = Big_Shoulders_Inline_Text({
   subsets: ["latin"],
   weight: ["400", "700"],
-  variable: "--font-big-shoulders-inline",
+  variable: "--font-big-shoulders-inline-text", // Definimos la variable CSS
 });
 
 // Fuente principal para textos (Big Shoulders Text)
