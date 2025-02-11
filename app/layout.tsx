@@ -1,51 +1,38 @@
-import type { Metadata } from "next";
+"use client"; // Asegúrate de que este archivo sea un Client Component
+
+import { usePathname } from "next/navigation"; // Importamos el hook de Next.js para obtener la ruta actual
+import Navbar from "@/components/Navbar"; // Navbar genérico
 import { Big_Shoulders_Text, Work_Sans } from "next/font/google";
-import Navbar from "@/components/Navbar";
 import "./globals.css";
 
-// // Fuente para el logo (Big Shoulders Inline Text)
-// const bigShouldersInlineText = Big_Shoulders_Inline_Text({
-//   subsets: ["latin"],
-//   weight: ["400", "700"],
-//   variable: "--font-big-shoulders-inline-text", // Definimos la variable CSS
-// });
-
-// Fuente principal para textos (Big Shoulders Text)
+// Fuentes
 const bigShouldersText = Big_Shoulders_Text({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-big-shoulders-text",
 });
 
-// Fuente para botones (Work Sans)
 const workSans = Work_Sans({
   subsets: ["latin"],
   weight: ["400", "600", "700"],
   variable: "--font-work-sans",
 });
 
-export const metadata: Metadata = {
-  title: "Lexhoy - Plataforma de Leads",
-  description: "Compra y vende leads de alta calidad con Lexhoy.",
-  openGraph: {
-    type: "website",
-    locale: "es_ES",
-    url: "https://lexhoy.com",
-    siteName: "Lexhoy",
-  },
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <html lang="es">
       <body
         className={`${bigShouldersText.variable} ${workSans.variable} bg-background text-text font-bigShouldersText`}
       >
-        <Navbar />
+        {/* Solo mostramos el Navbar genérico si no estamos en el dashboard */}
+        {pathname.startsWith("/dashboard") ? null : <Navbar />}
+
         <main className="w-full">{children}</main>
       </body>
     </html>
