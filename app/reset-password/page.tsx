@@ -1,16 +1,15 @@
-"use client"; // Asegúrate de tener esto al principio del archivo
+"use client"; // Asegúrate de que el componente es un componente de cliente
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 
 export default function ResetPasswordPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
 
-  // Llamada a useSearchParams para obtener los parámetros de la URL
+  // Obtener los parámetros de la URL
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams.get("token"); // El parámetro token de la URL
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -48,9 +47,9 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Verifica si el token existe antes de renderizar el formulario
+  // Si el token no existe, muestra un mensaje de carga
   if (!token) {
-    return <div>Esperando token...</div>; // Mensaje en caso de que no haya token
+    return <div>Esperando token...</div>;
   }
 
   return (
