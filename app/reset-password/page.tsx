@@ -1,20 +1,24 @@
-"use client"; // Asegúrate de que el componente es un componente de cliente
+"use client"; // Asegúrate de que es un componente del cliente
 
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
 
-  // Obtener los parámetros de la URL
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token"); // El parámetro token de la URL
-
+  const [token, setToken] = useState<string | null>(null); // Inicializamos el token como nulo
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    // Obtener el parámetro de la URL solo en el cliente
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get("token");
+    setToken(tokenFromUrl);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,6 +27,11 @@ export default function ResetPasswordPage() {
 
     if (password !== confirmPassword) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    if (!token) {
+      setError("El token no es válido.");
       return;
     }
 
@@ -47,54 +56,50 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Si el token no existe, muestra un mensaje de carga
+  // Si no tenemos el token, mostramos un mensaje de espera
   if (!token) {
-    return <div>Esperando token...</div>;
+    return <div>Esperando el token...</div>;
   }
 
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      {" "}
-      {/* Suspense Boundary */}
-      <section className="h-screen flex justify-center items-center">
-        <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold text-center">
+    <section className="h-screen flex justify-center items-center">
+      <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center">
+          Restablecer Contraseña
+        </h2>
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+          <input
+            type="password"
+            placeholder="Nueva Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="border p-3 rounded-md w-full"
+          />
+          <input
+            type="password"
+            placeholder="Confirmar Contraseña"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="border p-3 rounded-md w-full"
+          />
+          <button
+            type="submit"
+            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600"
+          >
             Restablecer Contraseña
-          </h2>
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-            <input
-              type="password"
-              placeholder="Nueva Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border p-3 rounded-md w-full"
-            />
-            <input
-              type="password"
-              placeholder="Confirmar Contraseña"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="border p-3 rounded-md w-full"
-            />
-            <button
-              type="submit"
-              className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600"
-            >
-              Restablecer Contraseña
-            </button>
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-            )}
-            {success && (
-              <p className="text-green-500 text-sm text-center mt-2">
-                Contraseña restablecida con éxito. Redirigiendo...
-              </p>
-            )}
-          </form>
-        </div>
-      </section>
-    </Suspense>
+          </button>
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+          )}
+          {success && (
+            <p className="text-green-500 text-sm text-center mt-2">
+              Contraseña restablecida con éxito. Redirigiendo...
+            </p>
+          )}
+        </form>
+      </div>
+    </section>
   );
 }
