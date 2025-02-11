@@ -47,8 +47,9 @@ export default function ResetPasswordPage() {
     }
   };
 
+  // Verificar si el token está presente
   if (!token) {
-    return <div>Cargando...</div>; // Puedes mostrar un mensaje o un indicador de carga
+    return <div>Cargando...</div>; // O un mensaje adecuado de carga
   }
 
   return (
