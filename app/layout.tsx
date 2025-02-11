@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
-import {
-  Big_Shoulders_Inline_Text,
-  Big_Shoulders_Text,
-  Work_Sans,
-} from "next/font/google";
+import { Big_Shoulders_Text, Work_Sans } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import "./globals.css";
 
-// Fuente para el logo (Big Shoulders Inline Text)
-export const bigShouldersInlineText = Big_Shoulders_Inline_Text({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-big-shoulders-inline-text", // Definimos la variable CSS
-});
+// // Fuente para el logo (Big Shoulders Inline Text)
+// const bigShouldersInlineText = Big_Shoulders_Inline_Text({
+//   subsets: ["latin"],
+//   weight: ["400", "700"],
+//   variable: "--font-big-shoulders-inline-text", // Definimos la variable CSS
+// });
 
 // Fuente principal para textos (Big Shoulders Text)
 const bigShouldersText = Big_Shoulders_Text({
