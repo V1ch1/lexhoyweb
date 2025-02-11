@@ -39,7 +39,7 @@ export default function LoginPage() {
     setError(""); // Limpiar error antes de hacer la petición
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, password: form.password }),
