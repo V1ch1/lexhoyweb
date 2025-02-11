@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 export default function ResetPasswordPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
+
+  // Llamada directa a useSearchParams
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -14,7 +16,6 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Agregar tipo de evento en el parámetro e
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
@@ -45,6 +46,10 @@ export default function ResetPasswordPage() {
       setError("Error de conexión con el servidor.");
     }
   };
+
+  if (!token) {
+    return <div>Cargando...</div>; // Puedes mostrar un mensaje o un indicador de carga
+  }
 
   return (
     <section className="h-screen flex justify-center items-center">
