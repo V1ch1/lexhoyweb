@@ -5,11 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 
+// Definir la interfaz para el estado del formulario
+interface FormState {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: boolean;
+}
+
 export default function RegisterPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
 
-  const [form, setForm] = useState({
+  // Tipamos el estado 'form' usando la interfaz FormState
+  const [form, setForm] = useState<FormState>({
     fullName: "",
     email: "",
     password: "",
@@ -17,17 +27,14 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string>(""); // Tipado explícito para el error
+  const [success, setSuccess] = useState<boolean>(false); // Tipado explícito para success
+  const [showPassword, setShowPassword] = useState<boolean>(false); // Tipado para el estado de la contraseña
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState<boolean>(false); // Tipado para el estado de confirmación de la contraseña
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
-  };
-
-  const handleSubmit = async (e) => {
+  // Tipamos 'e' como React.FormEvent<HTMLFormElement>
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
@@ -56,9 +63,15 @@ export default function RegisterPage() {
 
       setSuccess(true);
       setTimeout(() => router.push("/login"), 1500);
-    } catch (error) {
+    } catch {
       setError("Error de conexión con el servidor");
     }
+  };
+
+  // Tipar el evento 'e' correctamente en handleChange
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
   return (
