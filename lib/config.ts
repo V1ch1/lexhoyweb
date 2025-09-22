@@ -3,7 +3,7 @@
 export const APP_CONFIG = {
   name: "Lexhoy Portal",
   description: "Portal exclusivo para despachos de abogados",
-  url: "https://portal.lexhoy.com",
+  url: "https://despachos.lexhoy.com",
   version: "1.0.0",
   
   contact: {

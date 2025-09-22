@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_ES",
-    url: "https://portal.lexhoy.com",
+    url: "https://despachos.lexhoy.com",
     siteName: "Lexhoy Portal",
     title: "Lexhoy Portal - Área Personal para Despachos de Abogados",
     description: "Portal exclusivo para despachos de abogados. Gestiona tu perfil, accede a leads de clientes potenciales y descubre nuestros servicios especializados.",
