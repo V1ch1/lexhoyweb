@@ -1,7 +1,6 @@
 // components/NavbarDashboard.tsx
 "use client";
 
-import { useState } from "react";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 
