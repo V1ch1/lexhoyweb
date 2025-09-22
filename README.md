@@ -1,5 +1,7 @@
 # Lexhoy Portal - Área Personal para Despachos de Abogados
 
+🚀 **Deploy Automático Configurado** - Cada push despliega automáticamente en Vercel
+
 ## 📋 Descripción del Proyecto
 
 **Lexhoy Portal** es una aplicación web que permite a los despachos de abogados acceder a un área personal donde pueden gestionar su perfil, acceder a servicios del portal Lexhoy.com y administrar leads generados por lectores que buscan servicios legales.
