@@ -96,23 +96,26 @@ Lectores/Leads ←→ Sistema de Leads
   - Videos de presentación
 
 ### Sistema de Leads
-- **Dashboard de Leads**:
-  - Lista de leads disponibles
-  - Filtros por ubicación, especialidad, urgencia
-  - Estado de cada lead (nuevo, contactado, cerrado)
-- **Detalle de Lead**:
-  - Información del cliente potencial
-  - Tipo de consulta legal
-  - Presupuesto estimado
-  - Datos de contacto
-- **Herramientas de Contacto**:
-  - Sistema de mensajería interna
-  - Plantillas de respuesta
-  - Historial de comunicaciones
-- **Métricas**:
-  - Leads recibidos
-  - Tasa de conversión
-  - Clientes adquiridos
+- **Dashboard de Leads** ✅:
+  - Lista de leads con datos reales
+  - Filtros por ubicación, especialidad, urgencia  
+  - Estados: nuevo, contactado, cerrado
+  - Métricas de valor estimado
+- **Gestión Multi-sede** ✅:
+  - Soporte para múltiples oficinas por despacho
+  - Verificación independiente por sede
+  - Horarios y contacto específico
+  - Redes sociales por sede
+- **Backend Completo** ✅:
+  - Base de datos Supabase PostgreSQL
+  - TypeScript con tipos seguros
+  - API de servicios (DespachoService)
+  - Estructura compatible con Algolia
+- **Dashboard de Ejemplo**:
+  - `/dashboard/ejemplo` - Demo con datos de muestra
+  - Diseño responsive con Tailwind CSS
+  - Componentes de leads y sedes
+  - Estados y métricas en tiempo real
 
 ## 🔗 Integraciones Técnicas
 
@@ -191,15 +194,29 @@ Lectores/Leads ←→ Sistema de Leads
 - Next-SEO
 
 ### Backend/APIs
-- Next.js API Routes
-- Algolia Search API
-- WordPress REST API
-- Vercel Functions (serverless)
+- **Supabase PostgreSQL** (principal) - Base de datos completa
+- **Next.js API Routes** - Endpoints personalizados
+- **Algolia Search API** - Búsqueda de despachos (10.000+ registros)
+- **WordPress REST API** - Integración de contenido
+- **Vercel Functions** - Funciones serverless
 
 ### Base de Datos
-- Algolia (principal)
-- WordPress MySQL (sincronización)
-- Vercel KV (sesiones/cache)
+- **Supabase** (principal) - PostgreSQL con RLS y triggers
+- **Algolia** (búsqueda) - Índice de despachos multi-sede  
+- **WordPress MySQL** (contenido) - Sincronización opcional
+- **Vercel KV** (cache) - Sesiones y datos temporales
+
+#### Estructura Supabase
+```sql
+-- Tablas principales
+despachos     -> Información de bufetes
+sedes         -> Oficinas múltiples por despacho  
+leads         -> Consultas de clientes
+users         -> Autenticación de usuarios
+interactions  -> Seguimiento de leads
+```
+
+**🔧 Configuración completa:** Ver `docs/SUPABASE_SETUP.md`
 
 ### Deploy & Hosting
 - Vercel (frontend)

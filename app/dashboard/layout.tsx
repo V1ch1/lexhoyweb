@@ -1,29 +1,31 @@
 "use client"; // Indica que este es un componente del cliente
 
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { ReactNode } from "react";
+import { useAuth } from "@/lib/authContext";
 import Sidebar from "@/components/Sidebar"; // Sidebar del Dashboard
 import NavbarDashboard from "@/components/NavbarDashboard"; // Navbar del Dashboard
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const router = useRouter();
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsAuthenticated(true);
-    } else {
-      router.push("/login"); // Redirige si no está autenticado
-    }
-  }, [router]);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  if (!isAuthenticated) {
-    return <div>Loading...</div>; // Mientras verificamos el estado de autenticación
+  // Si no hay usuario, el useAuth ya se encarga de la redirección
+  if (!user) {
+    return null;
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar del Dashboard */}
       <Sidebar />
 

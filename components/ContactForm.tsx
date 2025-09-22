@@ -88,8 +88,7 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         setSubmitStatus('idle');
       }, 3000);
 
-    } catch (error) {
-      console.error('Error al enviar formulario:', error);
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

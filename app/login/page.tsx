@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+import { AuthService } from "@/lib/authService";
+import { useAuth } from "@/lib/authContext";
 
 // Tipado de la variable "form" y "error"
 interface FormState {
@@ -13,8 +15,11 @@ interface FormState {
 }
 
 export default function LoginPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+  
+  const isConfirmed = searchParams.get('confirmed') === 'true';
 
   const [form, setForm] = useState<FormState>({
     email: "",
@@ -24,6 +29,7 @@ export default function LoginPage() {
 
   // Tipo de error como string
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -37,25 +43,65 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(""); // Limpiar error antes de hacer la petición
+    setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Credenciales incorrectas");
+      console.log('Intentando login con email:', form.email);
+      
+      // Usar AuthService para autenticación real con Supabase
+      const authResult = await AuthService.signIn(form.email, form.password);
+      
+      if (authResult.error) {
+        console.log('Error de autenticación:', authResult.error);
+        
+        // Mensaje más claro para email no confirmado
+        if (authResult.error.includes('Email not confirmed')) {
+          setError(
+            'Tu cuenta aún no ha sido confirmada. Por favor, revisa tu email y haz clic en el enlace de confirmación. Si no has recibido el email, revisa la carpeta de spam.'
+          );
+        } else {
+          setError(authResult.error);
+        }
         return;
       }
 
-      localStorage.setItem("token", data.token);
-      router.push("/dashboard");
-    } catch {
-      setError("Error de conexión con el servidor");
+      if (!authResult.user) {
+        console.log('Usuario no encontrado');
+        setError("Error de autenticación");
+        return;
+      }
+
+      console.log('Login exitoso con Supabase Auth');
+      
+      // Usar el contexto de autenticación
+      const userData = {
+        id: authResult.user.id,
+        email: authResult.user.email,
+        name: authResult.user.name,
+        role: authResult.user.role as 'super_admin' | 'despacho_admin'
+      };
+      
+      login(userData);
+
+      // Redirigir según el rol
+      if (authResult.user.role === 'super_admin') {
+        console.log('Redirigiendo a admin/users');
+        router.push('/admin/users');
+      } else {
+        console.log('Redirigiendo a dashboard');
+        router.push('/dashboard');
+      }
+
+    } catch (error) {
+      console.error('Error en login:', error);
+      
+      if (error instanceof Error) {
+        setError(`Error: ${error.message}`);
+      } else {
+        setError("Error de conexión con el servidor");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,6 +111,21 @@ export default function LoginPage() {
         <h2 className="text-3xl font-bold text-text text-center">
           Iniciar Sesión
         </h2>
+        
+        {isConfirmed && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <h3 className="text-green-800 font-medium">¡Cuenta confirmada!</h3>
+            </div>
+            <p className="text-green-700 text-sm mt-2">
+              Tu email ha sido verificado exitosamente. Ahora puedes iniciar sesión con tu cuenta.
+            </p>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="email"
@@ -110,9 +171,17 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600"
+            disabled={isLoading}
+            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Iniciar Sesión
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Verificando...
+              </>
+            ) : (
+              'Iniciar Sesión'
+            )}
           </button>
 
           {/* Usamos el valor del error solo si tiene contenido */}
