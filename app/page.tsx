@@ -9,14 +9,14 @@ export default function Home() {
       <SectionTitle />
 
       <FeatureBlock
-        title="Obtén Leads de Alta Calidad"
-        description="Nuestra plataforma te conecta con clientes potenciales verificados y listos para comprar tus productos o servicios."
+        title="Gestiona tu Despacho de Abogados"
+        description="Accede a tu área personal donde puedes actualizar los datos de tu despacho, gestionar especialidades jurídicas y mantener tu perfil siempre actualizado en nuestro directorio."
         image="/images/Feature1.webp"
       />
 
       <FeatureBlock
-        title="Automatiza Tu Proceso de Ventas"
-        description="Optimiza tu negocio con herramientas inteligentes que te ayudarán a gestionar tus leads de manera efectiva."
+        title="Recibe Leads de Calidad"
+        description="Conecta con clientes potenciales verificados que buscan servicios jurídicos. Nuestro sistema te notifica de nuevos leads según tu especialidad y ubicación."
         image="/images/Feature2.webp"
         reverse
       />

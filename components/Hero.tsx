@@ -7,26 +7,34 @@ export default function Hero() {
       {/* Bloque Izquierdo - Texto centrado */}
       <div className="w-1/2 flex flex-col justify-center items-center p-10">
         <h1 className="text-5xl font-bold text-text font-bigShouldersText text-center">
-          Impulsa tu negocio con leads de alta calidad
+          Portal Exclusivo para Despachos de Abogados
         </h1>
-        <p className="text-lg text-gray-600 text-center mt-4">
-          Encuentra compradores potenciales y aumenta tus ventas con nuestra
-          plataforma.
+        <p className="text-lg text-gray-600 text-center mt-4 max-w-lg">
+          Gestiona tu despacho, actualiza tu perfil profesional y conecta con clientes potenciales 
+          a través de nuestra red de más de 10.000 despachos en España.
         </p>
-        <Link
-          href="/register"
-          className="bg-primary text-white px-4 py-2 mt-4 rounded-lg hover:bg-red-600 font-workSans"
-        >
-          Regístrate ahora
-        </Link>
+        <div className="flex space-x-4 mt-6">
+          <Link
+            href="/register"
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 font-workSans transition-colors"
+          >
+            Registrar Despacho
+          </Link>
+          <Link
+            href="/login"
+            className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
+          >
+            Acceder al Portal
+          </Link>
+        </div>
       </div>
 
-      {/* Bloque Derecho - Imagen corregida */}
+      {/* Bloque Derecho - Imagen */}
       <div className="w-1/2 relative">
         <Image
-          src="/images/imageHero.webp" // ✅ Usamos la ruta directa en public/
-          alt="Imagen representativa"
-          fill // ✅ Nueva forma en Next.js 13+
+          src="/images/imageHero.webp"
+          alt="Despacho de abogados profesional"
+          fill
           className="object-cover"
         />
       </div>

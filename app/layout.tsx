@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"; // Importamos el hook de Next.js para obtener la ruta actual
 import Navbar from "@/components/Navbar"; // Navbar genérico
+import Footer from "@/components/Footer"; // Footer
 import { Big_Shoulders_Text, Work_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -34,6 +35,9 @@ export default function RootLayout({
         {pathname.startsWith("/dashboard") ? null : <Navbar />}
 
         <main className="w-full">{children}</main>
+
+        {/* Solo mostramos el Footer si no estamos en el dashboard */}
+        {pathname.startsWith("/dashboard") ? null : <Footer />}
       </body>
     </html>
   );
