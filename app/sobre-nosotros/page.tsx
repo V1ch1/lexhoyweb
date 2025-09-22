@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import FeatureBlock from "@/components/FeatureBlock";
 
 export const metadata: Metadata = {
   title: "Sobre Nosotros - Lexhoy Portal",
@@ -24,40 +25,90 @@ export default function SobreNosotros() {
       </section>
 
       {/* Nuestra Historia */}
-      <section className="py-16">
+      <FeatureBlock
+        title="Nuestra Historia"
+        description="Lexhoy.com nació con la visión de revolucionar el sector jurídico digital en España. Comenzamos como un portal de noticias especializadas en el ámbito legal, pero pronto identificamos la necesidad de crear un puente entre los profesionales del derecho y los ciudadanos que requieren sus servicios."
+        image="/images/Feature1.webp"
+        features={[
+          "Portal de noticias jurídicas líder en España",
+          "Base de datos más completa con +10.000 despachos verificados",
+          "Referencia del sector para servicios jurídicos especializados",
+          "Tecnología avanzada con integración Algolia y WordPress"
+        ]}
+        buttonText="Conocer Nuestros Servicios"
+        buttonLink="/servicios"
+      />
+
+      {/* Nuestra Misión */}
+      <FeatureBlock
+        title="Nuestra Misión"
+        description="Democratizar el acceso a servicios jurídicos de calidad, facilitando el encuentro entre despachos especializados y clientes que necesitan servicios específicos. Mantenemos a la comunidad jurídica informada y conectada."
+        image="/images/Feature2.webp"
+        reverse
+        features={[
+          "Información jurídica actualizada y especializada",
+          "Conexión directa entre despachos y clientes potenciales",
+          "Acceso simplificado a la justicia para todos",
+          "Red profesional de más de 10.000 despachos"
+        ]}
+        buttonText="Registrar Despacho"
+        buttonLink="/register"
+      />
+
+      {/* Nuestros Números */}
+      <section className="bg-white py-16">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
-                Nuestra Historia
-              </h2>
-              <div className="space-y-4 text-gray-600 font-workSans">
-                <p>
-                  Lexhoy.com nació con la visión de revolucionar el sector jurídico digital en España. 
-                  Comenzamos como un portal de noticias especializadas en el ámbito legal, pero pronto 
-                  identificamos la necesidad de crear un puente entre los profesionales del derecho y 
-                  los ciudadanos que requieren sus servicios.
-                </p>
-                <p>
-                  Con el tiempo, hemos construido la base de datos más completa de despachos de abogados 
-                  en España, con más de 10.000 registros verificados, convirtiéndonos en la referencia 
-                  del sector para la búsqueda de servicios jurídicos especializados.
-                </p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
+              Lexhoy en Números
+            </h2>
+            <p className="text-xl text-gray-600 font-workSans">
+              Datos que respaldan nuestro liderazgo en el sector jurídico digital
+            </p>
+          </div>
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
+                +10.000
               </div>
+              <p className="text-gray-600 font-workSans">
+                Despachos registrados
+              </p>
             </div>
-            <div className="bg-gray-200 h-64 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500">Imagen: Historia de Lexhoy</span>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
+                +50.000
+              </div>
+              <p className="text-gray-600 font-workSans">
+                Usuarios mensuales
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
+                +50
+              </div>
+              <p className="text-gray-600 font-workSans">
+                Leads generados/mes
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
+                52
+              </div>
+              <p className="text-gray-600 font-workSans">
+                Provincias cubiertas
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Nuestra Misión */}
-      <section className="bg-white py-16">
+      {/* Nuestros Valores */}
+      <section className="py-16">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
-              Nuestra Misión
+              Nuestros Valores
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -70,7 +121,7 @@ export default function SobreNosotros() {
               </h3>
               <p className="text-gray-600 font-workSans">
                 Mantener a la comunidad jurídica informada con noticias, análisis y 
-                actualizations del sector legal español.
+                actualizaciones del sector legal español.
               </p>
             </div>
             <div className="text-center">
@@ -95,51 +146,6 @@ export default function SobreNosotros() {
               <p className="text-gray-600 font-workSans">
                 Democratizar el acceso a servicios jurídicos de calidad, 
                 haciendo más fácil encontrar el despacho adecuado para cada necesidad.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Nuestros Números */}
-      <section className="py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
-              Lexhoy en Números
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
-                +10.000
-              </div>
-              <p className="text-gray-600 font-workSans">
-                Despachos registrados
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
-                +50.000
-              </div>
-              <p className="text-gray-600 font-workSans">
-                Usuarios mensuales
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
-                +1.000
-              </div>
-              <p className="text-gray-600 font-workSans">
-                Leads generados/mes
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
-                52
-              </div>
-              <p className="text-gray-600 font-workSans">
-                Provincias cubiertas
               </p>
             </div>
           </div>
