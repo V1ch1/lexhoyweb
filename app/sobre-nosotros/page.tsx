@@ -28,7 +28,7 @@ export default function SobreNosotros() {
       <FeatureBlock
         title="Nuestra Historia"
         description="Lexhoy.com nació con la visión de revolucionar el sector jurídico digital en España. Comenzamos como un portal de noticias especializadas en el ámbito legal, pero pronto identificamos la necesidad de crear un puente entre los profesionales del derecho y los ciudadanos que requieren sus servicios."
-        image="/images/Feature1.webp"
+        image="/images/imagen1Nosotros.webp"
         features={[
           "Portal de noticias jurídicas líder en España",
           "Base de datos más completa con +10.000 despachos verificados",
