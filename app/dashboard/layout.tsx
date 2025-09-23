@@ -12,15 +12,24 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Si no hay usuario, el useAuth ya se encarga de la redirección
+  // Si no hay usuario, intentar recuperar de localStorage o redirigir
   if (!user) {
+    // Intentar recuperar usuario de localStorage
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('lexhoy_user');
+      if (!storedUser) {
+        // No hay usuario guardado, redirigir a login
+        window.location.href = '/login';
+        return null;
+      }
+    }
     return null;
   }
 

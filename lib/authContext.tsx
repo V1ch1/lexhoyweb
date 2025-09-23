@@ -32,11 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔄 AuthContext: Loading session...');
         setIsLoading(true);
         
-        // Timeout de seguridad para evitar carga infinita
+        // Timeout de seguridad más largo para evitar pérdida de sesión
         const timeoutId = setTimeout(() => {
           console.log('⏰ AuthContext: Session loading timeout, setting isLoading to false');
           setIsLoading(false);
-        }, 10000); // 10 segundos máximo
+        }, 15000); // 15 segundos máximo
         
         // Verificar si hay una sesión activa en Supabase
         const currentUserResult = await AuthService.getCurrentUser();
@@ -54,13 +54,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           console.log('✅ AuthContext: Setting user data:', userData);
           setUser(userData);
+          
+          // Guardar en localStorage como backup
+          localStorage.setItem('lexhoy_user', JSON.stringify(userData));
         } else {
           console.log('❌ AuthContext: No user found or error:', currentUserResult.error);
-          setUser(null);
+          
+          // Intentar recuperar desde localStorage como fallback
+          const storedUser = localStorage.getItem('lexhoy_user');
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              console.log('🔄 AuthContext: Recovered user from localStorage:', userData);
+              setUser(userData);
+            } catch (e) {
+              console.error('❌ AuthContext: Error parsing stored user:', e);
+              localStorage.removeItem('lexhoy_user');
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
         console.error('💥 AuthContext: Error loading session:', error);
-        setUser(null);
+        
+        // Intentar recuperar desde localStorage en caso de error
+        const storedUser = localStorage.getItem('lexhoy_user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            console.log('🔄 AuthContext: Recovered user from localStorage after error:', userData);
+            setUser(userData);
+          } catch (e) {
+            console.error('❌ AuthContext: Error parsing stored user after error:', e);
+            localStorage.removeItem('lexhoy_user');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       } finally {
         console.log('⏹️ AuthContext: Finished loading, setting isLoading to false');
         setIsLoading(false);
@@ -98,17 +131,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // El login real se maneja en AuthService.signIn
     // Este método solo actualiza el estado local
     setUser(userData);
+    // Guardar en localStorage como backup
+    localStorage.setItem('lexhoy_user', JSON.stringify(userData));
   };
 
   const logout = async () => {
     try {
       await AuthService.signOut();
       setUser(null);
+      // Limpiar localStorage
+      localStorage.removeItem('lexhoy_user');
       router.push('/login');
     } catch (error) {
       console.error('Error during logout:', error);
       // Forzar logout local aunque falle el logout remoto
       setUser(null);
+      localStorage.removeItem('lexhoy_user');
       router.push('/login');
     }
   };
