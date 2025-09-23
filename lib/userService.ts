@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, UserDespacho, SolicitudRegistro, SolicitudAsignacionDespacho, SyncLog, UserRole, UserStatus, PlanType } from './types';
+import { User, UserDespacho, SolicitudRegistro, SyncLog, UserRole, UserStatus, PlanType } from './types';
 
 // Interfaz para los datos raw de la base de datos
 interface UserRaw {

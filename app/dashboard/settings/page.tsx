@@ -86,7 +86,6 @@ const SettingsPage = () => {
 
   // Estado para despachos del usuario
   const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
-  const [loadingDespachos, setLoadingDespachos] = useState(true);
 
   const [despachoData, setDespachoData] = useState({
     nombre: '',
@@ -318,14 +317,11 @@ const SettingsPage = () => {
       // Cargar despachos del usuario
       const loadUserDespachos = async () => {
         try {
-          setLoadingDespachos(true);
           const despachos = await userService.getUserDespachos(user.id);
           setUserDespachos(despachos.filter(d => d.activo)); // Solo despachos activos
         } catch (error) {
           console.error('Error loading user despachos:', error);
           setUserDespachos([]);
-        } finally {
-          setLoadingDespachos(false);
         }
       };
       

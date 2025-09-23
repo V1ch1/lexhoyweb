@@ -124,20 +124,6 @@ export default function AdminUsersPage() {
     setEditingUser(false);
   };
 
-  const handleUpdateUserDetails = async (updatedUser: Partial<User>) => {
-    if (!selectedUserDetails) return;
-    
-    try {
-      await userService.updateUser(selectedUserDetails.id, updatedUser);
-      await loadUsers();
-      handleCloseModal();
-      console.log(`✅ Usuario actualizado`);
-    } catch (error) {
-      console.error('Error updating user:', error);
-      alert('Error al actualizar el usuario');
-    }
-  };
-
   const handleApproveSolicitud = async (solicitudId: string) => {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();

@@ -4,14 +4,14 @@ import { usePathname } from "next/navigation"; // Importamos el hook de Next.js 
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
 import { AuthProvider } from "@/lib/authContext"; // Contexto de autenticación
-import { Big_Shoulders_Text, Work_Sans } from "next/font/google";
+import { Inter, Work_Sans } from "next/font/google";
 import "./globals.css";
 
 // Fuentes
-const bigShouldersText = Big_Shoulders_Text({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "700"],
-  variable: "--font-big-shoulders-text",
+  variable: "--font-inter",
 });
 
 const workSans = Work_Sans({
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${bigShouldersText.variable} ${workSans.variable} bg-background text-text font-bigShouldersText`}
+        className={`${inter.variable} ${workSans.variable} bg-background text-text font-sans`}
       >
         <AuthProvider>
           {/* Solo mostramos el Navbar genérico si no estamos en dashboard o admin */}
