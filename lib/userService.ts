@@ -885,118 +885,44 @@ export class UserService {
   }
 
   /**
-   * Aprobar solicitud de despacho
+   * Aprobar solicitud de despacho: asigna el despacho al usuario y actualiza la solicitud
    */
-  async aprobarSolicitudDespacho(solicitudId: string, adminId: string) {
-    try {
-      // 1. Actualizar la solicitud
-      const { data: solicitud, error: solicitudError } = await supabase
-  .from('solicitudes_despacho')
-        .update({
-          estado: 'aprobada',
-          fecha_respuesta: new Date().toISOString(),
-          respondido_por: adminId
-        })
-        .eq('id', solicitudId)
-        .select()
-        .single();
-
-      if (solicitudError) throw solicitudError;
-
-      // 2. Crear la asignación real en user_despachos
-      const { error: asignacionError } = await supabase
-        .from('user_despachos')
-        .insert({
-          user_id: solicitud.user_id,
-          despacho_id: solicitud.despacho_id,
-          fecha_asignacion: new Date().toISOString(),
-          asignado_por: adminId,
-          activo: true,
-          permisos: {
-            leer: true,
-            escribir: true,
-            eliminar: false
-          }
-        });
-
-      if (asignacionError) throw asignacionError;
-
-      return solicitud;
-    } catch (error) {
-      console.error('Error al aprobar solicitud:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Rechazar solicitud de despacho
-   */
-  async rechazarSolicitudDespacho(solicitudId: string, adminId: string, motivoRechazo: string) {
-    const { data, error } = await supabase
-  .from('solicitudes_despacho')
-      .update({
-        estado: 'rechazada',
-        fecha_respuesta: new Date().toISOString(),
-        respondido_por: adminId,
-        motivo_rechazo: motivoRechazo
-      })
-      .eq('id', solicitudId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  /**
-   * Asignar despacho manualmente (solo super_admin)
-   */
-  async asignarDespachoManual(userId: string, despachoId: string, adminId: string) {
-    const { data, error } = await supabase
-      .from('user_despachos')
-      .insert({
-        user_id: userId,
-        despacho_id: despachoId,
-        fecha_asignacion: new Date().toISOString(),
-        asignado_por: adminId,
-        activo: true,
-        permisos: {
-          leer: true,
-          escribir: true,
-          eliminar: false
-        }
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  /**
-   * Desasignar despacho
-   */
-  async desasignarDespacho(userId: string, despachoId: string) {
-    const { error } = await supabase
-      .from('user_despachos')
-      .update({ activo: false })
-      .eq('user_id', userId)
-      .eq('despacho_id', despachoId);
-
-    if (error) throw error;
-  }
-
-  /**
-   * Obtener todos los despachos disponibles
-   */
-  async getAllDespachos() {
-    const { data, error } = await supabase
-      .from('despachos')
+  async approveSolicitudDespacho(solicitudId: string, approvedBy: string, notas?: string): Promise<void> {
+    // Obtener la solicitud
+    const { data: solicitud, error: solicitudError } = await supabase
+      .from('solicitudes_despacho')
       .select('*')
-      .eq('activo', true)
-      .order('nombre');
+      .eq('id', solicitudId)
+      .single();
+    if (solicitudError) throw solicitudError;
+    // Asignar despacho al usuario
+    await this.assignDespachoToUser(solicitud.user_id, solicitud.despacho_id, approvedBy);
+    // Actualizar solicitud
+    const { error: updateError } = await supabase
+      .from('solicitudes_despacho')
+      .update({
+        estado: 'aprobado',
+        fecha_respuesta: new Date().toISOString(),
+        respondido_por: approvedBy,
+        notas_respuesta: notas
+      })
+      .eq('id', solicitudId);
+    if (updateError) throw updateError;
+  }
 
+  /**
+   * Rechazar solicitud de despacho: actualiza el estado y guarda la nota
+   */
+  async rejectSolicitudDespacho(solicitudId: string, rejectedBy: string, notas: string): Promise<void> {
+    const { error } = await supabase
+      .from('solicitudes_despacho')
+      .update({
+        estado: 'rechazado',
+        fecha_respuesta: new Date().toISOString(),
+        respondido_por: rejectedBy,
+        notas_respuesta: notas
+      })
+      .eq('id', solicitudId);
     if (error) throw error;
-    return data || [];
   }
 }

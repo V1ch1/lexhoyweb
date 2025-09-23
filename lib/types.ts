@@ -65,9 +65,25 @@ export interface DespachoGestion {
 
 export interface SolicitudRegistro {
   id: string;
-  email: string;
-  nombre: string;
-  apellidos: string;
+  // Para solicitudes de despachos
+  user_id?: string;
+  user_email?: string;
+  user_name?: string;
+  despacho_id?: string;
+  despacho_nombre?: string;
+  despacho_localidad?: string;
+  despacho_provincia?: string;
+  estado: SolicitudStatus;
+  fechaSolicitud: Date;
+  fechaRespuesta?: Date;
+  respondidoPor?: string;
+  notasRespuesta?: string;
+  userCreadoId?: string;
+  despachoCreadoId?: string;
+  // Para compatibilidad con solicitudes antiguas
+  email?: string;
+  nombre?: string;
+  apellidos?: string;
   telefono?: string;
   empresa?: string;
   mensaje?: string;
@@ -82,13 +98,6 @@ export interface SolicitudRegistro {
     email: string;
     website?: string;
   };
-  estado: SolicitudStatus;
-  fechaSolicitud: Date;
-  fechaRespuesta?: Date;
-  respondidoPor?: string;
-  notasRespuesta?: string;
-  userCreadoId?: string;
-  despachoCreadoId?: string;
 }
 
 export interface SyncLog {
