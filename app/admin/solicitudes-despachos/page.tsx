@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+// import { UserService } from '@/lib/userService';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { UserService } from '@/lib/userService';
 import { useAuth } from '@/lib/authContext';
@@ -11,22 +13,27 @@ interface SolicitudExtendida {
   id: string;
   user_id: string;
   despacho_id: string;
-  fecha_solicitud: string;
+  fecha: string;
   estado: 'pendiente' | 'aprobada' | 'rechazada';
-  justificacion: string;
-  tipo_solicitud: 'propiedad' | 'colaboracion' | 'otro';
+  justificacion?: string;
+  tipo_solicitud?: 'propiedad' | 'colaboracion' | 'otro';
   documentos_adjuntos?: string[];
   fecha_respuesta?: string;
   respondido_por?: string;
   motivo_rechazo?: string;
-  users: {
-    nombre: string;
-    apellidos: string;
-    email: string;
+  usuario?: {
+    nombre?: string;
+    apellidos?: string;
+    email?: string;
   };
-  despachos: {
-    nombre: string;
+  despacho?: {
+    nombre?: string;
   };
+  despachoNombre?: string;
+  despacho_nombre?: string;
+  despacho_localidad?: string;
+  despacho_provincia?: string;
+  fecha_solicitud?: string;
 }
 
 export default function SolicitudesDespacchosPage() {
@@ -47,7 +54,23 @@ export default function SolicitudesDespacchosPage() {
       setLoading(true);
       setError(null);
       const data = await userService.getSolicitudesDespachosPendientes();
-      setSolicitudes(data);
+      // Para cada solicitud, obtener usuario y despacho
+      const solicitudesConDatos = await Promise.all(
+        data.map(async (solicitud: any) => {
+          // Usar los datos guardados en la solicitud
+          return {
+            ...solicitud,
+            usuario: {
+              nombre: solicitud.user_name || '',
+              email: solicitud.user_email || ''
+            },
+            despachoNombre: solicitud.despacho_nombre || String(solicitud.despacho_id),
+            despachoLocalidad: solicitud.despacho_localidad || '',
+            despachoProvincia: solicitud.despacho_provincia || ''
+          };
+        })
+      );
+      setSolicitudes(solicitudesConDatos);
     } catch (error) {
       console.error('Error loading solicitudes:', error);
       setError('Error al cargar las solicitudes');
@@ -206,7 +229,7 @@ export default function SolicitudesDespacchosPage() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
                         <h3 className="text-lg font-medium text-gray-900">
-                          {solicitud.users.nombre} {solicitud.users.apellidos}
+                          {solicitud.usuario?.nombre || solicitud.user_id} {solicitud.usuario?.apellidos || ''}
                         </h3>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           solicitud.tipo_solicitud === 'propiedad' 
@@ -223,16 +246,29 @@ export default function SolicitudesDespacchosPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <p className="text-sm text-gray-600">Email:</p>
-                          <p className="text-sm font-medium">{solicitud.users.email}</p>
+                          <p className="text-sm font-medium">{solicitud.usuario?.email || ''}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Despacho solicitado:</p>
-                          <p className="text-sm font-medium">{solicitud.despachos.nombre}</p>
+                          <p className="text-sm font-medium">{solicitud.despacho_nombre || solicitud.despachoNombre || solicitud.despacho_id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Localidad:</p>
+                          <p className="text-sm font-medium">{solicitud.despacho_localidad || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Provincia:</p>
+                          <p className="text-sm font-medium">{solicitud.despacho_provincia || '-'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Fecha de solicitud:</p>
                           <p className="text-sm font-medium">
-                            {new Date(solicitud.fecha_solicitud).toLocaleDateString('es-ES')}
+                            {(() => {
+                              const fechaLocal = new Date(solicitud.fecha_solicitud);
+                              if (isNaN(fechaLocal.getTime())) return '-';
+                              fechaLocal.setHours(fechaLocal.getHours() + 2);
+                              return fechaLocal.toLocaleString('es-ES');
+                            })()}
                           </p>
                         </div>
                         <div>
@@ -297,8 +333,8 @@ export default function SolicitudesDespacchosPage() {
                 Rechazar Solicitud
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Solicitud de {selectedSolicitud.users.nombre} {selectedSolicitud.users.apellidos} 
-                para el despacho {selectedSolicitud.despachos.nombre}
+                Solicitud de {selectedSolicitud.usuario?.nombre || selectedSolicitud.user_id} {selectedSolicitud.usuario?.apellidos || ''}
+                para el despacho {selectedSolicitud.despacho?.nombre || selectedSolicitud.despacho_id}
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">

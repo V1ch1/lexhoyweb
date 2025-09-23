@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
 import { AuthService } from '@/lib/authService';
 import { UserDespacho } from '@/lib/types';
+import { decodeHtml } from '@/lib/decodeHtml';
 import { 
   UserIcon, 
   KeyIcon, 
@@ -139,6 +140,16 @@ const SettingsPage = () => {
       current: false
     }
   ]);
+
+  const [userSolicitudes, setUserSolicitudes] = useState<Array<{
+    despacho_id: number | string;
+    despacho_nombre?: string;
+    despacho_localidad?: string;
+    despacho_provincia?: string;
+    fecha_solicitud: string;
+    estado: string;
+  }>>([]);
+  const [despachosInfo, setDespachosInfo] = useState<Record<string, { nombre: string; localidad: string; provincia: string }>>({});
 
   const tabs = [
     { id: 'profile', name: 'Perfil Personal', icon: UserIcon },
@@ -343,6 +354,33 @@ const SettingsPage = () => {
     }
   }, [user]);
 
+  // Efecto para cargar solicitudes de despacho
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/solicitudes-despacho?userId=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setUserSolicitudes(data);
+        // Mapear info directamente desde la solicitud
+        const info: Record<string, { nombre: string; localidad: string; provincia: string }> = {};
+        data.forEach((s: {
+          despacho_id: string | number;
+          despacho_nombre?: string;
+          despacho_localidad?: string;
+          despacho_provincia?: string;
+        }) => {
+          const key = String(s.despacho_id);
+          info[key] = {
+            nombre: s.despacho_nombre || `Despacho ${key}`,
+            localidad: s.despacho_localidad || '-',
+            provincia: s.despacho_provincia || '-'
+          };
+        });
+        setDespachosInfo(info);
+      })
+      .catch(() => setUserSolicitudes([]));
+  }, [user]);
+
   const revokeSession = async (sessionId: string) => {
     if (confirm('¿Estás seguro de que quieres cerrar esta sesión?')) {
       try {
@@ -377,6 +415,48 @@ const SettingsPage = () => {
         </p>
       </div>
       <div className="space-y-6">
+        {/* Bloque de despachos solicitados */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Mis despachos</h3>
+          {userSolicitudes.length === 0 ? (
+            <p className="text-gray-500">No tienes despachos solicitados ni asignados.</p>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="px-4 py-2">Nombre</th>
+                  <th className="px-4 py-2">Localidad</th>
+                  <th className="px-4 py-2">Provincia</th>
+                  <th className="px-4 py-2">Fecha</th>
+                  <th className="px-4 py-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userSolicitudes.map(s => (
+                  <tr key={s.despacho_id} className="border-b">
+                    <td className="px-4 py-2 font-semibold text-gray-900">{decodeHtml(despachosInfo[String(s.despacho_id)]?.nombre || String(s.despacho_id))}</td>
+                    <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.localidad || '-'}</td>
+                    <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.provincia || '-'}</td>
+                    <td className="px-4 py-2">{
+                      (() => {
+                        const fechaLocal = new Date(s.fecha_solicitud);
+                        if (isNaN(fechaLocal.getTime())) return '-';
+                        fechaLocal.setHours(fechaLocal.getHours() + 2);
+                        return fechaLocal.toLocaleString('es-ES');
+                      })()
+                    }</td>
+                    <td className="px-4 py-2">
+                      {s.estado === 'pendiente' && <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pendiente</span>}
+                      {s.estado === 'aprobada' && <span className="bg-green-100 text-green-800 px-2 py-1 rounded">Aprobada</span>}
+                      {s.estado === 'denegada' && <span className="bg-red-100 text-red-800 px-2 py-1 rounded">Denegada</span>}
+                    </td>
+                  </tr>
+                ))}
+
+              </tbody>
+            </table>
+          )}
+        </div>
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
@@ -942,5 +1022,6 @@ const SettingsPage = () => {
     </div>
   );
 }
+
 
 export default SettingsPage;

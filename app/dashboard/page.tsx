@@ -30,6 +30,18 @@ const DashboardPage = () => {
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [solicitudDespacho, setSolicitudDespacho] = useState<{ despachoId: number; fecha: string; estado: string } | null>(null);
+  // Cargar solicitud de despacho pendiente para el usuario actual
+  useEffect(() => {
+    if (!user?.id || user.role !== 'usuario') return;
+    fetch(`/api/solicitudes-despacho?userId=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+  const pendiente = data.find((s: { estado: string }) => s.estado === 'pendiente');
+        setSolicitudDespacho(pendiente || null);
+      })
+      .catch(() => setSolicitudDespacho(null));
+  }, [user?.id, user?.role]);
 
   // Debug del usuario actual
   useEffect(() => {
@@ -151,11 +163,17 @@ const DashboardPage = () => {
                   ¿Tienes un despacho? Solicita la creación de tu despacho para acceder a todas las funcionalidades.
                 </p>
                 <button 
-                  onClick={() => alert('Funcionalidad en desarrollo: Crear solicitud de despacho')}
+                  onClick={() => router.push('/dashboard/solicitar-despacho')}
                   className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
                 >
                   Solicitar Despacho
                 </button>
+                {solicitudDespacho && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <span className="text-yellow-800 font-medium">Solicitud pendiente</span><br />
+                    <span className="text-gray-700 text-sm">Tu solicitud de despacho está pendiente de revisión por un administrador.</span>
+                  </div>
+                )}
               </div>
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Estado de Cuenta</h3>

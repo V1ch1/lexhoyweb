@@ -250,9 +250,18 @@ export class AuthService {
       
       console.log('🔍 AuthService: Step 2 result:', { userData: !!userData, userError: userError?.message });
 
-      if (userError) {
+      if (userError || !userData) {
         console.error('❌ AuthService: Error fetching user data:', userError);
-        return { user: null, error: 'Error al obtener datos del usuario' };
+        // Si existe authData.user, devolver al menos los datos básicos
+        return {
+          user: {
+            id: authData.user.id,
+            email: authData.user.email,
+            name: authData.user.user_metadata?.nombre || authData.user.email,
+            role: (authData.user.user_metadata?.rol as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario'
+          },
+          error: null
+        };
       }
 
       console.log('✅ AuthService: User data found:', userData);

@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isPublicPage = publicPages.includes(pathname);
 
   // Cargar sesión al iniciar
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const loadSession = async () => {
       try {
@@ -152,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.data.subscription.unsubscribe();
     };
-  }, [pathname, isPublicPage, user]);
+  }, [pathname, isPublicPage]);
 
   const login = (userData: User) => {
     // El login real se maneja en AuthService.signIn
@@ -160,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     // Guardar en localStorage como backup
     localStorage.setItem('lexhoy_user', JSON.stringify(userData));
+    router.push('/dashboard');
   };
 
   const logout = async () => {

@@ -31,7 +31,7 @@ export class UserService {
   async getAllUsers(): Promise<User[]> {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+  .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -412,9 +412,9 @@ export class UserService {
   /**
    * Obtener todas las solicitudes (solo super_admin)
    */
-  async getAllSolicitudes(): Promise<SolicitudRegistro[]> {
+  async getAllSolicitudes(): Promise<any[]> {
     const { data, error } = await supabase
-      .from('solicitudes_registro')
+      .from('solicitudes_despacho')
       .select('*')
       .order('fecha_solicitud', { ascending: false });
 
@@ -426,19 +426,20 @@ export class UserService {
    * Crear solicitud de registro (público)
    */
   async createSolicitud(solicitudData: {
-    email: string;
-    nombre: string;
-    apellidos: string;
-    telefono?: string;
-    empresa?: string;
-    mensaje?: string;
-    datosDespacho: Record<string, unknown>;
-  }): Promise<SolicitudRegistro> {
+    user_id: string;
+    user_email: string;
+    user_name: string;
+    despacho_id: string;
+    despacho_nombre: string;
+    despacho_localidad?: string;
+    despacho_provincia?: string;
+    estado?: string;
+  }): Promise<any> {
     const { data, error } = await supabase
-      .from('solicitudes_registro')
+      .from('solicitudes_despacho')
       .insert({
         ...solicitudData,
-        estado: 'pendiente',
+        estado: solicitudData.estado || 'pendiente',
         fecha_solicitud: new Date().toISOString()
       })
       .select()
@@ -835,7 +836,7 @@ export class UserService {
     documentosAdjuntos?: string[];
   }) {
     const { data, error } = await supabase
-      .from('solicitud_asignacion_despacho')
+  .from('solicitudes_despacho')
       .insert({
         user_id: solicitud.userId,
         despacho_id: solicitud.despachoId,
@@ -857,14 +858,10 @@ export class UserService {
    */
   async getSolicitudesDespachosPendientes() {
     const { data, error } = await supabase
-      .from('solicitud_asignacion_despacho')
-      .select(`
-        *,
-        users(nombre, apellidos, email),
-        despachos(nombre)
-      `)
+  .from('solicitudes_despacho')
+      .select('*')
       .eq('estado', 'pendiente')
-      .order('fecha_solicitud', { ascending: false });
+  .order('fecha', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -875,7 +872,7 @@ export class UserService {
    */
   async getSolicitudesUsuario(userId: string) {
     const { data, error } = await supabase
-      .from('solicitud_asignacion_despacho')
+  .from('solicitudes_despacho')
       .select(`
         *,
         despachos(nombre)
@@ -894,7 +891,7 @@ export class UserService {
     try {
       // 1. Actualizar la solicitud
       const { data: solicitud, error: solicitudError } = await supabase
-        .from('solicitud_asignacion_despacho')
+  .from('solicitudes_despacho')
         .update({
           estado: 'aprobada',
           fecha_respuesta: new Date().toISOString(),
@@ -936,7 +933,7 @@ export class UserService {
    */
   async rechazarSolicitudDespacho(solicitudId: string, adminId: string, motivoRechazo: string) {
     const { data, error } = await supabase
-      .from('solicitud_asignacion_despacho')
+  .from('solicitudes_despacho')
       .update({
         estado: 'rechazada',
         fecha_respuesta: new Date().toISOString(),

@@ -53,8 +53,14 @@ export default function AdminUsersPage() {
   }, [checkPermissionsAndLoadData]);
 
   const loadUsers = async () => {
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
-      const allUsers = await userService.getAllUsers();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Timeout al cargar usuarios')), 10000);
+      });
+      const usersPromise = userService.getAllUsers();
+      const allUsers = await Promise.race([usersPromise, timeoutPromise]);
+      if (timeoutId) clearTimeout(timeoutId);
       setUsers(allUsers);
 
       // Cargar despachos para cada usuario
@@ -71,6 +77,9 @@ export default function AdminUsersPage() {
       setUserDespachos(despachoMap);
 
     } catch (error) {
+      if (timeoutId) clearTimeout(timeoutId);
+      setUsers([]);
+      alert('❌ Error al cargar usuarios: ' + (error instanceof Error ? error.message : 'Error desconocido'));
       console.error('Error loading users:', error);
     }
   };
