@@ -1,19 +1,50 @@
+"use client";
+
 import { ReactNode } from 'react';
+import { useAuth } from '@/lib/authContext';
 import Sidebar from '@/components/Sidebar';
+import NavbarDashboard from '@/components/NavbarDashboard';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  // TODO: Verificar autenticación y permisos de super admin aquí
-  // Por ahora, comentamos la verificación hasta implementar auth completa
-  
+  const { user, isLoading } = useAuth();
+
+  if (isLoading && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Verificar permisos de admin
+  if (!user || user.role !== 'super_admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
+          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar unificado */}
       <Sidebar />
-      <div className="flex-1 overflow-auto">
-        {children}
+
+      {/* Contenido principal con navbar consistente */}
+      <div className="flex-1 flex flex-col">
+        {/* Navbar consistente con dashboard */}
+        <NavbarDashboard />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

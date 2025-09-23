@@ -1,14 +1,16 @@
 "use client"; // Indica que este es un componente del cliente
 
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import Sidebar from "@/components/Sidebar"; // Sidebar del Dashboard
 import NavbarDashboard from "@/components/NavbarDashboard"; // Navbar del Dashboard
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (isLoading) {
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -25,8 +27,8 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('lexhoy_user');
       if (!storedUser) {
-        // No hay usuario guardado, redirigir a login
-        window.location.href = '/login';
+        // No hay usuario guardado, usar Next.js router
+        router.push('/login');
         return null;
       }
     }

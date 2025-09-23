@@ -37,6 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔄 AuthContext: Loading session...');
         console.log('📍 Current pathname:', pathname);
         console.log('🌐 Is public page:', isPublicPage);
+        
+        // Solo verificar sesión si no es una página pública
+        if (isPublicPage) {
+          console.log('🌐 AuthContext: Public page, skipping session check');
+          setIsLoading(false);
+          return;
+        }
+
+        // Si ya tenemos usuario y estamos navegando entre páginas internas, NO re-cargar
+        if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
+          console.log('👤 AuthContext: User exists, skipping session reload for internal navigation');
+          setIsLoading(false);
+          return;
+        }
+
+        // Solo aquí activamos loading para verificaciones reales
         setIsLoading(true);
         
         // Timeout de seguridad más largo para evitar pérdida de sesión
@@ -44,14 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('⏰ AuthContext: Session loading timeout, setting isLoading to false');
           setIsLoading(false);
         }, 15000); // 15 segundos máximo
-        
-        // Solo verificar sesión si no es una página pública
-        if (isPublicPage) {
-          console.log('🌐 AuthContext: Public page, skipping session check');
-          clearTimeout(timeoutId);
-          setIsLoading(false);
-          return;
-        }
         
         // Verificar si hay una sesión activa en Supabase
         const currentUserResult = await AuthService.getCurrentUser();
@@ -144,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.data.subscription.unsubscribe();
     };
-  }, [pathname, isPublicPage]);
+  }, [pathname, isPublicPage, user]);
 
   const login = (userData: User) => {
     // El login real se maneja en AuthService.signIn
@@ -196,29 +204,33 @@ export function useRequireAuth(requiredRole?: 'super_admin' | 'despacho_admin' |
   const isPublicPage = publicPages.includes(pathname);
 
   useEffect(() => {
-    if (!isLoading && !isPublicPage) {
-      if (!user) {
-        console.log('🚨 useRequireAuth: No user found, redirecting to login from:', pathname);
-        router.push('/login');
-        return;
-      }
+    // DESHABILITADO TEMPORALMENTE: Evitar redirects automáticos entre dashboard/admin
+    // Esto estaba causando recargas de página al navegar entre secciones
+    console.log('⏸️ useRequireAuth: Redirects automáticos deshabilitados para mejorar navegación SPA');
+    
+    // if (!isLoading && !isPublicPage) {
+    //   if (!user) {
+    //     console.log('🚨 useRequireAuth: No user found, redirecting to login from:', pathname);
+    //     router.push('/login');
+    //     return;
+    //   }
 
-      if (requiredRole && user.role !== requiredRole) {
-        // Si requiere super_admin pero es despacho_admin o usuario, redirigir a su dashboard
-        if (requiredRole === 'super_admin' && (user.role === 'despacho_admin' || user.role === 'usuario')) {
-          console.log('🚨 useRequireAuth: Insufficient permissions (super_admin required), redirecting to dashboard');
-          router.push('/dashboard');
-          return;
-        }
+    //   if (requiredRole && user.role !== requiredRole) {
+    //     // Si requiere super_admin pero es despacho_admin o usuario, redirigir a su dashboard
+    //     if (requiredRole === 'super_admin' && (user.role === 'despacho_admin' || user.role === 'usuario')) {
+    //       console.log('🚨 useRequireAuth: Insufficient permissions (super_admin required), redirecting to dashboard');
+    //       router.push('/dashboard');
+    //       return;
+    //     }
         
-        // Si requiere despacho_admin pero es solo usuario, redirigir a dashboard
-        if (requiredRole === 'despacho_admin' && user.role === 'usuario') {
-          console.log('🚨 useRequireAuth: Insufficient permissions (despacho_admin required), redirecting to dashboard');
-          router.push('/dashboard');
-          return;
-        }
-      }
-    }
+    //     // Si requiere despacho_admin pero es solo usuario, redirigir a dashboard
+    //     if (requiredRole === 'despacho_admin' && user.role === 'usuario') {
+    //       console.log('🚨 useRequireAuth: Insufficient permissions (despacho_admin required), redirecting to dashboard');
+    //       router.push('/dashboard');
+    //       return;
+    //     }
+    //   }
+    // }
   }, [user, isLoading, requiredRole, router, pathname, isPublicPage]);
 
   return { user, isLoading };

@@ -47,19 +47,16 @@ const DashboardPage = () => {
 
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {
+    if (!user?.id || !user?.role) return;
     const loadStats = async () => {
-      if (!user) return;
-      
       setStatsLoading(true);
       try {
         const userService = new UserService();
         if (user.role === 'super_admin') {
           const stats = await userService.getSystemStats();
-          console.log('🔍 STATS DEBUG - Estadísticas del sistema:', stats);
           setSystemStats(stats);
         } else if (user.role === 'despacho_admin') {
           const stats = await userService.getDespachoStats(user.id);
-          console.log('🔍 STATS DEBUG - Estadísticas del despacho:', stats);
           setDespachoStats(stats);
         }
       } catch (error) {
@@ -68,12 +65,18 @@ const DashboardPage = () => {
         setStatsLoading(false);
       }
     };
-
     loadStats();
-  }, [user]);
+  }, [user?.id, user?.role]);
 
-  // Mostrar loading mientras verifica la sesión
-  if (isLoading) {
+
+  // Mostrar loading hasta que user y stats estén listos
+  const statsReady =
+    (user &&
+      ((user.role === 'super_admin' && systemStats && !statsLoading) ||
+       (user.role === 'despacho_admin' && despachoStats && !statsLoading) ||
+       (user.role === 'usuario')));
+
+  if (isLoading || !user || (user.role !== 'usuario' && !statsReady)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -84,43 +87,33 @@ const DashboardPage = () => {
     );
   }
 
-  // Si no hay usuario, el hook useAuth ya redirigirá al login
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div>
-      {/* Contenido del Dashboard sin header duplicado */}
+    <div className="p-6">
+      {/* Header Dashboard */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="mt-2 text-gray-600">
+          {user.role === 'super_admin' && 'Accede a la administración global de la plataforma.'}
+          {user.role === 'despacho_admin' && 'Gestiona tu despacho y tus leads desde aquí.'}
+          {user.role === 'usuario' && 'Tu cuenta está registrada. Solicita un despacho o espera asignación para acceder a más funciones.'}
+        </p>
+        {user.role === 'super_admin' && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 text-sm">
+              💡 <strong>Tip:</strong> Accede al{' '}
+              <button 
+                onClick={() => router.push('/admin/users')}
+                className="text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Panel de Administración
+              </button>{' '}
+              para gestionar usuarios y configuración avanzada.
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Dashboard - {user.role === 'super_admin' ? 'Super Administrador' : user.role === 'despacho_admin' ? 'Despacho' : 'Usuario'}
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Bienvenido, {user.name}. {
-              user.role === 'super_admin' 
-                ? 'Gestiona toda la plataforma desde este panel.' 
-                : user.role === 'despacho_admin'
-                ? 'Gestiona tu despacho desde este panel.'
-                : 'Tu cuenta está registrada. Espera a que un administrador te asigne a un despacho para acceder a más funciones.'
-            }
-          </p>
-          {user.role === 'super_admin' && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                💡 <strong>Tip:</strong> Como super administrador, también puedes acceder al{' '}
-                <button 
-                  onClick={() => router.push('/admin/users')}
-                  className="text-blue-600 hover:text-blue-800 underline font-medium"
-                >
-                  Panel de Administración
-                </button>{' '}
-                para gestionar usuarios y configuración avanzada.
-              </p>
-            </div>
-          )}
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card de Bienvenida */}
@@ -129,10 +122,9 @@ const DashboardPage = () => {
               ¡Bienvenido, {user.name.split(' ')[0]}!
             </h2>
             <p className="text-gray-600">
-              {user.role === 'super_admin' 
-                ? 'Accede a todas las funcionalidades de administración desde este panel.'
-                : 'Accede a todas las funcionalidades de tu despacho desde este panel.'
-              }
+              {user.role === 'super_admin' && 'Tienes acceso total a la administración y estadísticas globales.'}
+              {user.role === 'despacho_admin' && 'Gestiona tu despacho, leads y perfil desde este panel.'}
+              {user.role === 'usuario' && 'Solicita la creación de un despacho o espera asignación para acceder a más funciones.'}
             </p>
           </div>
 
@@ -152,38 +144,36 @@ const DashboardPage = () => {
 
           {/* Card de Solicitar Despacho (solo para usuarios básicos) */}
           {user.role === 'usuario' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Crear Despacho</h3>
-              <p className="text-gray-600 mb-4">
-                ¿Tienes un despacho? Solicita la creación de tu despacho para acceder a todas las funcionalidades.
-              </p>
-              <button 
-                onClick={() => alert('Funcionalidad en desarrollo: Crear solicitud de despacho')}
-                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
-              >
-                Solicitar Despacho
-              </button>
-            </div>
-          )}
-
-          {/* Card de Estado (solo para usuarios básicos) */}
-          {user.role === 'usuario' && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Estado de Cuenta</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Rol actual:</span>
-                  <span className="font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">Usuario</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Estado:</span>
-                  <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Activo</span>
-                </div>
+            <>
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Crear Despacho</h3>
+                <p className="text-gray-600 mb-4">
+                  ¿Tienes un despacho? Solicita la creación de tu despacho para acceder a todas las funcionalidades.
+                </p>
+                <button 
+                  onClick={() => alert('Funcionalidad en desarrollo: Crear solicitud de despacho')}
+                  className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+                >
+                  Solicitar Despacho
+                </button>
               </div>
-              <p className="text-sm text-gray-500 mt-4">
-                Espera a que un administrador te asigne a un despacho para acceder a más funciones.
-              </p>
-            </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Estado de Cuenta</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Rol actual:</span>
+                    <span className="font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">Usuario</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Estado:</span>
+                    <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Activo</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-4">
+                  Espera a que un administrador te asigne a un despacho para acceder a más funciones.
+                </p>
+              </div>
+            </>
           )}
 
           {/* Card de Leads (solo para despacho_admin y super_admin) */}

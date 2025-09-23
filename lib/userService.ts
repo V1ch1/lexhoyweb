@@ -771,20 +771,53 @@ export class UserService {
    */
   async updateUserRole(userId: string, newRole: UserRole): Promise<void> {
     try {
-      const { error } = await supabase
+      console.log(`🔄 Intentando actualizar usuario ${userId} a rol: ${newRole}`);
+      
+      // Primero verificar que el usuario existe
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id, email, rol')
+        .eq('id', userId)
+        .single();
+
+      if (checkError) {
+        console.error('❌ Error verificando usuario:', checkError);
+        throw new Error(`Error verificando usuario: ${checkError.message}`);
+      }
+
+      if (!existingUser) {
+        throw new Error('Usuario no encontrado');
+      }
+
+      console.log(`👤 Usuario encontrado: ${existingUser.email}, rol actual: ${existingUser.rol}`);
+
+      // Actualización simple - SOLO campos básicos que sabemos que existen
+      const { data, error } = await supabase
         .from('users')
         .update({ 
           rol: newRole,
-          estado: 'activo', // Al cambiar rol, automáticamente activamos al usuario
-          fecha_aprobacion: new Date().toISOString()
+          estado: 'activo'
+          // Omitimos fecha_aprobacion completamente hasta resolver el esquema
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error de Supabase:', error);
+        console.error('❌ Detalles completos del error:', JSON.stringify(error, null, 2));
+        throw new Error(`Error de base de datos: ${error.message}`);
+      }
 
-      console.log(`✅ Usuario ${userId} actualizado a rol: ${newRole}`);
+      if (!data || data.length === 0) {
+        console.error('❌ No se actualizó ningún registro');
+        throw new Error('No se pudo actualizar el usuario. Verifica los permisos.');
+      }
+
+      console.log(`✅ Usuario ${userId} actualizado correctamente a rol: ${newRole}`);
+      console.log(`✅ Datos actualizados:`, data[0]);
+      
     } catch (error) {
-      console.error('Error al actualizar rol de usuario:', error);
+      console.error('❌ Error en updateUserRole:', error);
       throw error;
     }
   }

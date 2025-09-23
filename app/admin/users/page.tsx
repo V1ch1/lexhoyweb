@@ -9,14 +9,13 @@ import { useAuth } from '@/lib/authContext';
 const userService = new UserService();
 
 export default function AdminUsersPage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'users' | 'solicitudes' | 'solicitudes-despachos' | 'create'>('users');
   const [userDespachos, setUserDespachos] = useState<Record<string, UserDespacho[]>>({});
-  const [currentUser, setCurrentUser] = useState<{email: string, name: string} | null>(null);
 
   // Estado para modal de detalles
   const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
@@ -37,7 +36,6 @@ export default function AdminUsersPage() {
       // Usar el contexto de autenticación
       if (!user) return;
       
-      setCurrentUser({ email: user.email, name: user.name });
       const isSuperAdmin = user.role === 'super_admin';
       setIsSuperAdmin(isSuperAdmin);
 
@@ -217,36 +215,18 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Administración de Usuarios
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {currentUser && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">{currentUser.name}</span>
-                  <span className="text-gray-400 mx-2">•</span>
-                  <span>{currentUser.email}</span>
-                </div>
-              )}
-              <button
-                onClick={logout}
-                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Título de la página */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Administración de Usuarios
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Gestiona usuarios, roles y permisos del sistema
+          </p>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
         <div className="mb-8">
           <nav className="flex space-x-8">
