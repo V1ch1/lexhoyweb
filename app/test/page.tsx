@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 
 export default function TestPage() {
@@ -8,7 +10,7 @@ export default function TestPage() {
         
         <div className="space-y-4">
           <div>
-            <Link href="/" className="bg-blue-500 text-white px-4 py-2 rounded">
+            <Link href="/" className="bg-blue-500 text-white px-4 py-2 rounded inline-block">
               Ir a Home (Link)
             </Link>
           </div>
