@@ -22,7 +22,7 @@ export default function AdminUsersPage() {
     nombre: '',
     apellidos: '',
     telefono: '',
-    rol: 'despacho_admin' as UserRole
+    rol: 'usuario' as UserRole
   });
 
   const checkPermissionsAndLoadData = useCallback(async () => {
@@ -82,12 +82,17 @@ export default function AdminUsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await userService.createUser(newUser);
-      setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'despacho_admin' });
+      const result = await userService.createUserWithAuth(newUser);
+      
+      alert(`✅ Usuario creado exitosamente!\n\n📧 Email: ${newUser.email}\n🔑 Contraseña temporal: ${result.temporaryPassword}\n\n⚠️ IMPORTANTE: Guarda esta contraseña y compártela de forma segura con el usuario. Debe cambiarla en su primer login.`);
+      
+      setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'usuario' });
       await loadUsers();
       setSelectedTab('users');
     } catch (error) {
       console.error('Error creating user:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`❌ Error al crear usuario: ${errorMessage}`);
     }
   };
 
@@ -133,7 +138,13 @@ export default function AdminUsersPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando permisos...</p>
+          <p className="text-gray-600 mb-4">Verificando permisos...</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -173,12 +184,14 @@ export default function AdminUsersPage() {
   const RoleBadge = ({ role }: { role: UserRole }) => {
     const colors = {
       super_admin: 'bg-purple-100 text-purple-800',
-      despacho_admin: 'bg-blue-100 text-blue-800'
+      despacho_admin: 'bg-blue-100 text-blue-800',
+      usuario: 'bg-gray-100 text-gray-800'
     };
 
     const labels = {
       super_admin: 'Super Admin',
-      despacho_admin: 'Admin Despacho'
+      despacho_admin: 'Admin Despacho',
+      usuario: 'Usuario'
     };
 
     return (
@@ -420,7 +433,31 @@ export default function AdminUsersPage() {
         {/* Contenido de Crear Usuario */}
         {selectedTab === 'create' && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-6">Crear Nuevo Usuario</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Crear Nuevo Usuario</h3>
+            
+            {/* Información importante */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Información sobre la creación de usuarios
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Se creará la cuenta de autenticación automáticamente</li>
+                      <li>Se generará una contraseña temporal que debes compartir con el usuario</li>
+                      <li>El usuario debe cambiar la contraseña en su primer login</li>
+                      <li>Los usuarios con rol &quot;Usuario&quot; necesitan ser asignados a un despacho para acceder a funciones avanzadas</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <form onSubmit={handleCreateUser} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -484,6 +521,7 @@ export default function AdminUsersPage() {
                     onChange={(e) => setNewUser({ ...newUser, rol: e.target.value as UserRole })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="usuario">Usuario</option>
                     <option value="despacho_admin">Admin Despacho</option>
                     <option value="super_admin">Super Admin</option>
                   </select>
@@ -493,7 +531,7 @@ export default function AdminUsersPage() {
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'despacho_admin' })}
+                  onClick={() => setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'usuario' })}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                 >
                   Limpiar

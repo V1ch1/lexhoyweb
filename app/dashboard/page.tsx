@@ -2,11 +2,37 @@
 
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { testSupabaseConnection } from '@/lib/testConnection';
 
 // Página principal del Dashboard
 const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+
+  // Test de conexión al cargar la página
+  useEffect(() => {
+    const runTest = async () => {
+      console.log('🚀 Running connection test from dashboard...');
+      const result = await testSupabaseConnection();
+      console.log('📊 Test result:', result);
+    };
+    runTest();
+  }, []);
+
+  // Debug del usuario actual
+  useEffect(() => {
+    if (user) {
+      console.log('🔍 DASHBOARD DEBUG - Usuario actual:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        'Es super_admin?': user.role === 'super_admin',
+        'Es usuario?': user.role === 'usuario'
+      });
+    }
+  }, [user]);
 
   // Mostrar loading mientras verifica la sesión
   if (isLoading) {
@@ -31,10 +57,16 @@ const DashboardPage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Dashboard - {user.role === 'super_admin' ? 'Super Administrador' : 'Despacho'}
+            Dashboard - {user.role === 'super_admin' ? 'Super Administrador' : user.role === 'despacho_admin' ? 'Despacho' : 'Usuario'}
           </h1>
           <p className="mt-2 text-gray-600">
-            Bienvenido, {user.name}. {user.role === 'super_admin' ? 'Gestiona toda la plataforma desde este panel.' : 'Gestiona tu despacho desde este panel.'}
+            Bienvenido, {user.name}. {
+              user.role === 'super_admin' 
+                ? 'Gestiona toda la plataforma desde este panel.' 
+                : user.role === 'despacho_admin'
+                ? 'Gestiona tu despacho desde este panel.'
+                : 'Tu cuenta está registrada. Espera a que un administrador te asigne a un despacho para acceder a más funciones.'
+            }
           </p>
           {user.role === 'super_admin' && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -80,24 +112,60 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {/* Card de Leads */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads</h3>
-            <p className="text-gray-600 mb-4">
-              {user.role === 'super_admin' 
-                ? 'Ver todos los leads del sistema'
-                : 'Gestiona los leads de tu despacho'
-              }
-            </p>
-            <button 
-              onClick={() => router.push('/dashboard/leads')}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Ver Leads
-            </button>
-          </div>
+          {/* Card de Solicitar Despacho (solo para usuarios básicos) */}
+          {user.role === 'usuario' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Crear Despacho</h3>
+              <p className="text-gray-600 mb-4">
+                ¿Tienes un despacho? Solicita la creación de tu despacho para acceder a todas las funcionalidades.
+              </p>
+              <button 
+                onClick={() => alert('Funcionalidad en desarrollo: Crear solicitud de despacho')}
+                className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+              >
+                Solicitar Despacho
+              </button>
+            </div>
+          )}
 
-          {/* Card de Perfil */}
+          {/* Card de Estado (solo para usuarios básicos) */}
+          {user.role === 'usuario' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Estado de Cuenta</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Rol actual:</span>
+                  <span className="font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">Usuario</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Estado:</span>
+                  <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Activo</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Espera a que un administrador te asigne a un despacho para acceder a más funciones.
+              </p>
+            </div>
+          )}
+
+          {/* Card de Leads (solo para despacho_admin y super_admin) */}
+          {(user.role === 'despacho_admin' || user.role === 'super_admin') && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads</h3>
+              <p className="text-gray-600 mb-4">
+                {user.role === 'super_admin' 
+                  ? 'Ver todos los leads del sistema'
+                  : 'Gestiona los leads de tu despacho'
+                }
+              </p>
+              <button 
+                onClick={() => router.push('/dashboard/leads')}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Ver Leads
+              </button>
+            </div>
+          )}          {/* Card de Perfil */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Mi Perfil</h3>
             <p className="text-gray-600 mb-4">

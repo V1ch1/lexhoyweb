@@ -230,7 +230,7 @@ export interface Analytics {
 
 // Enums
 export type PlanType = "basico" | "profesional" | "enterprise";
-export type UserRole = "super_admin" | "despacho_admin";
+export type UserRole = "super_admin" | "despacho_admin" | "usuario";
 export type UserStatus = "pendiente" | "activo" | "inactivo" | "suspendido";
 export type DespachoStatus = "borrador" | "pendiente" | "aprobado" | "rechazado" | "suspendido";
 export type SolicitudStatus = "pendiente" | "aprobado" | "rechazado";

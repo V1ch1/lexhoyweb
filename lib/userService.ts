@@ -1,5 +1,25 @@
 import { supabase } from './supabase';
-import { User, UserDespacho, SolicitudRegistro, SyncLog, UserRole, UserStatus } from './types';
+import { User, UserDespacho, SolicitudRegistro, SyncLog, UserRole, UserStatus, PlanType } from './types';
+
+// Interfaz para los datos raw de la base de datos
+interface UserRaw {
+  id: string;
+  email: string;
+  nombre: string;
+  apellidos: string;
+  telefono?: string;
+  fecha_registro: string;
+  ultimo_acceso?: string;
+  activo: boolean;
+  email_verificado: boolean;
+  plan: string;
+  rol: UserRole;
+  estado: UserStatus;
+  fecha_aprobacion?: string;
+  aprobado_por?: string;
+  notas_admin?: string;
+  despacho_id?: string;
+}
 
 export class UserService {
   
@@ -15,7 +35,26 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Mapear nombres de columnas de DB a propiedades de TypeScript
+    return (data || []).map((user: UserRaw) => ({
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellidos: user.apellidos,
+      telefono: user.telefono,
+      fechaRegistro: new Date(user.fecha_registro),
+      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      activo: user.activo,
+      emailVerificado: user.email_verificado,
+      plan: user.plan as PlanType,
+      rol: user.rol,
+      estado: user.estado,
+      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      aprobadoPor: user.aprobado_por,
+      notasAdmin: user.notas_admin,
+      despachoId: user.despacho_id
+    }));
   }
 
   /**
@@ -80,6 +119,88 @@ export class UserService {
   }
 
   /**
+   * Crear usuario con cuenta de autenticación y contraseña temporal
+   */
+  async createUserWithAuth(userData: {
+    email: string;
+    nombre: string;
+    apellidos: string;
+    telefono?: string;
+    rol: UserRole;
+  }): Promise<{ user: User; temporaryPassword: string }> {
+    try {
+      // 1. Generar contraseña temporal
+      const temporaryPassword = this.generateTemporaryPassword();
+
+      // 2. Crear cuenta de autenticación en Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: temporaryPassword,
+        options: {
+          data: {
+            nombre: userData.nombre,
+            apellidos: userData.apellidos,
+            telefono: userData.telefono,
+            created_by_admin: true
+          },
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/auth/confirm`
+        }
+      });
+
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        throw new Error(`Error de autenticación: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('No se pudo crear la cuenta de usuario');
+      }
+
+      // 3. Crear registro en nuestra tabla users con el ID de Supabase Auth
+      const { data: localUser, error: localError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id, // Usar el ID de Supabase Auth
+          email: userData.email,
+          nombre: userData.nombre,
+          apellidos: userData.apellidos,
+          telefono: userData.telefono,
+          rol: userData.rol,
+          estado: 'activo', // Activo porque fue creado por admin
+          fecha_registro: new Date().toISOString(),
+          activo: true,
+          email_verificado: authData.user.email_confirmed_at ? true : false,
+          plan: 'basico'
+        })
+        .select()
+        .single();
+
+      if (localError) {
+        console.error('Error creating local user record:', localError);
+        throw new Error(`Error creando perfil de usuario: ${localError.message}`);
+      }
+
+      return { user: localUser, temporaryPassword };
+
+    } catch (error) {
+      console.error('Error in createUserWithAuth:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generar contraseña temporal segura
+   */
+  private generateTemporaryPassword(): string {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
+
+  /**
    * Actualizar usuario
    */
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
@@ -103,6 +224,56 @@ export class UserService {
       fechaAprobacion: new Date(),
       aprobadoPor: approvedBy
     });
+  }
+
+  /**
+   * Asignar usuario a despacho y promocionar a despacho_admin
+   */
+  async assignUserToDespachoAndPromote(
+    userId: string, 
+    despachoId: string, 
+    assignedBy: string
+  ): Promise<{ user: User; assignment: UserDespacho }> {
+    // 1. Asignar despacho
+    const assignment = await this.assignDespachoToUser(userId, despachoId, assignedBy);
+    
+    // 2. Cambiar rol a despacho_admin
+    const updatedUser = await this.updateUser(userId, {
+      rol: 'despacho_admin'
+    });
+
+    return { user: updatedUser, assignment };
+  }
+
+  /**
+   * Remover usuario de despacho y regresar a rol usuario (si no tiene más despachos)
+   */
+  async removeUserFromDespachoAndDemote(userId: string, despachoId: string): Promise<User> {
+    // 1. Desactivar asignación de despacho
+    await supabase
+      .from('user_despachos')
+      .update({ activo: false })
+      .eq('user_id', userId)
+      .eq('despacho_id', despachoId);
+
+    // 2. Verificar si el usuario tiene otros despachos activos
+    const { data: activeDespachos } = await supabase
+      .from('user_despachos')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('activo', true);
+
+    // 3. Si no tiene más despachos, cambiar rol a usuario
+    if (!activeDespachos || activeDespachos.length === 0) {
+      return this.updateUser(userId, {
+        rol: 'usuario'
+      });
+    }
+
+    // Si aún tiene despachos, mantener rol despacho_admin
+    const user = await this.getUserById(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+    return user;
   }
 
   // ======================== ASIGNACIÓN DE DESPACHOS ========================

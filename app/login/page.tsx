@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
@@ -14,7 +14,7 @@ interface FormState {
   rememberMe: boolean;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -78,7 +78,7 @@ export default function LoginPage() {
         id: authResult.user.id,
         email: authResult.user.email,
         name: authResult.user.name,
-        role: authResult.user.role as 'super_admin' | 'despacho_admin'
+        role: authResult.user.role as 'super_admin' | 'despacho_admin' | 'usuario'
       };
       
       login(userData);
@@ -206,5 +206,20 @@ export default function LoginPage() {
         </p>
       </div>
     </section>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }

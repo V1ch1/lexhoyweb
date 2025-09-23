@@ -1,0 +1,30 @@
+===============================================
+LEXHOY DESPACHOS - CONFIRMACIÓN DE CUENTA
+===============================================
+
+¡Bienvenido a LexHoy Despachos!
+
+Gracias por registrarte en nuestra plataforma. Para completar tu registro y comenzar a utilizar todas las funcionalidades, necesitamos que confirmes tu dirección de correo electrónico.
+
+CONFIRMAR CUENTA:
+{{ CONFIRMATION_URL }}
+
+INFORMACIÓN DE SEGURIDAD:
+- Este enlace es válido por 24 horas
+- Solo puede ser usado una vez
+- Si no solicitaste esta cuenta, puedes ignorar este correo
+
+UNA VEZ CONFIRMADA TU CUENTA PODRÁS:
+• Gestionar la información de tu despacho
+• Recibir y gestionar leads qualificados
+• Acceder a métricas y reportes
+• Configurar tu perfil y preferencias
+
+SOPORTE:
+Si tienes alguna pregunta o necesitas ayuda, contacta con nuestro equipo de soporte.
+
+---
+© 2025 LexHoy Despachos
+Todos los derechos reservados
+
+Si no deseas recibir estos correos, responde con "BAJA" en el asunto.

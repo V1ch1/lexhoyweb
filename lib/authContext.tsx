@@ -8,7 +8,7 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'despacho_admin';
+  role: 'super_admin' | 'despacho_admin' | 'usuario';
 }
 
 interface AuthContextType {
@@ -29,26 +29,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadSession = async () => {
       try {
+        console.log('🔄 AuthContext: Loading session...');
         setIsLoading(true);
+        
+        // Timeout de seguridad para evitar carga infinita
+        const timeoutId = setTimeout(() => {
+          console.log('⏰ AuthContext: Session loading timeout, setting isLoading to false');
+          setIsLoading(false);
+        }, 10000); // 10 segundos máximo
         
         // Verificar si hay una sesión activa en Supabase
         const currentUserResult = await AuthService.getCurrentUser();
+        console.log('👤 AuthContext: getCurrentUser result:', currentUserResult);
+        
+        // Limpiar timeout si la operación termina antes
+        clearTimeout(timeoutId);
         
         if (currentUserResult.user) {
           const userData: User = {
             id: currentUserResult.user.id,
             email: currentUserResult.user.email,
             name: currentUserResult.user.name,
-            role: currentUserResult.user.role as 'super_admin' | 'despacho_admin'
+            role: currentUserResult.user.role as 'super_admin' | 'despacho_admin' | 'usuario'
           };
+          console.log('✅ AuthContext: Setting user data:', userData);
           setUser(userData);
         } else {
+          console.log('❌ AuthContext: No user found or error:', currentUserResult.error);
           setUser(null);
         }
       } catch (error) {
-        console.error('Error loading session:', error);
+        console.error('💥 AuthContext: Error loading session:', error);
         setUser(null);
       } finally {
+        console.log('⏹️ AuthContext: Finished loading, setting isLoading to false');
         setIsLoading(false);
       }
     };
@@ -57,15 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Escuchar cambios en el estado de autenticación
     const subscription = AuthService.onAuthStateChange((authUser: AuthUser | null) => {
+      console.log('🔔 AuthContext: Auth state changed:', authUser);
       if (authUser) {
         const userData: User = {
           id: authUser.id,
           email: authUser.email,
           name: authUser.name,
-          role: authUser.role as 'super_admin' | 'despacho_admin'
+          role: authUser.role as 'super_admin' | 'despacho_admin' | 'usuario'
         };
+        console.log('✅ AuthContext: Setting user from auth change:', userData);
         setUser(userData);
       } else {
+        console.log('❌ AuthContext: Clearing user from auth change');
         setUser(null);
       }
       setIsLoading(false);
@@ -112,7 +129,7 @@ export function useAuth() {
 }
 
 // Hook para proteger rutas
-export function useRequireAuth(requiredRole?: 'super_admin' | 'despacho_admin') {
+export function useRequireAuth(requiredRole?: 'super_admin' | 'despacho_admin' | 'usuario') {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -124,8 +141,14 @@ export function useRequireAuth(requiredRole?: 'super_admin' | 'despacho_admin') 
       }
 
       if (requiredRole && user.role !== requiredRole) {
-        // Si requiere super_admin pero es despacho_admin, redirigir a su dashboard
-        if (requiredRole === 'super_admin' && user.role === 'despacho_admin') {
+        // Si requiere super_admin pero es despacho_admin o usuario, redirigir a su dashboard
+        if (requiredRole === 'super_admin' && (user.role === 'despacho_admin' || user.role === 'usuario')) {
+          router.push('/dashboard');
+          return;
+        }
+        
+        // Si requiere despacho_admin pero es solo usuario, redirigir a dashboard
+        if (requiredRole === 'despacho_admin' && user.role === 'usuario') {
           router.push('/dashboard');
           return;
         }

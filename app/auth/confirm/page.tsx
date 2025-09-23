@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -23,14 +23,27 @@ export default function ConfirmPage() {
         // Obtener todos los parámetros posibles
         const token_hash = searchParams.get('token_hash');
         const type = searchParams.get('type');
+        const error = searchParams.get('error');
+        const error_description = searchParams.get('error_description');
         const confirmationUrl = window.location.href;
         
-        console.log('Parámetros de confirmación:', {
+        console.log('🔍 Parámetros de confirmación:', {
           token_hash,
           type,
+          error,
+          error_description,
           url: confirmationUrl,
-          allParams: Object.fromEntries(searchParams.entries())
+          allParams: Object.fromEntries(searchParams.entries()),
+          hash: window.location.hash
         });
+
+        // Si hay un error en los parámetros, mostrarlo
+        if (error) {
+          console.error('❌ Error en URL:', error, error_description);
+          setStatus('error');
+          setMessage(`Error: ${error_description || error}`);
+          return;
+        }
 
         // Intentar diferentes métodos de confirmación
         if (token_hash && type) {
@@ -119,7 +132,7 @@ export default function ConfirmPage() {
                 nombre: userData.nombre || user.email?.split('@')[0] || 'Usuario',
                 apellidos: userData.apellidos || '',
                 telefono: userData.telefono || null,
-                rol: 'despacho_admin',
+                rol: 'usuario',
                 estado: 'activo',
                 activo: true,
                 email_verificado: true,
@@ -220,5 +233,20 @@ export default function ConfirmPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando confirmación...</p>
+        </div>
+      </div>
+    }>
+      <ConfirmPageContent />
+    </Suspense>
   );
 }

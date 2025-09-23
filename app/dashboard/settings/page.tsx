@@ -23,7 +23,7 @@ interface UserProfile {
   nombre: string;
   apellidos: string;
   telefono: string;
-  role: 'super_admin' | 'despacho_admin';
+  role: 'super_admin' | 'despacho_admin' | 'usuario';
   despacho_nombre?: string;
   fecha_registro: string;
   ultimo_acceso: string;
@@ -64,7 +64,7 @@ const SettingsPage = () => {
     nombre: user?.name?.split(' ')[0] || '',
     apellidos: user?.name?.split(' ').slice(1).join(' ') || '',
     telefono: '',
-    role: user?.role || 'despacho_admin',
+    role: user?.role || 'usuario',
     fecha_registro: new Date().toISOString(),
     ultimo_acceso: new Date().toISOString()
   });

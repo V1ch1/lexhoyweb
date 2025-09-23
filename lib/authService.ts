@@ -5,7 +5,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'despacho_admin';
+  role: 'super_admin' | 'despacho_admin' | 'usuario';
 }
 
 export class AuthService {
@@ -97,7 +97,7 @@ export class AuthService {
             apellidos: userData.apellidos,
             telefono: userData.telefono
           },
-          emailRedirectTo: `http://localhost:3000/auth/confirm`
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
         }
       });
 
@@ -141,7 +141,7 @@ export class AuthService {
             id: authData.user.id,
             email: email,
             name: `${userData.nombre} ${userData.apellidos}`,
-            role: 'despacho_admin'
+            role: 'usuario'
           }, 
           error: null 
         };
@@ -193,24 +193,71 @@ export class AuthService {
    */
   static async getCurrentUser(): Promise<{ user: AuthUser | null; error: string | null }> {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      console.log('🔍 AuthService: Getting current user...');
+      
+      // Debug de configuración
+      console.log('� AuthService: Supabase config check:', {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0, 30) + '...',
+        keyPresent: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length
+      });
+      
+      console.log('�🔍 AuthService: Step 1 - Calling supabase.auth.getUser()...');
+      
+      // Agregar timeout para evitar cuelgue infinito
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout: supabase.auth.getUser() took too long')), 5000);
+      });
+      
+      const authPromise = supabase.auth.getUser();
+      
+      const { data: authData, error: authError } = await Promise.race([
+        authPromise, 
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof supabase.auth.getUser>>;
+      
+      console.log('🔍 AuthService: Step 1 result:', { authData: !!authData, authError: authError?.message });
 
       if (authError || !authData.user) {
+        console.log('❌ AuthService: No auth user or error:', authError?.message);
         return { user: null, error: authError?.message || 'No hay usuario autenticado' };
       }
 
+      console.log('✅ AuthService: Auth user found:', authData.user.id, authData.user.email);
+
       // Obtener datos del usuario desde nuestra tabla
-      const { data: userData, error: userError } = await supabase
+      console.log('🔍 AuthService: Step 2 - Fetching user data from users table...');
+      console.log('🔍 AuthService: Looking for user ID:', authData.user.id);
+      
+      let { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', authData.user.id)
         .single();
+      
+      // Si no se encuentra por ID, buscar por email como fallback
+      if (userError && userError.code === 'PGRST116') {
+        console.log('🔄 AuthService: User not found by ID, trying by email...');
+        const result = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', authData.user.email)
+          .single();
+        
+        userData = result.data;
+        userError = result.error;
+      }
+      
+      console.log('🔍 AuthService: Step 2 result:', { userData: !!userData, userError: userError?.message });
 
       if (userError) {
+        console.error('❌ AuthService: Error fetching user data:', userError);
         return { user: null, error: 'Error al obtener datos del usuario' };
       }
 
-      return {
+      console.log('✅ AuthService: User data found:', userData);
+
+      const result = {
         user: {
           id: userData.id,
           email: userData.email,
@@ -219,9 +266,12 @@ export class AuthService {
         },
         error: null
       };
+      
+      console.log('🎯 AuthService: Final result:', result);
+      return result;
 
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error('💥 AuthService: Get current user error:', error);
       return { user: null, error: 'Error de conexión' };
     }
   }
@@ -294,7 +344,7 @@ export class AuthService {
           nombre: nombre || email.split('@')[0],
           apellidos: apellidos || '',
           telefono: telefono || null,
-          rol: 'despacho_admin', // Por defecto, los nuevos usuarios son despacho_admin
+          rol: 'usuario', // Por defecto, los nuevos usuarios son usuarios básicos
           estado: 'activo', // Cambiado de 'pendiente' a 'activo' 
           activo: true,
           email_verificado: true, // Cambiado a true ya que auto-confirm está habilitado
@@ -328,17 +378,17 @@ export class AuthService {
    */
   static onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Usuario se ha logueado
+      console.log('🔔 AuthService: Auth state change event:', event, !!session);
+      
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+        // Usuario se ha logueado, token refrescado, o sesión inicial
+        console.log('🔄 AuthService: Getting user data for auth change...');
         const { user } = await this.getCurrentUser();
         callback(user);
-      } else if (event === 'SIGNED_OUT') {
-        // Usuario se ha deslogueado
+      } else if (event === 'SIGNED_OUT' || !session) {
+        // Usuario se ha deslogueado o no hay sesión
+        console.log('🚪 AuthService: User signed out or no session');
         callback(null);
-      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Token se ha refrescado
-        const { user } = await this.getCurrentUser();
-        callback(user);
       }
     });
   }
