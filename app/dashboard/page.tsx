@@ -3,22 +3,11 @@
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { testSupabaseConnection } from '@/lib/testConnection';
 
 // Página principal del Dashboard
 const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-
-  // Test de conexión al cargar la página
-  useEffect(() => {
-    const runTest = async () => {
-      console.log('🚀 Running connection test from dashboard...');
-      const result = await testSupabaseConnection();
-      console.log('📊 Test result:', result);
-    };
-    runTest();
-  }, []);
 
   // Debug del usuario actual
   useEffect(() => {
