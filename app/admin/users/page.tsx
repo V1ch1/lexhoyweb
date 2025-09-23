@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { UserService } from '@/lib/userService';
 import { User, UserDespacho, SolicitudRegistro, UserRole, UserStatus } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
@@ -9,12 +10,18 @@ const userService = new UserService();
 
 export default function AdminUsersPage() {
   const { user, logout, isLoading } = useAuth();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'users' | 'solicitudes' | 'create'>('users');
+  const [selectedTab, setSelectedTab] = useState<'users' | 'solicitudes' | 'solicitudes-despachos' | 'create'>('users');
   const [userDespachos, setUserDespachos] = useState<Record<string, UserDespacho[]>>({});
   const [currentUser, setCurrentUser] = useState<{email: string, name: string} | null>(null);
+
+  // Estado para modal de detalles
+  const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(false);
 
   // Estado para crear usuario
   const [newUser, setNewUser] = useState({
@@ -96,15 +103,38 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleApproveUser = async (userId: string) => {
+  const handleChangeUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      const currentUser = await userService.getCurrentUserWithDespachos();
-      if (currentUser) {
-        await userService.approveUser(userId, currentUser.user.id);
-        await loadUsers();
-      }
+      await userService.updateUserRole(userId, newRole);
+      await loadUsers();
+      console.log(`✅ Rol actualizado a: ${newRole}`);
     } catch (error) {
-      console.error('Error approving user:', error);
+      console.error('Error changing user role:', error);
+      alert('Error al cambiar el rol del usuario');
+    }
+  };
+
+  const handleShowUserDetails = (user: User) => {
+    router.push(`/admin/users/${user.id}`);
+  };
+
+  const handleCloseModal = () => {
+    setShowUserModal(false);
+    setSelectedUserDetails(null);
+    setEditingUser(false);
+  };
+
+  const handleUpdateUserDetails = async (updatedUser: Partial<User>) => {
+    if (!selectedUserDetails) return;
+    
+    try {
+      await userService.updateUser(selectedUserDetails.id, updatedUser);
+      await loadUsers();
+      handleCloseModal();
+      console.log(`✅ Usuario actualizado`);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Error al actualizar el usuario');
     }
   };
 
@@ -167,16 +197,15 @@ export default function AdminUsersPage() {
   }
 
   const StatusBadge = ({ status }: { status: UserStatus }) => {
-    const colors = {
-      pendiente: 'bg-yellow-100 text-yellow-800',
-      activo: 'bg-green-100 text-green-800',
-      inactivo: 'bg-gray-100 text-gray-800',
-      suspendido: 'bg-red-100 text-red-800'
-    };
-
+    const isActive = status === 'activo';
+    
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[status]}`}>
-        {status}
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+        isActive 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-gray-100 text-gray-800'
+      }`}>
+        {isActive ? 'Activo' : 'Inactivo'}
       </span>
     );
   };
@@ -238,11 +267,18 @@ export default function AdminUsersPage() {
             {[
               { key: 'users', label: 'Usuarios', count: users.length },
               { key: 'solicitudes', label: 'Solicitudes', count: solicitudes.filter(s => s.estado === 'pendiente').length },
+              { key: 'solicitudes-despachos', label: 'Solicitudes Despachos', count: null },
               { key: 'create', label: 'Crear Usuario', count: null }
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setSelectedTab(tab.key as 'users' | 'solicitudes' | 'create')}
+                onClick={() => {
+                  if (tab.key === 'solicitudes-despachos') {
+                    router.push('/admin/solicitudes-despachos');
+                  } else {
+                    setSelectedTab(tab.key as 'users' | 'solicitudes' | 'solicitudes-despachos' | 'create');
+                  }
+                }}
                 className={`flex items-center pb-4 px-1 border-b-2 font-medium text-sm ${
                   selectedTab === tab.key
                     ? 'border-blue-500 text-blue-600'
@@ -292,7 +328,7 @@ export default function AdminUsersPage() {
                       Registrado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
+                      Cambiar Rol
                     </th>
                   </tr>
                 </thead>
@@ -330,17 +366,23 @@ export default function AdminUsersPage() {
                         {new Date(user.fechaRegistro).toLocaleDateString('es-ES')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {user.estado === 'pendiente' && (
-                          <button
-                            onClick={() => handleApproveUser(user.id)}
-                            className="text-green-600 hover:text-green-900 mr-3"
+                        <div className="flex items-center space-x-2">
+                          <select
+                            value={user.rol}
+                            onChange={(e) => handleChangeUserRole(user.id, e.target.value as UserRole)}
+                            className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
-                            Aprobar
+                            <option value="usuario">Usuario</option>
+                            <option value="despacho_admin">Despacho Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                          </select>
+                          <button 
+                            className="text-blue-600 hover:text-blue-900 text-sm"
+                            onClick={() => handleShowUserDetails(user)}
+                          >
+                            Editar
                           </button>
-                        )}
-                        <button className="text-blue-600 hover:text-blue-900">
-                          Editar
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -547,6 +589,169 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Detalles del Usuario */}
+      {showUserModal && selectedUserDetails && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Detalles del Usuario
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-6">
+              {!editingUser ? (
+                // Vista de solo lectura
+                <div className="space-y-6">
+                  {/* Información Básica */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Información Básica</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <p className="mt-1 text-sm text-gray-900">{selectedUserDetails.email}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUserDetails.nombre} {selectedUserDetails.apellidos}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUserDetails.telefono || 'No especificado'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Plan</label>
+                        <p className="mt-1 text-sm text-gray-900">{selectedUserDetails.plan}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información del Sistema */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Información del Sistema</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Rol</label>
+                        <div className="mt-1">
+                          <RoleBadge role={selectedUserDetails.rol} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Estado</label>
+                        <div className="mt-1">
+                          <StatusBadge status={selectedUserDetails.estado} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Fecha de Registro</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {new Date(selectedUserDetails.fechaRegistro).toLocaleString('es-ES')}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Último Acceso</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUserDetails.ultimoAcceso 
+                            ? new Date(selectedUserDetails.ultimoAcceso).toLocaleString('es-ES')
+                            : 'Nunca'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Email Verificado</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedUserDetails.emailVerificado 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {selectedUserDetails.emailVerificado ? 'Verificado' : 'No verificado'}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Cuenta Activa</label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedUserDetails.activo 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {selectedUserDetails.activo ? 'Activa' : 'Inactiva'}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información de Despachos */}
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Despachos Asignados</h4>
+                    {userDespachos[selectedUserDetails.id]?.length ? (
+                      <div className="space-y-2">
+                        {userDespachos[selectedUserDetails.id].map((despacho, idx) => (
+                          <div key={idx} className="bg-white p-3 rounded border">
+                            <p className="text-sm font-medium">ID: {despacho.despachoId}</p>
+                            <p className="text-xs text-gray-500">
+                              Asignado: {new Date(despacho.fechaAsignacion).toLocaleDateString('es-ES')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No tiene despachos asignados</p>
+                    )}
+                  </div>
+
+                  {/* Notas del Admin */}
+                  {selectedUserDetails.notasAdmin && (
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">Notas del Administrador</h4>
+                      <p className="text-sm text-gray-700">{selectedUserDetails.notasAdmin}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Vista de edición (para futuras implementaciones)
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Modo de edición - En desarrollo</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setEditingUser(!editingUser)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={editingUser}
+                >
+                  {editingUser ? 'Editando...' : 'Editar Usuario'}
+                </button>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

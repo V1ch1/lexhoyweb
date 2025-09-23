@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
 import { AuthService } from '@/lib/authService';
+import { UserDespacho } from '@/lib/types';
 import { 
   UserIcon, 
   KeyIcon, 
@@ -83,6 +84,10 @@ const SettingsPage = () => {
     push_mensajes: false
   });
 
+  // Estado para despachos del usuario
+  const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
+  const [loadingDespachos, setLoadingDespachos] = useState(true);
+
   const [despachoData, setDespachoData] = useState({
     nombre: '',
     direccion: '',
@@ -140,7 +145,7 @@ const SettingsPage = () => {
     { id: 'profile', name: 'Perfil Personal', icon: UserIcon },
     { id: 'password', name: 'Contraseña', icon: KeyIcon },
     { id: 'notifications', name: 'Notificaciones', icon: BellIcon },
-    ...(user?.role === 'despacho_admin' ? [{ id: 'despacho', name: 'Mi Despacho', icon: BuildingOfficeIcon }] : []),
+    ...(userDespachos.length > 0 ? [{ id: 'despacho', name: 'Mi Despacho', icon: BuildingOfficeIcon }] : []),
     { id: 'privacy', name: 'Privacidad', icon: ShieldCheckIcon },
     { id: 'sessions', name: 'Sesiones', icon: ComputerDesktopIcon }
   ];
@@ -309,6 +314,22 @@ const SettingsPage = () => {
     if (user) {
       // Cargar datos reales del usuario
       loadUserData();
+      
+      // Cargar despachos del usuario
+      const loadUserDespachos = async () => {
+        try {
+          setLoadingDespachos(true);
+          const despachos = await userService.getUserDespachos(user.id);
+          setUserDespachos(despachos.filter(d => d.activo)); // Solo despachos activos
+        } catch (error) {
+          console.error('Error loading user despachos:', error);
+          setUserDespachos([]);
+        } finally {
+          setLoadingDespachos(false);
+        }
+      };
+      
+      loadUserDespachos();
       
       // Cargar notificaciones guardadas
       const savedNotifications = localStorage.getItem(`notifications_${user.id}`);
@@ -689,8 +710,8 @@ const SettingsPage = () => {
             </form>
           )}
 
-          {/* Mi Despacho (solo para despacho_admin) */}
-          {activeTab === 'despacho' && user.role === 'despacho_admin' && (
+          {/* Mi Despacho (solo si el usuario tiene despachos asignados) */}
+          {activeTab === 'despacho' && userDespachos.length > 0 && (
             <form onSubmit={handleDespachoSubmit} className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Despacho</h3>

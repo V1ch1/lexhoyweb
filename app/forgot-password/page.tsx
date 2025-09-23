@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
@@ -9,6 +9,11 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentOrigin, setCurrentOrigin] = useState("");
+
+  useEffect(() => {
+    setCurrentOrigin(window.location.origin);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -17,15 +22,20 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
+      console.log('Enviando email de recuperación a:', email);
+      console.log('Redirect URL:', `${currentOrigin}/reset-password`);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${currentOrigin}/reset-password`,
       });
 
       if (error) {
-        setError(error.message);
+        console.error('Error en resetPasswordForEmail:', error);
+        setError(`Error: ${error.message}`);
         return;
       }
 
+      console.log('Email enviado exitosamente');
       setMessage(
         "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y spam."
       );

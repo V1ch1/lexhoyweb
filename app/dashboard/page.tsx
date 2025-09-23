@@ -2,12 +2,34 @@
 
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { UserService } from '@/lib/userService';
+
+// Interfaces para las estadísticas
+interface SystemStats {
+  totalUsers: number;
+  activeDespachos: number;
+  totalLeads: number;
+  usersByRole: {
+    super_admin: number;
+    despacho_admin: number;
+    usuario: number;
+  };
+}
+
+interface DespachoStats {
+  leadsThisMonth: number;
+  totalLeads: number;
+  conversions: number;
+}
 
 // Página principal del Dashboard
 const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // Debug del usuario actual
   useEffect(() => {
@@ -21,6 +43,33 @@ const DashboardPage = () => {
         'Es usuario?': user.role === 'usuario'
       });
     }
+  }, [user]);
+
+  // Cargar estadísticas según el rol del usuario
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return;
+      
+      setStatsLoading(true);
+      try {
+        const userService = new UserService();
+        if (user.role === 'super_admin') {
+          const stats = await userService.getSystemStats();
+          console.log('🔍 STATS DEBUG - Estadísticas del sistema:', stats);
+          setSystemStats(stats);
+        } else if (user.role === 'despacho_admin') {
+          const stats = await userService.getDespachoStats(user.id);
+          console.log('🔍 STATS DEBUG - Estadísticas del despacho:', stats);
+          setDespachoStats(stats);
+        }
+      } catch (error) {
+        console.error('Error al cargar estadísticas:', error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
   }, [user]);
 
   // Mostrar loading mientras verifica la sesión
@@ -164,7 +213,7 @@ const DashboardPage = () => {
               }
             </p>
             <button 
-              onClick={() => router.push('/dashboard/perfil')}
+              onClick={() => router.push('/dashboard/settings')}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             >
               Editar Perfil
@@ -179,28 +228,91 @@ const DashboardPage = () => {
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total usuarios:</span>
-                    <span className="font-semibold">--</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        systemStats?.totalUsers || 0
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Despachos activos:</span>
-                    <span className="font-semibold">--</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        systemStats?.activeDespachos || 0
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Leads totales:</span>
-                    <span className="font-semibold">--</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        systemStats?.totalLeads || 0
+                      )}
+                    </span>
                   </div>
+                  {systemStats && !statsLoading && (
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-500 mb-2">Por roles:</p>
+                      <div className="text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Super Admin:</span>
+                          <span className="text-purple-600 font-medium">{systemStats.usersByRole.super_admin}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Despacho Admin:</span>
+                          <span className="text-blue-600 font-medium">{systemStats.usersByRole.despacho_admin}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Usuarios:</span>
+                          <span className="text-green-600 font-medium">{systemStats.usersByRole.usuario}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
-              ) : (
+              ) : (user.role === 'despacho_admin') ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Leads este mes:</span>
-                    <span className="font-semibold">--</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        despachoStats?.leadsThisMonth || 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total leads:</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        despachoStats?.totalLeads || 0
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Conversiones:</span>
-                    <span className="font-semibold">--</span>
+                    <span className="font-semibold">
+                      {statsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-gray-200 animate-pulse rounded"></span>
+                      ) : (
+                        despachoStats?.conversions || 0
+                      )}
+                    </span>
                   </div>
                 </>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="text-sm">Estadísticas disponibles cuando te asignen a un despacho</p>
+                </div>
               )}
             </div>
           </div>

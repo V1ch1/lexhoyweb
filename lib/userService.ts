@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, UserDespacho, SolicitudRegistro, SyncLog, UserRole, UserStatus, PlanType } from './types';
+import { User, UserDespacho, SolicitudRegistro, SolicitudAsignacionDespacho, SyncLog, UserRole, UserStatus, PlanType } from './types';
 
 // Interfaz para los datos raw de la base de datos
 interface UserRaw {
@@ -71,7 +71,29 @@ export class UserService {
       if (error.code === 'PGRST116') return null; // No encontrado
       throw error;
     }
-    return data;
+
+    if (!data) return null;
+
+    // Mapear nombres de columnas de DB a propiedades de TypeScript
+    const user: UserRaw = data;
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellidos: user.apellidos,
+      telefono: user.telefono,
+      fechaRegistro: new Date(user.fecha_registro),
+      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      activo: user.activo,
+      emailVerificado: user.email_verificado,
+      plan: user.plan as PlanType,
+      rol: user.rol,
+      estado: user.estado,
+      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      aprobadoPor: user.aprobado_por,
+      notasAdmin: user.notas_admin,
+      despachoId: user.despacho_id
+    };
   }
 
   /**
@@ -204,15 +226,50 @@ export class UserService {
    * Actualizar usuario
    */
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    // Mapear propiedades de TypeScript a nombres de columnas de DB
+    const dbUpdates: Record<string, unknown> = {};
+    
+    if (updates.nombre !== undefined) dbUpdates.nombre = updates.nombre;
+    if (updates.apellidos !== undefined) dbUpdates.apellidos = updates.apellidos;
+    if (updates.telefono !== undefined) dbUpdates.telefono = updates.telefono;
+    if (updates.rol !== undefined) dbUpdates.rol = updates.rol;
+    if (updates.estado !== undefined) dbUpdates.estado = updates.estado;
+    if (updates.activo !== undefined) dbUpdates.activo = updates.activo;
+    if (updates.emailVerificado !== undefined) dbUpdates.email_verificado = updates.emailVerificado;
+    if (updates.notasAdmin !== undefined) dbUpdates.notas_admin = updates.notasAdmin;
+    if (updates.fechaAprobacion !== undefined) dbUpdates.fecha_aprobacion = updates.fechaAprobacion?.toISOString();
+    if (updates.aprobadoPor !== undefined) dbUpdates.aprobado_por = updates.aprobadoPor;
+    if (updates.ultimoAcceso !== undefined) dbUpdates.ultimo_acceso = updates.ultimoAcceso?.toISOString();
+
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+
+    // Mapear respuesta de DB a formato TypeScript
+    const user: UserRaw = data;
+    return {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      apellidos: user.apellidos,
+      telefono: user.telefono,
+      fechaRegistro: new Date(user.fecha_registro),
+      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      activo: user.activo,
+      emailVerificado: user.email_verificado,
+      plan: user.plan as PlanType,
+      rol: user.rol,
+      estado: user.estado,
+      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      aprobadoPor: user.aprobado_por,
+      notasAdmin: user.notas_admin,
+      despachoId: user.despacho_id
+    };
   }
 
   /**
@@ -560,5 +617,356 @@ export class UserService {
     const despachos = await this.getUserDespachos(user.id);
 
     return { user, despachos };
+  }
+
+  /**
+   * Obtener estadísticas del sistema (solo para super_admin)
+   */
+  async getSystemStats(): Promise<{
+    totalUsers: number;
+    activeDespachos: number;
+    totalLeads: number;
+    usersByRole: {
+      super_admin: number;
+      despacho_admin: number;
+      usuario: number;
+    };
+  }> {
+    try {
+      // Total de usuarios
+      const { count: totalUsers, error: usersError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+      if (usersError) throw usersError;
+
+      // Despachos activos
+      const { count: activeDespachos, error: despachosError } = await supabase
+        .from('despachos')
+        .select('*', { count: 'exact', head: true })
+        .eq('activo', true);
+
+      if (despachosError) {
+        console.error('🔍 ERROR despachos:', despachosError);
+        throw despachosError;
+      }
+
+      console.log('🔍 DEBUG despachos activos:', activeDespachos);
+
+      // Total de leads
+      const { count: totalLeads, error: leadsError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true });
+
+      if (leadsError) {
+        console.error('🔍 ERROR leads:', leadsError);
+        throw leadsError;
+      }
+
+      console.log('🔍 DEBUG total leads:', totalLeads);
+
+      // Usuarios por rol
+      const { data: roleData, error: roleError } = await supabase
+        .from('users')
+        .select('rol')
+        .eq('activo', true);
+
+      if (roleError) throw roleError;
+
+      const usersByRole = {
+        super_admin: 0,
+        despacho_admin: 0,
+        usuario: 0
+      };
+
+      (roleData || []).forEach((user: { rol: string }) => {
+        if (user.rol in usersByRole) {
+          usersByRole[user.rol as keyof typeof usersByRole]++;
+        }
+      });
+
+      return {
+        totalUsers: totalUsers || 0,
+        activeDespachos: activeDespachos || 0,
+        totalLeads: totalLeads || 0,
+        usersByRole
+      };
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      return {
+        totalUsers: 0,
+        activeDespachos: 0,
+        totalLeads: 0,
+        usersByRole: {
+          super_admin: 0,
+          despacho_admin: 0,
+          usuario: 0
+        }
+      };
+    }
+  }
+
+  /**
+   * Obtener estadísticas de despacho (para despacho_admin)
+   */
+  async getDespachoStats(userId: string): Promise<{
+    leadsThisMonth: number;
+    totalLeads: number;
+    conversions: number;
+  }> {
+    try {
+      // Obtener el despacho del usuario
+      const { data: userDespacho, error: userError } = await supabase
+        .from('user_despachos')
+        .select('despacho_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (userError || !userDespacho) {
+        return { leadsThisMonth: 0, totalLeads: 0, conversions: 0 };
+      }
+
+      // Total de leads del despacho
+      const { count: totalLeads, error: totalError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('despacho_id', userDespacho.despacho_id);
+
+      if (totalError) throw totalError;
+
+      // Leads este mes
+      const currentMonth = new Date();
+      const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      
+      const { count: leadsThisMonth, error: monthError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('despacho_id', userDespacho.despacho_id)
+        .gte('created_at', firstDayOfMonth.toISOString());
+
+      if (monthError) throw monthError;
+
+      // Conversiones (leads con estado 'convertido' o similar)
+      const { count: conversions, error: convError } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('despacho_id', userDespacho.despacho_id)
+        .eq('estado', 'convertido');
+
+      if (convError) throw convError;
+
+      return {
+        leadsThisMonth: leadsThisMonth || 0,
+        totalLeads: totalLeads || 0,
+        conversions: conversions || 0
+      };
+    } catch (error) {
+      console.error('Error al obtener estadísticas del despacho:', error);
+      return { leadsThisMonth: 0, totalLeads: 0, conversions: 0 };
+    }
+  }
+
+  /**
+   * Actualizar el rol de un usuario
+   */
+  async updateUserRole(userId: string, newRole: UserRole): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          rol: newRole,
+          estado: 'activo', // Al cambiar rol, automáticamente activamos al usuario
+          fecha_aprobacion: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      console.log(`✅ Usuario ${userId} actualizado a rol: ${newRole}`);
+    } catch (error) {
+      console.error('Error al actualizar rol de usuario:', error);
+      throw error;
+    }
+  }
+
+  // ======================== GESTIÓN DE SOLICITUDES DE DESPACHOS ========================
+
+  /**
+   * Crear solicitud de asignación de despacho
+   */
+  async createSolicitudDespacho(solicitud: {
+    userId: string;
+    despachoId: string;
+    justificacion: string;
+    tipoSolicitud: 'propiedad' | 'colaboracion' | 'otro';
+    documentosAdjuntos?: string[];
+  }) {
+    const { data, error } = await supabase
+      .from('solicitud_asignacion_despacho')
+      .insert({
+        user_id: solicitud.userId,
+        despacho_id: solicitud.despachoId,
+        fecha_solicitud: new Date().toISOString(),
+        estado: 'pendiente',
+        justificacion: solicitud.justificacion,
+        tipo_solicitud: solicitud.tipoSolicitud,
+        documentos_adjuntos: solicitud.documentosAdjuntos
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Obtener solicitudes de despacho pendientes (solo super_admin)
+   */
+  async getSolicitudesDespachosPendientes() {
+    const { data, error } = await supabase
+      .from('solicitud_asignacion_despacho')
+      .select(`
+        *,
+        users(nombre, apellidos, email),
+        despachos(nombre)
+      `)
+      .eq('estado', 'pendiente')
+      .order('fecha_solicitud', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Obtener solicitudes de un usuario específico
+   */
+  async getSolicitudesUsuario(userId: string) {
+    const { data, error } = await supabase
+      .from('solicitud_asignacion_despacho')
+      .select(`
+        *,
+        despachos(nombre)
+      `)
+      .eq('user_id', userId)
+      .order('fecha_solicitud', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Aprobar solicitud de despacho
+   */
+  async aprobarSolicitudDespacho(solicitudId: string, adminId: string) {
+    try {
+      // 1. Actualizar la solicitud
+      const { data: solicitud, error: solicitudError } = await supabase
+        .from('solicitud_asignacion_despacho')
+        .update({
+          estado: 'aprobada',
+          fecha_respuesta: new Date().toISOString(),
+          respondido_por: adminId
+        })
+        .eq('id', solicitudId)
+        .select()
+        .single();
+
+      if (solicitudError) throw solicitudError;
+
+      // 2. Crear la asignación real en user_despachos
+      const { error: asignacionError } = await supabase
+        .from('user_despachos')
+        .insert({
+          user_id: solicitud.user_id,
+          despacho_id: solicitud.despacho_id,
+          fecha_asignacion: new Date().toISOString(),
+          asignado_por: adminId,
+          activo: true,
+          permisos: {
+            leer: true,
+            escribir: true,
+            eliminar: false
+          }
+        });
+
+      if (asignacionError) throw asignacionError;
+
+      return solicitud;
+    } catch (error) {
+      console.error('Error al aprobar solicitud:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rechazar solicitud de despacho
+   */
+  async rechazarSolicitudDespacho(solicitudId: string, adminId: string, motivoRechazo: string) {
+    const { data, error } = await supabase
+      .from('solicitud_asignacion_despacho')
+      .update({
+        estado: 'rechazada',
+        fecha_respuesta: new Date().toISOString(),
+        respondido_por: adminId,
+        motivo_rechazo: motivoRechazo
+      })
+      .eq('id', solicitudId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Asignar despacho manualmente (solo super_admin)
+   */
+  async asignarDespachoManual(userId: string, despachoId: string, adminId: string) {
+    const { data, error } = await supabase
+      .from('user_despachos')
+      .insert({
+        user_id: userId,
+        despacho_id: despachoId,
+        fecha_asignacion: new Date().toISOString(),
+        asignado_por: adminId,
+        activo: true,
+        permisos: {
+          leer: true,
+          escribir: true,
+          eliminar: false
+        }
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Desasignar despacho
+   */
+  async desasignarDespacho(userId: string, despachoId: string) {
+    const { error } = await supabase
+      .from('user_despachos')
+      .update({ activo: false })
+      .eq('user_id', userId)
+      .eq('despacho_id', despachoId);
+
+    if (error) throw error;
+  }
+
+  /**
+   * Obtener todos los despachos disponibles
+   */
+  async getAllDespachos() {
+    const { data, error } = await supabase
+      .from('despachos')
+      .select('*')
+      .eq('activo', true)
+      .order('nombre');
+
+    if (error) throw error;
+    return data || [];
   }
 }

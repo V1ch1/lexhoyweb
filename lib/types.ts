@@ -34,6 +34,35 @@ export interface UserDespacho {
   };
 }
 
+// Nueva interfaz para solicitudes de asignación de despachos
+export interface SolicitudAsignacionDespacho {
+  id: string;
+  userId: string;
+  despachoId: string;
+  fechaSolicitud: Date;
+  estado: 'pendiente' | 'aprobada' | 'rechazada';
+  justificacion: string; // Por qué el usuario debe tener acceso a este despacho
+  tipoSolicitud: 'propiedad' | 'colaboracion' | 'otro';
+  documentosAdjuntos?: string[]; // URLs de documentos que comprueban la propiedad
+  fechaRespuesta?: Date;
+  respondidoPor?: string;
+  motivoRechazo?: string;
+  notasAdmin?: string;
+}
+
+// Interfaz para gestión de despachos en el admin
+export interface DespachoGestion {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  fechaCreacion: Date;
+  verificado: boolean;
+  activo: boolean;
+  usuariosAsignados: number;
+  solicitudesPendientes: number;
+  creadoPor?: string;
+}
+
 export interface SolicitudRegistro {
   id: string;
   email: string;
