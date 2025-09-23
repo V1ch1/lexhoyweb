@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/lib/authContext';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { UserService } from '@/lib/userService';
+import { useAuth } from "@/lib/authContext";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { UserService } from "@/lib/userService";
 
 // Interfaces para las estadísticas
 interface SystemStats {
@@ -28,16 +28,22 @@ const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
-  const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(null);
+  const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(
+    null
+  );
   const [statsLoading, setStatsLoading] = useState(true);
-  const [solicitudDespacho, setSolicitudDespacho] = useState<{ despachoId: number; fecha: string; estado: string } | null>(null);
+  const [solicitudDespacho, setSolicitudDespacho] = useState<{
+    despachoId: number;
+    fecha: string;
+    estado: string;
+  } | null>(null);
   // Cargar solicitud de despacho pendiente para el usuario actual
   useEffect(() => {
-    if (!user?.id || user.role !== 'usuario') return;
+    if (!user?.id || user.role !== "usuario") return;
     fetch(`/api/solicitudes-despacho?userId=${user.id}`)
-      .then(res => res.json())
-      .then(data => {
-  const pendiente = data.find((s: { estado: string }) => s.estado === 'pendiente');
+      .then((res) => res.json())
+      .then((data) => {
+        const pendiente = data.find((s: any) => s.estado === "pendiente");
         setSolicitudDespacho(pendiente || null);
       })
       .catch(() => setSolicitudDespacho(null));
@@ -46,13 +52,13 @@ const DashboardPage = () => {
   // Debug del usuario actual
   useEffect(() => {
     if (user) {
-      console.log('🔍 DASHBOARD DEBUG - Usuario actual:', {
+      console.log("🔍 DASHBOARD DEBUG - Usuario actual:", {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        'Es super_admin?': user.role === 'super_admin',
-        'Es usuario?': user.role === 'usuario'
+        "Es super_admin?": user.role === "super_admin",
+        "Es usuario?": user.role === "usuario",
       });
     }
   }, [user]);
@@ -64,15 +70,15 @@ const DashboardPage = () => {
       setStatsLoading(true);
       try {
         const userService = new UserService();
-        if (user.role === 'super_admin') {
+        if (user.role === "super_admin") {
           const stats = await userService.getSystemStats();
           setSystemStats(stats);
-        } else if (user.role === 'despacho_admin') {
+        } else if (user.role === "despacho_admin") {
           const stats = await userService.getDespachoStats(user.id);
           setDespachoStats(stats);
         }
       } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
+        console.error("Error al cargar estadísticas:", error);
       } finally {
         setStatsLoading(false);
       }
@@ -80,15 +86,14 @@ const DashboardPage = () => {
     loadStats();
   }, [user?.id, user?.role]);
 
-
   // Mostrar loading hasta que user y stats estén listos
   const statsReady =
-    (user &&
-      ((user.role === 'super_admin' && systemStats && !statsLoading) ||
-       (user.role === 'despacho_admin' && despachoStats && !statsLoading) ||
-       (user.role === 'usuario')));
+    user &&
+    ((user.role === "super_admin" && systemStats && !statsLoading) ||
+      (user.role === "despacho_admin" && despachoStats && !statsLoading) ||
+      user.role === "usuario");
 
-  if (isLoading || !user || (user.role !== 'usuario' && !statsReady)) {
+  if (isLoading || !user || (user.role !== "usuario" && !statsReady)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -105,20 +110,23 @@ const DashboardPage = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          {user.role === 'super_admin' && 'Accede a la administración global de la plataforma.'}
-          {user.role === 'despacho_admin' && 'Gestiona tu despacho y tus leads desde aquí.'}
-          {user.role === 'usuario' && 'Tu cuenta está registrada. Solicita un despacho o espera asignación para acceder a más funciones.'}
+          {user.role === "super_admin" &&
+            "Accede a la administración global de la plataforma."}
+          {user.role === "despacho_admin" &&
+            "Gestiona tu despacho y tus leads desde aquí."}
+          {user.role === "usuario" &&
+            "Tu cuenta está registrada. Solicita un despacho o espera asignación para acceder a más funciones."}
         </p>
-        {user.role === 'super_admin' && (
+        {user.role === "super_admin" && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-800 text-sm">
-              💡 <strong>Tip:</strong> Accede al{' '}
-              <button 
-                onClick={() => router.push('/admin/users')}
+              💡 <strong>Tip:</strong> Accede al{" "}
+              <button
+                onClick={() => router.push("/admin/users")}
                 className="text-blue-600 hover:text-blue-800 underline font-medium"
               >
                 Panel de Administración
-              </button>{' '}
+              </button>{" "}
               para gestionar usuarios y configuración avanzada.
             </p>
           </div>
@@ -126,113 +134,136 @@ const DashboardPage = () => {
       </div>
 
       <div className="space-y-6">
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card de Bienvenida */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              ¡Bienvenido, {user.name.split(' ')[0]}!
+              ¡Bienvenido, {user.name.split(" ")[0]}!
             </h2>
             <p className="text-gray-600">
-              {user.role === 'super_admin' && 'Tienes acceso total a la administración y estadísticas globales.'}
-              {user.role === 'despacho_admin' && 'Gestiona tu despacho, leads y perfil desde este panel.'}
-              {user.role === 'usuario' && 'Solicita la creación de un despacho o espera asignación para acceder a más funciones.'}
+              {user.role === "super_admin" &&
+                "Tienes acceso total a la administración y estadísticas globales."}
+              {user.role === "despacho_admin" &&
+                "Gestiona tu despacho, leads y perfil desde este panel."}
+              {user.role === "usuario" &&
+                "Solicita la creación de un despacho o espera asignación para acceder a más funciones."}
             </p>
           </div>
-
           {/* Card de Administración (solo para super_admin) */}
-          {user.role === 'super_admin' && (
+          {user.role === "super_admin" && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Administración</h3>
-              <p className="text-gray-600 mb-4">Gestiona usuarios y configuración del sistema</p>
-              <button 
-                onClick={() => router.push('/admin/users')}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Administración
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Gestiona usuarios y configuración del sistema
+              </p>
+              <button
+                onClick={() => router.push("/admin/users")}
                 className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
               >
                 Panel Admin
               </button>
             </div>
           )}
-
           {/* Card de Solicitar Despacho (solo para usuarios básicos) */}
-          {user.role === 'usuario' && (
+          {user.role === "usuario" && (
             <>
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Crear Despacho</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Crear Despacho
+                </h3>
                 <p className="text-gray-600 mb-4">
-                  ¿Tienes un despacho? Solicita la creación de tu despacho para acceder a todas las funcionalidades.
+                  ¿Tienes un despacho? Solicita la creación de tu despacho para
+                  acceder a todas las funcionalidades.
                 </p>
-                <button 
-                  onClick={() => router.push('/dashboard/solicitar-despacho')}
+                <button
+                  onClick={() => router.push("/dashboard/solicitar-despacho")}
                   className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
                 >
                   Solicitar Despacho
                 </button>
                 {solicitudDespacho && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <span className="text-yellow-800 font-medium">Solicitud pendiente</span><br />
-                    <span className="text-gray-700 text-sm">Tu solicitud de despacho está pendiente de revisión por un administrador.</span>
+                    <span className="text-yellow-800 font-medium">
+                      Solicitud pendiente
+                    </span>
+                    <br />
+                    <span className="text-gray-700 text-sm">
+                      Tu solicitud de despacho está pendiente de revisión por un
+                      administrador.
+                    </span>
                   </div>
                 )}
               </div>
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Estado de Cuenta</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Estado de Cuenta
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rol actual:</span>
-                    <span className="font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">Usuario</span>
+                    <span className="font-semibold bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                      Usuario
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Estado:</span>
-                    <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Activo</span>
+                    <span className="font-semibold bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                      Activo
+                    </span>
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-4">
-                  Espera a que un administrador te asigne a un despacho para acceder a más funciones.
+                  Espera a que un administrador te asigne a un despacho para
+                  acceder a más funciones.
                 </p>
               </div>
             </>
           )}
-
           {/* Card de Leads (solo para despacho_admin y super_admin) */}
-          {(user.role === 'despacho_admin' || user.role === 'super_admin') && (
+          {(user.role === "despacho_admin" || user.role === "super_admin") && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Leads</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Leads
+              </h3>
               <p className="text-gray-600 mb-4">
-                {user.role === 'super_admin' 
-                  ? 'Ver todos los leads del sistema'
-                  : 'Gestiona los leads de tu despacho'
-                }
+                {user.role === "super_admin"
+                  ? "Ver todos los leads del sistema"
+                  : "Gestiona los leads de tu despacho"}
               </p>
-              <button 
-                onClick={() => router.push('/dashboard/leads')}
+              <button
+                onClick={() => router.push("/dashboard/leads")}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Ver Leads
               </button>
             </div>
-          )}          {/* Card de Perfil */}
+          )}{" "}
+          {/* Card de Perfil */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Mi Perfil</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Mi Perfil
+            </h3>
             <p className="text-gray-600 mb-4">
-              {user.role === 'super_admin' 
-                ? 'Actualiza la información de tu perfil de administrador'
-                : 'Actualiza la información de tu despacho'
-              }
+              {user.role === "super_admin"
+                ? "Actualiza la información de tu perfil de administrador"
+                : "Actualiza la información de tu despacho"}
             </p>
-            <button 
-              onClick={() => router.push('/dashboard/settings')}
+            <button
+              onClick={() => router.push("/dashboard/settings")}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             >
               Editar Perfil
             </button>
           </div>
-
           {/* Card de Estadísticas */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Estadísticas</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Estadísticas
+            </h3>
             <div className="space-y-2">
-              {user.role === 'super_admin' ? (
+              {user.role === "super_admin" ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total usuarios:</span>
@@ -270,21 +301,27 @@ const DashboardPage = () => {
                       <div className="text-xs space-y-1">
                         <div className="flex justify-between">
                           <span className="text-gray-500">Super Admin:</span>
-                          <span className="text-purple-600 font-medium">{systemStats.usersByRole.super_admin}</span>
+                          <span className="text-purple-600 font-medium">
+                            {systemStats.usersByRole.super_admin}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Despacho Admin:</span>
-                          <span className="text-blue-600 font-medium">{systemStats.usersByRole.despacho_admin}</span>
+                          <span className="text-blue-600 font-medium">
+                            {systemStats.usersByRole.despacho_admin}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Usuarios:</span>
-                          <span className="text-green-600 font-medium">{systemStats.usersByRole.usuario}</span>
+                          <span className="text-green-600 font-medium">
+                            {systemStats.usersByRole.usuario}
+                          </span>
                         </div>
                       </div>
                     </div>
                   )}
                 </>
-              ) : (user.role === 'despacho_admin') ? (
+              ) : user.role === "despacho_admin" ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Leads este mes:</span>
@@ -319,22 +356,24 @@ const DashboardPage = () => {
                 </>
               ) : (
                 <div className="text-center py-4 text-gray-500">
-                  <p className="text-sm">Estadísticas disponibles cuando te asignen a un despacho</p>
+                  <p className="text-sm">
+                    Estadísticas disponibles cuando te asignen a un despacho
+                  </p>
                 </div>
               )}
             </div>
           </div>
-
           {/* Card de Actividad Reciente */}
           <div className="bg-white rounded-lg shadow p-6 md:col-span-2">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Actividad Reciente
+            </h3>
             <div className="text-center py-8 text-gray-500">
               <p>No hay actividad reciente</p>
               <p className="text-sm mt-2">
-                {user.role === 'super_admin' 
-                  ? 'Las nuevas actividades del sistema aparecerán aquí'
-                  : 'Los nuevos leads aparecerán aquí'
-                }
+                {user.role === "super_admin"
+                  ? "Las nuevas actividades del sistema aparecerán aquí"
+                  : "Los nuevos leads aparecerán aquí"}
               </p>
             </div>
           </div>

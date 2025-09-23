@@ -10,7 +10,6 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-
   if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -22,30 +21,14 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  // Si loading terminó y no hay usuario, mostrar error
-  if (!isLoading && !user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-red-600 mb-4">Error de autenticación</div>
-          <p className="text-gray-600 mb-2">No se pudo cargar el usuario. Vuelve a iniciar sesión.</p>
-          <button
-            onClick={() => router.push('/login')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >Ir a Login</button>
-        </div>
-      </div>
-    );
-  }
-
   // Si no hay usuario, intentar recuperar de localStorage o redirigir
   if (!user) {
     // Intentar recuperar usuario de localStorage
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('lexhoy_user');
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("lexhoy_user");
       if (!storedUser) {
         // No hay usuario guardado, usar Next.js router
-        router.push('/login');
+        router.push("/login");
         return null;
       }
     }

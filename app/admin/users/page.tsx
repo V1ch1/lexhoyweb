@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { UserService } from '@/lib/userService';
-import { User, UserDespacho, SolicitudRegistro, UserRole, UserStatus } from '@/lib/types';
-import { useAuth } from '@/lib/authContext';
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { UserService } from "@/lib/userService";
+import {
+  User,
+  UserDespacho,
+  SolicitudRegistro,
+  UserRole,
+  UserStatus,
+} from "@/lib/types";
+import { useAuth } from "@/lib/authContext";
 
 const userService = new UserService();
 
@@ -14,29 +20,35 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'users' | 'solicitudes' | 'solicitudes-despachos' | 'create'>('users');
-  const [userDespachos, setUserDespachos] = useState<Record<string, UserDespacho[]>>({});
+  const [selectedTab, setSelectedTab] = useState<
+    "users" | "solicitudes" | "solicitudes-despachos" | "create"
+  >("users");
+  const [userDespachos, setUserDespachos] = useState<
+    Record<string, UserDespacho[]>
+  >({});
 
   // Estado para modal de detalles
-  const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
+  const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(
+    null
+  );
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(false);
 
   // Estado para crear usuario
   const [newUser, setNewUser] = useState({
-    email: '',
-    nombre: '',
-    apellidos: '',
-    telefono: '',
-    rol: 'usuario' as UserRole
+    email: "",
+    nombre: "",
+    apellidos: "",
+    telefono: "",
+    rol: "usuario" as UserRole,
   });
 
   const checkPermissionsAndLoadData = useCallback(async () => {
     try {
       // Usar el contexto de autenticación
       if (!user) return;
-      
-      const isSuperAdmin = user.role === 'super_admin';
+
+      const isSuperAdmin = user.role === "super_admin";
       setIsSuperAdmin(isSuperAdmin);
 
       if (isSuperAdmin) {
@@ -44,7 +56,7 @@ export default function AdminUsersPage() {
         await loadSolicitudes();
       }
     } catch (error) {
-      console.error('Error checking permissions:', error);
+      console.error("Error checking permissions:", error);
     }
   }, [user]);
 
@@ -53,14 +65,8 @@ export default function AdminUsersPage() {
   }, [checkPermissionsAndLoadData]);
 
   const loadUsers = async () => {
-    let timeoutId: NodeJS.Timeout | null = null;
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Timeout al cargar usuarios')), 10000);
-      });
-      const usersPromise = userService.getAllUsers();
-      const allUsers = await Promise.race([usersPromise, timeoutPromise]);
-      if (timeoutId) clearTimeout(timeoutId);
+      const allUsers = await userService.getAllUsers();
       setUsers(allUsers);
 
       // Cargar despachos para cada usuario
@@ -75,12 +81,8 @@ export default function AdminUsersPage() {
         despachoMap[userId] = despachos;
       });
       setUserDespachos(despachoMap);
-
     } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
-      setUsers([]);
-      alert('❌ Error al cargar usuarios: ' + (error instanceof Error ? error.message : 'Error desconocido'));
-      console.error('Error loading users:', error);
+      console.error("Error loading users:", error);
     }
   };
 
@@ -89,7 +91,7 @@ export default function AdminUsersPage() {
       const allSolicitudes = await userService.getAllSolicitudes();
       setSolicitudes(allSolicitudes);
     } catch (error) {
-      console.error('Error loading solicitudes:', error);
+      console.error("Error loading solicitudes:", error);
     }
   };
 
@@ -97,15 +99,24 @@ export default function AdminUsersPage() {
     e.preventDefault();
     try {
       const result = await userService.createUserWithAuth(newUser);
-      
-      alert(`✅ Usuario creado exitosamente!\n\n📧 Email: ${newUser.email}\n🔑 Contraseña temporal: ${result.temporaryPassword}\n\n⚠️ IMPORTANTE: Guarda esta contraseña y compártela de forma segura con el usuario. Debe cambiarla en su primer login.`);
-      
-      setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'usuario' });
+
+      alert(
+        `✅ Usuario creado exitosamente!\n\n📧 Email: ${newUser.email}\n🔑 Contraseña temporal: ${result.temporaryPassword}\n\n⚠️ IMPORTANTE: Guarda esta contraseña y compártela de forma segura con el usuario. Debe cambiarla en su primer login.`
+      );
+
+      setNewUser({
+        email: "",
+        nombre: "",
+        apellidos: "",
+        telefono: "",
+        rol: "usuario",
+      });
       await loadUsers();
-      setSelectedTab('users');
+      setSelectedTab("users");
     } catch (error) {
-      console.error('Error creating user:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error creating user:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
       alert(`❌ Error al crear usuario: ${errorMessage}`);
     }
   };
@@ -116,8 +127,8 @@ export default function AdminUsersPage() {
       await loadUsers();
       console.log(`✅ Rol actualizado a: ${newRole}`);
     } catch (error) {
-      console.error('Error changing user role:', error);
-      alert('Error al cambiar el rol del usuario');
+      console.error("Error changing user role:", error);
+      alert("Error al cambiar el rol del usuario");
     }
   };
 
@@ -140,7 +151,7 @@ export default function AdminUsersPage() {
         await loadUsers();
       }
     } catch (error) {
-      console.error('Error approving solicitud:', error);
+      console.error("Error approving solicitud:", error);
     }
   };
 
@@ -148,11 +159,15 @@ export default function AdminUsersPage() {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();
       if (currentUser) {
-        await userService.rejectSolicitud(solicitudId, currentUser.user.id, notas);
+        await userService.rejectSolicitud(
+          solicitudId,
+          currentUser.user.id,
+          notas
+        );
         await loadSolicitudes();
       }
     } catch (error) {
-      console.error('Error rejecting solicitud:', error);
+      console.error("Error rejecting solicitud:", error);
     }
   };
 
@@ -162,8 +177,8 @@ export default function AdminUsersPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 mb-4">Verificando permisos...</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           >
             Reintentar
@@ -180,7 +195,9 @@ export default function AdminUsersPage() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-red-600 text-2xl">🔒</span>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Acceso Restringido</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Acceso Restringido
+          </h2>
           <p className="text-gray-600">
             Solo los super administradores pueden acceder a esta página.
           </p>
@@ -190,34 +207,36 @@ export default function AdminUsersPage() {
   }
 
   const StatusBadge = ({ status }: { status: UserStatus }) => {
-    const isActive = status === 'activo';
-    
+    const isActive = status === "activo";
+
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-        isActive 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-gray-100 text-gray-800'
-      }`}>
-        {isActive ? 'Activo' : 'Inactivo'}
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+        }`}
+      >
+        {isActive ? "Activo" : "Inactivo"}
       </span>
     );
   };
 
   const RoleBadge = ({ role }: { role: UserRole }) => {
     const colors = {
-      super_admin: 'bg-purple-100 text-purple-800',
-      despacho_admin: 'bg-blue-100 text-blue-800',
-      usuario: 'bg-gray-100 text-gray-800'
+      super_admin: "bg-purple-100 text-purple-800",
+      despacho_admin: "bg-blue-100 text-blue-800",
+      usuario: "bg-gray-100 text-gray-800",
     };
 
     const labels = {
-      super_admin: 'Super Admin',
-      despacho_admin: 'Admin Despacho',
-      usuario: 'Usuario'
+      super_admin: "Super Admin",
+      despacho_admin: "Admin Despacho",
+      usuario: "Usuario",
     };
 
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[role]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[role]}`}
+      >
         {labels[role]}
       </span>
     );
@@ -240,33 +259,50 @@ export default function AdminUsersPage() {
         <div className="mb-8">
           <nav className="flex space-x-8">
             {[
-              { key: 'users', label: 'Usuarios', count: users.length },
-              { key: 'solicitudes', label: 'Solicitudes', count: solicitudes.filter(s => s.estado === 'pendiente').length },
-              { key: 'solicitudes-despachos', label: 'Solicitudes Despachos', count: null },
-              { key: 'create', label: 'Crear Usuario', count: null }
+              { key: "users", label: "Usuarios", count: users.length },
+              {
+                key: "solicitudes",
+                label: "Solicitudes",
+                count: solicitudes.filter((s) => s.estado === "pendiente")
+                  .length,
+              },
+              {
+                key: "solicitudes-despachos",
+                label: "Solicitudes Despachos",
+                count: null,
+              },
+              { key: "create", label: "Crear Usuario", count: null },
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => {
-                  if (tab.key === 'solicitudes-despachos') {
-                    router.push('/admin/solicitudes-despachos');
+                  if (tab.key === "solicitudes-despachos") {
+                    router.push("/admin/solicitudes-despachos");
                   } else {
-                    setSelectedTab(tab.key as 'users' | 'solicitudes' | 'solicitudes-despachos' | 'create');
+                    setSelectedTab(
+                      tab.key as
+                        | "users"
+                        | "solicitudes"
+                        | "solicitudes-despachos"
+                        | "create"
+                    );
                   }
                 }}
                 className={`flex items-center pb-4 px-1 border-b-2 font-medium text-sm ${
                   selectedTab === tab.key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
                 {tab.label}
                 {tab.count !== null && (
-                  <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
-                    selectedTab === tab.key
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}>
+                  <span
+                    className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
+                      selectedTab === tab.key
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-gray-100 text-gray-900"
+                    }`}
+                  >
                     {tab.count}
                   </span>
                 )}
@@ -276,7 +312,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Contenido de Usuarios */}
-        {selectedTab === 'users' && (
+        {selectedTab === "users" && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
@@ -315,9 +351,13 @@ export default function AdminUsersPage() {
                           <div className="text-sm font-medium text-gray-900">
                             {user.nombre} {user.apellidos}
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">
+                            {user.email}
+                          </div>
                           {user.telefono && (
-                            <div className="text-sm text-gray-500">{user.telefono}</div>
+                            <div className="text-sm text-gray-500">
+                              {user.telefono}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -338,20 +378,29 @@ export default function AdminUsersPage() {
                         ))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.fechaRegistro).toLocaleDateString('es-ES')}
+                        {new Date(user.fechaRegistro).toLocaleDateString(
+                          "es-ES"
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-2">
                           <select
                             value={user.rol}
-                            onChange={(e) => handleChangeUserRole(user.id, e.target.value as UserRole)}
+                            onChange={(e) =>
+                              handleChangeUserRole(
+                                user.id,
+                                e.target.value as UserRole
+                              )
+                            }
                             className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <option value="usuario">Usuario</option>
-                            <option value="despacho_admin">Despacho Admin</option>
+                            <option value="despacho_admin">
+                              Despacho Admin
+                            </option>
                             <option value="super_admin">Super Admin</option>
                           </select>
-                          <button 
+                          <button
                             className="text-blue-600 hover:text-blue-900 text-sm"
                             onClick={() => handleShowUserDetails(user)}
                           >
@@ -368,11 +417,13 @@ export default function AdminUsersPage() {
         )}
 
         {/* Contenido de Solicitudes */}
-        {selectedTab === 'solicitudes' && (
+        {selectedTab === "solicitudes" && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
-                Solicitudes de Registro ({solicitudes.filter(s => s.estado === 'pendiente').length} pendientes)
+                Solicitudes de Registro (
+                {solicitudes.filter((s) => s.estado === "pendiente").length}{" "}
+                pendientes)
               </h3>
             </div>
             <div className="divide-y divide-gray-200">
@@ -387,43 +438,92 @@ export default function AdminUsersPage() {
                         {solicitud.email} • {solicitud.telefono}
                       </p>
                       {solicitud.empresa && (
-                        <p className="text-sm text-gray-600">Empresa: {solicitud.empresa}</p>
+                        <p className="text-sm text-gray-600">
+                          Empresa: {solicitud.empresa}
+                        </p>
                       )}
-                      
+
                       {solicitud.datosDespacho && (
                         <div className="mt-3 p-3 bg-gray-50 rounded">
-                          <h5 className="text-sm font-medium text-gray-900 mb-2">Datos del Despacho:</h5>
+                          <h5 className="text-sm font-medium text-gray-900 mb-2">
+                            Datos del Despacho:
+                          </h5>
                           <div className="text-sm text-gray-600 space-y-1">
-                            <p><strong>Nombre:</strong> {(solicitud.datosDespacho as Record<string, unknown>).nombre as string}</p>
-                            <p><strong>Especialidades:</strong> {((solicitud.datosDespacho as Record<string, unknown>).especialidades as string[])?.join(', ')}</p>
-                            <p><strong>Ubicación:</strong> {(solicitud.datosDespacho as Record<string, unknown>).ciudad as string}, {(solicitud.datosDespacho as Record<string, unknown>).provincia as string}</p>
+                            <p>
+                              <strong>Nombre:</strong>{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).nombre as string
+                              }
+                            </p>
+                            <p>
+                              <strong>Especialidades:</strong>{" "}
+                              {(
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).especialidades as string[]
+                              )?.join(", ")}
+                            </p>
+                            <p>
+                              <strong>Ubicación:</strong>{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).ciudad as string
+                              }
+                              ,{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).provincia as string
+                              }
+                            </p>
                           </div>
                         </div>
                       )}
 
                       {solicitud.mensaje && (
                         <div className="mt-3">
-                          <p className="text-sm text-gray-600"><strong>Mensaje:</strong> {solicitud.mensaje}</p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Mensaje:</strong> {solicitud.mensaje}
+                          </p>
                         </div>
                       )}
                     </div>
 
                     <div className="ml-6 flex flex-col items-end space-y-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        solicitud.estado === 'pendiente' 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : solicitud.estado === 'aprobado'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          solicitud.estado === "pendiente"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : solicitud.estado === "aprobado"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {solicitud.estado}
                       </span>
-                      
+
                       <p className="text-xs text-gray-500">
-                        {new Date(solicitud.fechaSolicitud).toLocaleDateString('es-ES')}
+                        {new Date(solicitud.fechaSolicitud).toLocaleDateString(
+                          "es-ES"
+                        )}
                       </p>
 
-                      {solicitud.estado === 'pendiente' && (
+                      {solicitud.estado === "pendiente" && (
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleApproveSolicitud(solicitud.id)}
@@ -432,7 +532,12 @@ export default function AdminUsersPage() {
                             Aprobar
                           </button>
                           <button
-                            onClick={() => handleRejectSolicitud(solicitud.id, 'Rechazado por el administrador')}
+                            onClick={() =>
+                              handleRejectSolicitud(
+                                solicitud.id,
+                                "Rechazado por el administrador"
+                              )
+                            }
                             className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
                           >
                             Rechazar
@@ -448,16 +553,26 @@ export default function AdminUsersPage() {
         )}
 
         {/* Contenido de Crear Usuario */}
-        {selectedTab === 'create' && (
+        {selectedTab === "create" && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Crear Nuevo Usuario</h3>
-            
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Crear Nuevo Usuario
+            </h3>
+
             {/* Información importante */}
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-blue-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -466,16 +581,27 @@ export default function AdminUsersPage() {
                   </h3>
                   <div className="mt-2 text-sm text-blue-700">
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>Se creará la cuenta de autenticación automáticamente</li>
-                      <li>Se generará una contraseña temporal que debes compartir con el usuario</li>
-                      <li>El usuario debe cambiar la contraseña en su primer login</li>
-                      <li>Los usuarios con rol &quot;Usuario&quot; necesitan ser asignados a un despacho para acceder a funciones avanzadas</li>
+                      <li>
+                        Se creará la cuenta de autenticación automáticamente
+                      </li>
+                      <li>
+                        Se generará una contraseña temporal que debes compartir
+                        con el usuario
+                      </li>
+                      <li>
+                        El usuario debe cambiar la contraseña en su primer login
+                      </li>
+                      <li>
+                        Los usuarios con rol &quot;Usuario&quot; necesitan ser
+                        asignados a un despacho para acceder a funciones
+                        avanzadas
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <form onSubmit={handleCreateUser} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -486,7 +612,9 @@ export default function AdminUsersPage() {
                     type="email"
                     required
                     value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, email: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -498,7 +626,9 @@ export default function AdminUsersPage() {
                   <input
                     type="tel"
                     value={newUser.telefono}
-                    onChange={(e) => setNewUser({ ...newUser, telefono: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, telefono: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -511,7 +641,9 @@ export default function AdminUsersPage() {
                     type="text"
                     required
                     value={newUser.nombre}
-                    onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, nombre: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -524,7 +656,9 @@ export default function AdminUsersPage() {
                     type="text"
                     required
                     value={newUser.apellidos}
-                    onChange={(e) => setNewUser({ ...newUser, apellidos: e.target.value })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, apellidos: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -535,7 +669,12 @@ export default function AdminUsersPage() {
                   </label>
                   <select
                     value={newUser.rol}
-                    onChange={(e) => setNewUser({ ...newUser, rol: e.target.value as UserRole })}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        rol: e.target.value as UserRole,
+                      })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="usuario">Usuario</option>
@@ -548,7 +687,15 @@ export default function AdminUsersPage() {
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setNewUser({ email: '', nombre: '', apellidos: '', telefono: '', rol: 'usuario' })}
+                  onClick={() =>
+                    setNewUser({
+                      email: "",
+                      nombre: "",
+                      apellidos: "",
+                      telefono: "",
+                      rol: "usuario",
+                    })
+                  }
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                 >
                   Limpiar
@@ -589,82 +736,121 @@ export default function AdminUsersPage() {
                 <div className="space-y-6">
                   {/* Información Básica */}
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Información Básica</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">
+                      Información Básica
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedUserDetails.email}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Email
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          {selectedUserDetails.nombre} {selectedUserDetails.apellidos}
+                          {selectedUserDetails.email}
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Nombre Completo
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          {selectedUserDetails.telefono || 'No especificado'}
+                          {selectedUserDetails.nombre}{" "}
+                          {selectedUserDetails.apellidos}
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Plan</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedUserDetails.plan}</p>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Teléfono
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUserDetails.telefono || "No especificado"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Plan
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">
+                          {selectedUserDetails.plan}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Información del Sistema */}
                   <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Información del Sistema</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">
+                      Información del Sistema
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Rol</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Rol
+                        </label>
                         <div className="mt-1">
                           <RoleBadge role={selectedUserDetails.rol} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Estado</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Estado
+                        </label>
                         <div className="mt-1">
                           <StatusBadge status={selectedUserDetails.estado} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Fecha de Registro</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Fecha de Registro
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          {new Date(selectedUserDetails.fechaRegistro).toLocaleString('es-ES')}
+                          {new Date(
+                            selectedUserDetails.fechaRegistro
+                          ).toLocaleString("es-ES")}
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Último Acceso</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Último Acceso
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          {selectedUserDetails.ultimoAcceso 
-                            ? new Date(selectedUserDetails.ultimoAcceso).toLocaleString('es-ES')
-                            : 'Nunca'}
+                          {selectedUserDetails.ultimoAcceso
+                            ? new Date(
+                                selectedUserDetails.ultimoAcceso
+                              ).toLocaleString("es-ES")
+                            : "Nunca"}
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Email Verificado</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Email Verificado
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            selectedUserDetails.emailVerificado 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {selectedUserDetails.emailVerificado ? 'Verificado' : 'No verificado'}
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedUserDetails.emailVerificado
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {selectedUserDetails.emailVerificado
+                              ? "Verificado"
+                              : "No verificado"}
                           </span>
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Cuenta Activa</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Cuenta Activa
+                        </label>
                         <p className="mt-1 text-sm text-gray-900">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            selectedUserDetails.activo 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {selectedUserDetails.activo ? 'Activa' : 'Inactiva'}
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedUserDetails.activo
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {selectedUserDetails.activo ? "Activa" : "Inactiva"}
                           </span>
                         </p>
                       </div>
@@ -673,35 +859,55 @@ export default function AdminUsersPage() {
 
                   {/* Información de Despachos */}
                   <div className="bg-purple-50 p-4 rounded-lg">
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Despachos Asignados</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">
+                      Despachos Asignados
+                    </h4>
                     {userDespachos[selectedUserDetails.id]?.length ? (
                       <div className="space-y-2">
-                        {userDespachos[selectedUserDetails.id].map((despacho, idx) => (
-                          <div key={idx} className="bg-white p-3 rounded border">
-                            <p className="text-sm font-medium">ID: {despacho.despachoId}</p>
-                            <p className="text-xs text-gray-500">
-                              Asignado: {new Date(despacho.fechaAsignacion).toLocaleDateString('es-ES')}
-                            </p>
-                          </div>
-                        ))}
+                        {userDespachos[selectedUserDetails.id].map(
+                          (despacho, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-white p-3 rounded border"
+                            >
+                              <p className="text-sm font-medium">
+                                ID: {despacho.despachoId}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Asignado:{" "}
+                                {new Date(
+                                  despacho.fechaAsignacion
+                                ).toLocaleDateString("es-ES")}
+                              </p>
+                            </div>
+                          )
+                        )}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">No tiene despachos asignados</p>
+                      <p className="text-sm text-gray-500">
+                        No tiene despachos asignados
+                      </p>
                     )}
                   </div>
 
                   {/* Notas del Admin */}
                   {selectedUserDetails.notasAdmin && (
                     <div className="bg-yellow-50 p-4 rounded-lg">
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">Notas del Administrador</h4>
-                      <p className="text-sm text-gray-700">{selectedUserDetails.notasAdmin}</p>
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">
+                        Notas del Administrador
+                      </h4>
+                      <p className="text-sm text-gray-700">
+                        {selectedUserDetails.notasAdmin}
+                      </p>
                     </div>
                   )}
                 </div>
               ) : (
                 // Vista de edición (para futuras implementaciones)
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Modo de edición - En desarrollo</p>
+                  <p className="text-gray-500">
+                    Modo de edición - En desarrollo
+                  </p>
                 </div>
               )}
             </div>
@@ -714,7 +920,7 @@ export default function AdminUsersPage() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   disabled={editingUser}
                 >
-                  {editingUser ? 'Editando...' : 'Editar Usuario'}
+                  {editingUser ? "Editando..." : "Editar Usuario"}
                 </button>
               </div>
               <button
