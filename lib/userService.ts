@@ -80,7 +80,7 @@ export class UserService {
       .from('users')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') return null; // No encontrado
@@ -119,7 +119,7 @@ export class UserService {
       .from('users')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') return null; // No encontrado
@@ -149,7 +149,7 @@ export class UserService {
         plan: 'basico'
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -210,7 +210,7 @@ export class UserService {
           plan: 'basico'
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (localError) {
         console.error('Error creating local user record:', localError);

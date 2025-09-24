@@ -51,8 +51,12 @@ export default function SolicitarDespacho() {
       if (!res.ok) throw new Error('Error al buscar despachos');
       const data = await res.json();
       setResults(data);
-    } catch (err: any) {
-      setError(err.message || 'Error al buscar despachos');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Error al buscar despachos');
+      } else {
+        setError('Error al buscar despachos');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,8 +109,12 @@ export default function SolicitarDespacho() {
       if (!res.ok) throw new Error(result.error || 'Error al solicitar vinculación');
       setSolicitados(prev => [...prev, despacho.id]);
       setSuccess('Solicitud enviada correctamente');
-    } catch (err: any) {
-      setError(err.message || 'Error al solicitar vinculación');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Error al solicitar vinculación');
+      } else {
+        setError('Error al solicitar vinculación');
+      }
     }
   };
 

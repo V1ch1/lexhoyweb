@@ -10,15 +10,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    // Decodificar el JWT para obtener el sub (user id autenticado)
-    let jwtSub = null;
-    try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      jwtSub = payload.sub;
-    } catch (e) {
-      console.log('No se pudo decodificar el JWT:', e);
-    }
-
     // Crear cliente Supabase con el token del usuario
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -28,8 +19,6 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { userId, despachoId, userEmail, userName, despachoNombre, despachoLocalidad, despachoProvincia } = body;
-    console.log('[solicitar-despacho] userId recibido:', userId);
-    console.log('[solicitar-despacho] sub del JWT:', jwtSub);
     if (!userId || !despachoId || !userEmail || !userName || !despachoNombre) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }

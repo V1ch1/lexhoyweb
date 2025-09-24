@@ -234,7 +234,7 @@ export class AuthService {
         .from('users')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
       
       // Si no se encuentra por ID, buscar por email como fallback
       if (userError && userError.code === 'PGRST116') {
@@ -242,7 +242,7 @@ export class AuthService {
           .from('users')
           .select('*')
           .eq('email', authData.user.email)
-          .single();
+          .maybeSingle();
         
         userData = result.data;
         userError = result.error;
