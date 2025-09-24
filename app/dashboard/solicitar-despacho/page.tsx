@@ -14,9 +14,7 @@ function decodeHtml(html: string) {
   return txt.value;
 }
 import React, { useState } from "react";
-import { UserService } from "@/lib/userService";
 import { useAuth } from "@/lib/authContext";
-import { supabase } from "@/lib/supabase";
 
 interface Despacho {
   id: number;
@@ -35,7 +33,6 @@ interface Despacho {
 }
 
 export default function SolicitarDespacho() {
-  const userService = React.useMemo(() => new UserService(), []);
   // ...declaraciones únicas y handlers ya presentes arriba...
   const { user } = useAuth();
   // Handler para solicitar despacho
@@ -164,7 +161,7 @@ export default function SolicitarDespacho() {
     setTimeout(() => {
       console.log("Solicitudes recibidas:", solicitudesPendientes);
     }, 1000);
-  }, [user, cargarSolicitudesPendientes]);
+  }, [user, cargarSolicitudesPendientes, solicitudesPendientes]);
   const [nombre, setNombre] = useState("");
   const [results, setResults] = useState<Despacho[]>([]);
   const [loading, setLoading] = useState(false);

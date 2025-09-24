@@ -31,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isPublicPage = publicPages.includes(pathname);
 
   // Cargar sesión al iniciar
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const loadSession = async () => {
       try {
@@ -138,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.data.subscription.unsubscribe();
     };
-  }, [pathname, isPublicPage]);
+  }, [pathname, isPublicPage, user]);
 
   const login = (userData: User) => {
     // El login real se maneja en AuthService.signIn

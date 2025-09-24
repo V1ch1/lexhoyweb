@@ -1,6 +1,6 @@
 import { BellIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export function NotificationBell({ count }: { count: number }) {
   const [open, setOpen] = useState(false);

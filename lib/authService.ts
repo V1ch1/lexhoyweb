@@ -82,8 +82,7 @@ export class AuthService {
         error: null
       };
 
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch {
       return { user: null, error: 'Error de conexión' };
     }
   }
@@ -200,8 +199,8 @@ export class AuthService {
    */
   static async signOut(): Promise<{ error: string | null }> {
     try {
-      const { error } = await supabase.auth.signOut();
-      return { error: error?.message || null };
+  const { error: signOutError } = await supabase.auth.signOut();
+  return { error: signOutError?.message || null };
     } catch (error) {
       console.error('Sign out error:', error);
       return { error: 'Error al cerrar sesión' };
@@ -274,7 +273,7 @@ export class AuthService {
       
       return result;
 
-    } catch (error) {
+    } catch {
       return { user: null, error: 'Error de conexión' };
     }
   }

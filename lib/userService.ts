@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, UserDespacho, SolicitudRegistro, SyncLog, UserRole, UserStatus, PlanType } from './types';
+import { User, UserDespacho, SyncLog, UserRole, UserStatus, PlanType } from './types';
 
 // Interfaz para los datos raw de la base de datos
 interface UserRaw {
@@ -427,7 +427,7 @@ export class UserService {
   /**
    * Obtener todas las solicitudes (solo super_admin)
    */
-  async getAllSolicitudes(): Promise<any[]> {
+  async getAllSolicitudes(): Promise<Record<string, unknown>[]> {
     const { data, error } = await supabase
       .from('solicitudes_despacho')
       .select('*')
@@ -449,7 +449,7 @@ export class UserService {
     despacho_localidad?: string;
     despacho_provincia?: string;
     estado?: string;
-  }): Promise<any> {
+  }): Promise<Record<string, unknown>> {
     const { data, error } = await supabase
       .from('solicitudes_despacho')
       .insert({
