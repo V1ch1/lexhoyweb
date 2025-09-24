@@ -17,9 +17,8 @@ const NavbarDashboard = () => {
       <div className="text-2xl font-semibold">Dashboard</div>
 
       <div className="flex items-center space-x-4">
-
         {/* Campana de notificaciones para super_admin */}
-        {user?.role === 'super_admin' && (
+        {user?.role === "super_admin" && (
           <NotificationBell count={pendingCount} />
         )}
 

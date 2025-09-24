@@ -71,7 +71,7 @@ export default function SolicitudesDespacchosPage() {
       );
       setSolicitudes(solicitudesConDatos);
     } catch (error) {
-        // console.error("Error loading solicitudes:", error);
+      console.error("Error loading solicitudes:", error);
       setError("Error al cargar las solicitudes");
     } finally {
       setLoading(false);
@@ -89,7 +89,7 @@ export default function SolicitudesDespacchosPage() {
       setTimeout(() => setSuccessMessage(null), 3000);
       await loadSolicitudes(); // Recargar lista
     } catch (error) {
-        // console.error("Error al aprobar solicitud:", error);
+      console.error("Error al aprobar solicitud:", error);
       setError("Error al aprobar la solicitud");
     }
   };
@@ -110,7 +110,7 @@ export default function SolicitudesDespacchosPage() {
       setMotivoRechazo("");
       await loadSolicitudes(); // Recargar lista
     } catch (error) {
-        // console.error("Error al rechazar solicitud:", error);
+      console.error("Error al rechazar solicitud:", error);
       setError("Error al rechazar la solicitud");
     }
   };

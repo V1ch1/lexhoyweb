@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserService } from "@/lib/userService";
+import type { SolicitudRegistro } from "@/lib/types";
 
 // Interfaces para las estadísticas
 interface SystemStats {
@@ -37,12 +38,54 @@ const DashboardPage = () => {
     fecha: string;
     estado: string;
   } | null>(null);
+  // Solicitudes pendientes para super_admin
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<number | null>(null);
+  // Lista completa de solicitudes (solo super_admin)
+  const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
+  const [solicitudesLoading, setSolicitudesLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === "super_admin") {
+      setSolicitudesLoading(true);
+      const userService = new UserService();
+      userService.getAllSolicitudes()
+        .then((data) => {
+          const mapped = data.map((s: any) => ({
+            id: s.id as string,
+            user_id: s.user_id as string | undefined,
+            user_email: s.user_email as string | undefined,
+            user_name: s.user_name as string | undefined,
+            despacho_id: s.despacho_id as string | undefined,
+            despacho_nombre: s.despacho_nombre as string | undefined,
+            despacho_localidad: s.despacho_localidad as string | undefined,
+            despacho_provincia: s.despacho_provincia as string | undefined,
+            estado: s.estado as 'pendiente' | 'aprobado' | 'rechazado',
+            fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud) : new Date(0),
+            fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta) : undefined,
+            respondidoPor: s.respondidoPor as string | undefined,
+            notasRespuesta: s.notasRespuesta as string | undefined,
+            userCreadoId: s.userCreadoId as string | undefined,
+            despachoCreadoId: s.despachoCreadoId as string | undefined,
+            email: s.email as string | undefined,
+            nombre: s.nombre as string | undefined,
+            apellidos: s.apellidos as string | undefined,
+            telefono: s.telefono as string | undefined,
+            empresa: s.empresa as string | undefined,
+            mensaje: s.mensaje as string | undefined,
+            datosDespacho: s.datosDespacho as SolicitudRegistro['datosDespacho'],
+          }));
+          setSolicitudes(mapped);
+        })
+        .catch(() => setSolicitudes([]))
+        .finally(() => setSolicitudesLoading(false));
+    }
+  }, [user?.role]);
   // Función segura para obtener el JWT
   function getJWT() {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('supabase_jwt') || '';
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("supabase_jwt") || "";
     }
-    return '';
+    return "";
   }
   // useEffect bloqueado: No cargar solicitud de despacho automáticamente
   // useEffect(() => {
@@ -62,7 +105,19 @@ const DashboardPage = () => {
   //     .catch(() => setSolicitudDespacho(null));
   // }, [user?.id, user?.role]);
 
-  // Eliminado debug de usuario actual
+  // Debug del usuario actual
+  useEffect(() => {
+    if (user) {
+      console.log("🔍 DASHBOARD DEBUG - Usuario actual:", {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        "Es super_admin?": user.role === "super_admin",
+        "Es usuario?": user.role === "usuario",
+      });
+    }
+  }, [user]);
 
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {
@@ -134,7 +189,28 @@ const DashboardPage = () => {
         )}
       </div>
 
-      <div className="space-y-6">
+  <div className="space-y-6">
+        {/* Card de Solicitudes Pendientes (solo para super_admin) */}
+  {/* Card de pendientes y tabla de solicitudes para super_admin */}
+        {user.role === "super_admin" && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-900 mb-1 flex items-center gap-2">
+                <span>Solicitudes de despacho pendientes</span>
+                <span className="inline-block bg-yellow-200 text-yellow-900 px-2 py-1 rounded text-sm font-bold">
+                  {solicitudesLoading ? "..." : solicitudes.filter((s) => s.estado === "pendiente").length}
+                </span>
+              </h3>
+              <p className="text-yellow-800 text-sm">Revisa y gestiona las solicitudes de vinculación de despachos.</p>
+            </div>
+            <button
+              onClick={() => router.push("/admin/users?tab=solicitudes")}
+              className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+            >
+              Ver solicitudes
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card de Bienvenida */}
           <div className="bg-white rounded-lg shadow p-6">

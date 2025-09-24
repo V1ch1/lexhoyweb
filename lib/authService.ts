@@ -14,6 +14,10 @@ export class AuthService {
    */
   static async signIn(email: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
     try {
+      // Limpiar JWT previo antes de login
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('supabase_jwt');
+      }
       // Intentar autenticación con Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -242,23 +246,76 @@ export class AuthService {
           .select('*')
           .eq('email', authData.user.email)
           .maybeSingle();
-        
         userData = result.data;
         userError = result.error;
       }
-      
+
+      // Si sigue sin encontrarse, crear el usuario en la tabla 'users' solo si no existe
       if (userError || !userData) {
-        console.error('❌ AuthService: Error fetching user data:', userError);
-        // Si existe authData.user, devolver al menos los datos básicos
-        return {
-          user: {
-            id: authData.user.id,
-            email: authData.user.email ?? "",
-            name: authData.user.user_metadata?.nombre || (authData.user.email ?? ""),
-            role: (authData.user.user_metadata?.rol as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario'
-          },
-          error: null
-        };
+        if (authData.user) {
+          // Comprobar si ya existe por id o email
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('*')
+            .or(`id.eq.${authData.user.id},email.eq.${authData.user.email}`)
+            .maybeSingle();
+          if (existingUser) {
+            return {
+              user: {
+                id: existingUser.id,
+                email: existingUser.email,
+                name: `${existingUser.nombre} ${existingUser.apellidos}`,
+                role: existingUser.rol
+              },
+              error: null
+            };
+          }
+          // Si no existe, crearlo
+          const nombre = authData.user.user_metadata?.nombre || "";
+          const apellidos = authData.user.user_metadata?.apellidos || "";
+          const telefono = authData.user.user_metadata?.telefono || "";
+          const rol = (authData.user.user_metadata?.rol as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario';
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+              id: authData.user.id,
+              email: authData.user.email,
+              nombre,
+              apellidos,
+              telefono,
+              rol,
+              estado: 'activo',
+              fecha_registro: new Date().toISOString(),
+              activo: true,
+              email_verificado: !!authData.user.email_confirmed_at,
+              plan: 'basico',
+            })
+            .select()
+            .maybeSingle();
+          if (createError || !newUser) {
+            // Si falla la creación, devolver datos mínimos
+            return {
+              user: {
+                id: authData.user.id,
+                email: authData.user.email ?? "",
+                name: nombre ? nombre : (authData.user.email ?? ""),
+                role: rol
+              },
+              error: null
+            };
+          }
+          return {
+            user: {
+              id: newUser.id,
+              email: newUser.email,
+              name: `${newUser.nombre} ${newUser.apellidos}`,
+              role: newUser.rol
+            },
+            error: null
+          };
+        }
+        // Si no existe en Auth, devolver null
+        return { user: null, error: 'No hay usuario autenticado' };
       }
 
       const result = {
