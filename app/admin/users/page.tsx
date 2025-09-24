@@ -95,13 +95,29 @@ export default function AdminUsersPage() {
     try {
       const allSolicitudes = await userService.getAllSolicitudes();
       setSolicitudes(
-        allSolicitudes.map((s: Omit<SolicitudRegistro, 'fechaSolicitud' | 'fechaRespuesta'> & {
-          fecha_solicitud?: string;
-          fecha_respuesta?: string;
-        }) => ({
-          ...s,
-          fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud) : new Date(0),
-          fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta) : undefined,
+        allSolicitudes.map((s) => ({
+          id: s.id as string,
+          user_id: s.user_id as string | undefined,
+          user_email: s.user_email as string | undefined,
+          user_name: s.user_name as string | undefined,
+          despacho_id: s.despacho_id as string | undefined,
+          despacho_nombre: s.despacho_nombre as string | undefined,
+          despacho_localidad: s.despacho_localidad as string | undefined,
+          despacho_provincia: s.despacho_provincia as string | undefined,
+          estado: s.estado as 'pendiente' | 'aprobado' | 'rechazado',
+          fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud as string) : new Date(0),
+          fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta as string) : undefined,
+          respondidoPor: s.respondidoPor as string | undefined,
+          notasRespuesta: s.notasRespuesta as string | undefined,
+          userCreadoId: s.userCreadoId as string | undefined,
+          despachoCreadoId: s.despachoCreadoId as string | undefined,
+          email: s.email as string | undefined,
+          nombre: s.nombre as string | undefined,
+          apellidos: s.apellidos as string | undefined,
+          telefono: s.telefono as string | undefined,
+          empresa: s.empresa as string | undefined,
+          mensaje: s.mensaje as string | undefined,
+          datosDespacho: s.datosDespacho as SolicitudRegistro['datosDespacho'],
         }))
       );
     } catch (error) {

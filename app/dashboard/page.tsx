@@ -55,8 +55,8 @@ const DashboardPage = () => {
       }
     })
       .then((res) => res.json())
-      .then((data) => {
-        const pendiente = data.find((s: any) => s.estado === "pendiente");
+      .then((data: Array<{ estado: string; despachoId: number; fecha: string }>) => {
+        const pendiente = data.find((s) => s.estado === "pendiente");
         setSolicitudDespacho(pendiente || null);
       })
       .catch(() => setSolicitudDespacho(null));

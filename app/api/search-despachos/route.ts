@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       const data = await wpRes.json();
       return NextResponse.json(data, { status: 200 });
     }
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }
