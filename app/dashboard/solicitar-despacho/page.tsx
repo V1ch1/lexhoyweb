@@ -35,6 +35,12 @@ interface Despacho {
 export default function SolicitarDespacho() {
   // ...declaraciones únicas y handlers ya presentes arriba...
   const { user } = useAuth();
+  // Log de depuración para ver el ID del usuario
+  React.useEffect(() => {
+    if (user) {
+      console.log('ID de usuario en contexto:', user.id);
+    }
+  }, [user]);
   // Handler para solicitar despacho
   const handleSolicitar = async (despachoId: number) => {
     setError(null);
@@ -90,6 +96,12 @@ export default function SolicitarDespacho() {
       setSolicitados((prev) => [...prev, despachoId]);
       setSuccess("Solicitud enviada correctamente");
       await cargarSolicitudesPendientes();
+      // Ocultar el mensaje de éxito y limpiar resultados después de un breve tiempo
+      setTimeout(() => {
+        setSuccess(null);
+        setResults([]);
+        setNombre("");
+      }, 2000);
     } catch {
       setError("Error al solicitar vinculación");
     }
@@ -129,37 +141,43 @@ export default function SolicitarDespacho() {
       if (!res.ok) throw new Error("Error al cancelar la solicitud");
       setSuccess("Solicitud cancelada correctamente");
       await cargarSolicitudesPendientes();
+      setTimeout(() => {
+        setSuccess(null);
+      }, 2000);
     } catch {
       setError("Error al cancelar la solicitud");
     }
   };
 
-  // Función bloqueada: No cargar solicitudes pendientes automáticamente
-  // const cargarSolicitudesPendientes = React.useCallback(async () => {
-  //   if (!user?.id) return;
-  //   try {
-  //     // Obtener el JWT de forma segura
-  //     const token = getJWT();
-  //     if (!token) throw new Error("No se pudo obtener el token de sesión");
-  //     const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-  //     if (!res.ok) throw new Error("Error al cargar solicitudes");
-  //     const solicitudes = await res.json();
-  //     setSolicitudesPendientes(solicitudes);
-  //   } catch {
-  //     setError("Error al cargar solicitudes");
-  //   }
-  // }, [user]);
-  // React.useEffect(() => {
-  //   cargarSolicitudesPendientes();
-  //   // DEBUG: mostrar solicitudes recibidas en consola
-  //   setTimeout(() => {
-  //     console.log("Solicitudes recibidas:", solicitudesPendientes);
-  //   }, 1000);
-  // }, [user, cargarSolicitudesPendientes, solicitudesPendientes]);
+  // Activar carga automática de solicitudes pendientes
+  const cargarSolicitudesPendientes = React.useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      // Obtener el JWT de forma segura
+      const token = getJWT();
+      console.log('🔑 JWT actual:', token);
+      console.log('🔎 user_id en petición:', user.id);
+      if (!token) throw new Error("No se pudo obtener el token de sesión");
+      const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        console.error('Error al cargar solicitudes:', res.status, await res.text());
+        throw new Error("Error al cargar solicitudes");
+      }
+      const solicitudes = await res.json();
+      console.log('Respuesta de la API /api/solicitudes-despacho:', solicitudes);
+      setSolicitudesPendientes(solicitudes);
+    } catch (err) {
+      console.error('Error en cargarSolicitudesPendientes:', err);
+      setError("Error al cargar solicitudes");
+    }
+  }, [user]);
+  React.useEffect(() => {
+    cargarSolicitudesPendientes();
+  }, [user, cargarSolicitudesPendientes]);
   const [nombre, setNombre] = useState("");
   const [results, setResults] = useState<Despacho[]>([]);
   const [loading, setLoading] = useState(false);
@@ -226,10 +244,10 @@ export default function SolicitarDespacho() {
       {/* Renderizado de solicitudes del usuario */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-2">
-          Mis solicitudes de despacho
+          Mis solicitudes de despacho (pendientes)
         </h3>
-        {solicitudesPendientes.length === 0 ? (
-          <p className="text-gray-500">No tienes solicitudes registradas.</p>
+        {solicitudesPendientes.filter(s => s.estado === "pendiente").length === 0 ? (
+          <p className="text-gray-500">No tienes solicitudes pendientes.</p>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
@@ -243,7 +261,7 @@ export default function SolicitarDespacho() {
               </tr>
             </thead>
             <tbody>
-              {solicitudesPendientes.map((solicitud) => (
+              {solicitudesPendientes.filter(s => s.estado === "pendiente").map((solicitud) => (
                 <tr key={solicitud.id} className="border-b">
                   <td className="px-4 py-2">
                     {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
@@ -281,6 +299,60 @@ export default function SolicitarDespacho() {
                         Cancelar
                       </button>
                     )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Renderizado de solicitudes canceladas */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-2">
+          Solicitudes canceladas
+        </h3>
+        {solicitudesPendientes.filter(s => s.estado === "cancelada").length === 0 ? (
+          <p className="text-gray-500">No tienes solicitudes canceladas.</p>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="px-4 py-2">Nombre</th>
+                <th className="px-4 py-2">Localidad</th>
+                <th className="px-4 py-2">Provincia</th>
+                <th className="px-4 py-2">Fecha</th>
+                <th className="px-4 py-2">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {solicitudesPendientes.filter(s => s.estado === "cancelada").map((solicitud) => (
+                <tr key={solicitud.id} className="border-b bg-red-50">
+                  <td className="px-4 py-2">
+                    {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
+                  </td>
+                  <td className="px-4 py-2">
+                    {decodeHtml(solicitud.despacho_localidad || "-")}
+                  </td>
+                  <td className="px-4 py-2">
+                    {decodeHtml(solicitud.despacho_provincia || "-")}
+                  </td>
+                  <td className="px-4 py-2">
+                    {solicitud.fecha_solicitud
+                      ? (() => {
+                          const fechaLocal = new Date(
+                            solicitud.fecha_solicitud!
+                          );
+                          if (isNaN(fechaLocal.getTime())) return "-";
+                          fechaLocal.setHours(fechaLocal.getHours() + 2);
+                          return fechaLocal.toLocaleString("es-ES");
+                        })()
+                      : "-"}
+                  </td>
+                  <td className="px-4 py-2">
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                      Cancelada
+                    </span>
                   </td>
                 </tr>
               ))}
