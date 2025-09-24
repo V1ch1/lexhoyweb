@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-// import { UserService } from '@/lib/userService';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { UserService } from '@/lib/userService';
 import { useAuth } from '@/lib/authContext';
@@ -10,6 +8,8 @@ import { useAuth } from '@/lib/authContext';
 const userService = new UserService();
 
 interface SolicitudExtendida {
+  user_name?: string;
+  user_email?: string;
   id: string;
   user_id: string;
   despacho_id: string;
@@ -55,21 +55,16 @@ export default function SolicitudesDespacchosPage() {
       setError(null);
       const data = await userService.getSolicitudesDespachosPendientes();
       // Para cada solicitud, obtener usuario y despacho
-      const solicitudesConDatos = await Promise.all(
-        data.map(async (solicitud: any) => {
-          // Usar los datos guardados en la solicitud
-          return {
-            ...solicitud,
-            usuario: {
-              nombre: solicitud.user_name || '',
-              email: solicitud.user_email || ''
-            },
-            despachoNombre: solicitud.despacho_nombre || String(solicitud.despacho_id),
-            despachoLocalidad: solicitud.despacho_localidad || '',
-            despachoProvincia: solicitud.despacho_provincia || ''
-          };
-        })
-      );
+      const solicitudesConDatos: SolicitudExtendida[] = data.map((solicitud: SolicitudExtendida) => ({
+        ...solicitud,
+        usuario: {
+          nombre: solicitud.user_name || '',
+          email: solicitud.user_email || ''
+        },
+        despachoNombre: solicitud.despacho_nombre || String(solicitud.despacho_id),
+        despachoLocalidad: solicitud.despacho_localidad || '',
+        despachoProvincia: solicitud.despacho_provincia || ''
+      }));
       setSolicitudes(solicitudesConDatos);
     } catch (error) {
       console.error('Error loading solicitudes:', error);
@@ -94,7 +89,7 @@ export default function SolicitudesDespacchosPage() {
     if (!currentUser) return;
     
     try {
-      await userService.aprobarSolicitudDespacho(solicitudId, currentUser.id);
+  await userService.approveSolicitudDespacho(solicitudId, currentUser.id);
       setSuccessMessage('Solicitud aprobada exitosamente');
       setTimeout(() => setSuccessMessage(null), 3000);
       await loadSolicitudes(); // Recargar lista
@@ -108,7 +103,7 @@ export default function SolicitudesDespacchosPage() {
     if (!selectedSolicitud || !currentUser || !motivoRechazo.trim()) return;
     
     try {
-      await userService.rechazarSolicitudDespacho(selectedSolicitud.id, currentUser.id, motivoRechazo);
+  await userService.rejectSolicitudDespacho(selectedSolicitud.id, currentUser.id, motivoRechazo);
       setSuccessMessage('Solicitud rechazada');
       setTimeout(() => setSuccessMessage(null), 3000);
       setShowRejectModal(false);
@@ -264,8 +259,8 @@ export default function SolicitudesDespacchosPage() {
                           <p className="text-sm text-gray-600">Fecha de solicitud:</p>
                           <p className="text-sm font-medium">
                             {(() => {
-                              const fechaLocal = new Date(solicitud.fecha_solicitud);
-                              if (isNaN(fechaLocal.getTime())) return '-';
+                              const fechaLocal = solicitud.fecha_solicitud ? new Date(solicitud.fecha_solicitud) : null;
+                              if (!fechaLocal || isNaN(fechaLocal.getTime())) return '-';
                               fechaLocal.setHours(fechaLocal.getHours() + 2);
                               return fechaLocal.toLocaleString('es-ES');
                             })()}
