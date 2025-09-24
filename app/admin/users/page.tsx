@@ -11,6 +11,7 @@ import {
   UserStatus,
 } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
+import Toast from "@/components/Toast";
 
 const userService = new UserService();
 
@@ -18,7 +19,7 @@ export default function AdminUsersPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"users" | "solicitudes" | "create">("users");
   const [userDespachos, setUserDespachos] = useState<
@@ -40,6 +41,12 @@ export default function AdminUsersPage() {
     telefono: "",
     rol: "usuario" as UserRole,
   });
+
+  // Estado para toast
+  const [toast, setToast] = useState<{
+    type: "success" | "error" | "info" | "warning";
+    message: string;
+  } | null>(null);
 
   const checkPermissionsAndLoadData = useCallback(async () => {
     try {
@@ -87,7 +94,16 @@ export default function AdminUsersPage() {
   const loadSolicitudes = async () => {
     try {
       const allSolicitudes = await userService.getAllSolicitudes();
-      setSolicitudes(allSolicitudes as any[]);
+      setSolicitudes(
+        allSolicitudes.map((s: Omit<SolicitudRegistro, 'fechaSolicitud' | 'fechaRespuesta'> & {
+          fecha_solicitud?: string;
+          fecha_respuesta?: string;
+        }) => ({
+          ...s,
+          fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud) : new Date(0),
+          fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta) : undefined,
+        }))
+      );
     } catch (error) {
       console.error("Error loading solicitudes:", error);
     }
@@ -143,27 +159,35 @@ export default function AdminUsersPage() {
   const handleApproveSolicitud = async (solicitudId: string) => {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();
-      if (currentUser) {
-        await userService.approveSolicitudDespacho(solicitudId, currentUser.user.id);
-        await loadSolicitudes();
-        await loadUsers();
+      if (!currentUser) {
+        setToast({ type: "error", message: "No hay sesión activa o permisos insuficientes." });
+        console.error("No hay sesión activa o permisos insuficientes para aprobar.");
+        return;
       }
+      await userService.approveSolicitudDespacho(solicitudId, currentUser.user.id);
+      await loadSolicitudes();
+      await loadUsers();
+      setToast({ type: "success", message: "Solicitud aprobada y despacho asignado correctamente." });
     } catch (error) {
       console.error("Error approving solicitud de despacho:", error);
-      alert("Error al aprobar la solicitud de despacho");
+      setToast({ type: "error", message: "Error al aprobar la solicitud de despacho." });
     }
   };
 
   const handleRejectSolicitud = async (solicitudId: string, notas: string) => {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();
-      if (currentUser) {
-        await userService.rejectSolicitudDespacho(solicitudId, currentUser.user.id, notas);
-        await loadSolicitudes();
+      if (!currentUser) {
+        setToast({ type: "error", message: "No hay sesión activa o permisos insuficientes." });
+        console.error("No hay sesión activa o permisos insuficientes para rechazar.");
+        return;
       }
+      await userService.rejectSolicitudDespacho(solicitudId, currentUser.user.id, notas);
+      await loadSolicitudes();
+      setToast({ type: "info", message: "Solicitud rechazada correctamente." });
     } catch (error) {
       console.error("Error rejecting solicitud de despacho:", error);
-      alert("Error al rechazar la solicitud de despacho");
+      setToast({ type: "error", message: "Error al rechazar la solicitud de despacho." });
     }
   };
 
@@ -240,6 +264,14 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Título de la página */}
         <div className="mb-6">
@@ -466,15 +498,7 @@ export default function AdminUsersPage() {
                               : solicitud.fechaSolicitud instanceof Date
                                 ? solicitud.fechaSolicitud.toLocaleDateString("es-ES")
                                 : "Fecha no disponible")
-                          : solicitud["fecha_solicitud"]
-                            ? (typeof solicitud["fecha_solicitud"] === "string"
-                                ? !isNaN(Date.parse(solicitud["fecha_solicitud"]))
-                                  ? new Date(solicitud["fecha_solicitud"]).toLocaleDateString("es-ES")
-                                  : "Fecha no disponible"
-                                : solicitud["fecha_solicitud"] instanceof Date
-                                  ? solicitud["fecha_solicitud"].toLocaleDateString("es-ES")
-                                  : "Fecha no disponible")
-                            : "Fecha no disponible"}
+                          : "Fecha no disponible"}
                       </p>
                       {solicitud.estado === "pendiente" && (
                         <div className="flex space-x-2">

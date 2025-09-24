@@ -22,6 +22,21 @@ interface UserRaw {
 }
 
 export class UserService {
+  /**
+   * Cancelar solicitud de despacho: actualiza el estado a cancelada
+   */
+  async cancelarSolicitudDespacho(solicitudId: string, canceladoPor: string, notas?: string): Promise<void> {
+    const { error } = await supabase
+      .from('solicitudes_despacho')
+      .update({
+        estado: 'cancelada',
+        fecha_respuesta: new Date().toISOString(),
+        respondido_por: canceladoPor,
+        notas_respuesta: notas
+      })
+      .eq('id', solicitudId);
+    if (error) throw error;
+  }
   
   // ======================== GESTIÓN DE USUARIOS ========================
   
@@ -610,12 +625,15 @@ export class UserService {
    */
   async getCurrentUserWithDespachos(): Promise<{ user: User; despachos: UserDespacho[] } | null> {
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    console.log('[getCurrentUserWithDespachos] Resultado supabase.auth.getUser:', authUser);
     if (!authUser) return null;
 
     const user = await this.getUserById(authUser.id);
+    console.log('[getCurrentUserWithDespachos] Buscando en tabla users con id:', authUser.id, 'Resultado:', user);
     if (!user) return null;
 
     const despachos = await this.getUserDespachos(user.id);
+    console.log('[getCurrentUserWithDespachos] Despachos encontrados:', despachos);
 
     return { user, despachos };
   }
@@ -895,6 +913,24 @@ export class UserService {
       .eq('id', solicitudId)
       .single();
     if (solicitudError) throw solicitudError;
+
+    // Sincronizar despacho desde WordPress a Supabase antes de aprobar
+    const objectId = solicitud.despacho_id;
+    try {
+      const syncRes = await fetch('/api/sync-despacho', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ objectId })
+      });
+      const syncData = await syncRes.json();
+      if (!syncRes.ok) {
+        throw new Error(syncData.error || 'Error sincronizando despacho desde WordPress');
+      }
+    } catch (err) {
+      console.error('Error sincronizando despacho:', err);
+      throw err;
+    }
+
     // Asignar despacho al usuario
     await this.assignDespachoToUser(solicitud.user_id, solicitud.despacho_id, approvedBy);
     // Actualizar solicitud

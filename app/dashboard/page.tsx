@@ -37,10 +37,23 @@ const DashboardPage = () => {
     fecha: string;
     estado: string;
   } | null>(null);
+  // Función segura para obtener el JWT
+  function getJWT() {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('supabase_jwt') || '';
+    }
+    return '';
+  }
   // Cargar solicitud de despacho pendiente para el usuario actual
   useEffect(() => {
     if (!user?.id || user.role !== "usuario") return;
-    fetch(`/api/solicitudes-despacho?userId=${user.id}`)
+    // Obtener el JWT de forma segura
+    const token = getJWT();
+    fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         const pendiente = data.find((s: any) => s.estado === "pendiente");

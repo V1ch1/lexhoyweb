@@ -1,4 +1,11 @@
 "use client";
+// Función segura para obtener el JWT
+function getJWT() {
+  if (typeof window !== 'undefined') {
+    return window.localStorage.getItem('supabase_jwt') || '';
+  }
+  return '';
+}
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
@@ -50,7 +57,7 @@ const userService = new UserService();
 
 const SettingsPage = () => {
   const { user, login } = useAuth(); // Agregamos login para actualizar el contexto
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications' | 'despacho' | 'privacy' | 'sessions'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications' | 'despacho' | 'privacy' | 'sessions' | 'mis-despachos'>('profile');
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -155,6 +162,7 @@ const SettingsPage = () => {
     { id: 'profile', name: 'Perfil Personal', icon: UserIcon },
     { id: 'password', name: 'Contraseña', icon: KeyIcon },
     { id: 'notifications', name: 'Notificaciones', icon: BellIcon },
+    { id: 'mis-despachos', name: 'Mis despachos', icon: BuildingOfficeIcon },
     ...(userDespachos.length > 0 ? [{ id: 'despacho', name: 'Mi Despacho', icon: BuildingOfficeIcon }] : []),
     { id: 'privacy', name: 'Privacidad', icon: ShieldCheckIcon },
     { id: 'sessions', name: 'Sesiones', icon: ComputerDesktopIcon }
@@ -357,7 +365,13 @@ const SettingsPage = () => {
   // Efecto para cargar solicitudes de despacho
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/solicitudes-despacho?userId=${user.id}`)
+    // Obtener el JWT de forma segura
+    const token = getJWT();
+    fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(res => res.json())
       .then(data => {
         setUserSolicitudes(data);
@@ -394,6 +408,38 @@ const SettingsPage = () => {
     }
   };
 
+  // Handler para cancelar solicitud
+  const handleCancelarSolicitud = async (solicitudId: string) => {
+    setMessage(null);
+    try {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      // Obtener el JWT de forma segura
+      const token = getJWT();
+      const res = await fetch(`/api/cancelar-solicitud-despacho`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ solicitudId, userId: user.id })
+      });
+      if (!res.ok) throw new Error('Error al cancelar la solicitud');
+      setMessage({ type: 'success', text: 'Solicitud cancelada correctamente' });
+      // Recargar solicitudes
+      // Obtener el JWT de forma segura
+      const tokenReload = getJWT();
+      fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${tokenReload}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => setUserSolicitudes(data));
+    } catch {
+      setMessage({ type: 'error', text: 'Error al cancelar la solicitud' });
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -415,48 +461,7 @@ const SettingsPage = () => {
         </p>
       </div>
       <div className="space-y-6">
-        {/* Bloque de despachos solicitados */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Mis despachos</h3>
-          {userSolicitudes.length === 0 ? (
-            <p className="text-gray-500">No tienes despachos solicitados ni asignados.</p>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-4 py-2">Nombre</th>
-                  <th className="px-4 py-2">Localidad</th>
-                  <th className="px-4 py-2">Provincia</th>
-                  <th className="px-4 py-2">Fecha</th>
-                  <th className="px-4 py-2">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userSolicitudes.map(s => (
-                  <tr key={s.despacho_id} className="border-b">
-                    <td className="px-4 py-2 font-semibold text-gray-900">{decodeHtml(despachosInfo[String(s.despacho_id)]?.nombre || String(s.despacho_id))}</td>
-                    <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.localidad || '-'}</td>
-                    <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.provincia || '-'}</td>
-                    <td className="px-4 py-2">{
-                      (() => {
-                        const fechaLocal = new Date(s.fecha_solicitud);
-                        if (isNaN(fechaLocal.getTime())) return '-';
-                        fechaLocal.setHours(fechaLocal.getHours() + 2);
-                        return fechaLocal.toLocaleString('es-ES');
-                      })()
-                    }</td>
-                    <td className="px-4 py-2">
-                      {s.estado === 'pendiente' && <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pendiente</span>}
-                      {s.estado === 'aprobada' && <span className="bg-green-100 text-green-800 px-2 py-1 rounded">Aprobada</span>}
-                      {s.estado === 'denegada' && <span className="bg-red-100 text-red-800 px-2 py-1 rounded">Denegada</span>}
-                    </td>
-                  </tr>
-                ))}
-
-              </tbody>
-            </table>
-          )}
-        </div>
+  {/* ...existing code... */}
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
@@ -465,7 +470,7 @@ const SettingsPage = () => {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as 'profile' | 'password' | 'notifications' | 'despacho' | 'privacy' | 'sessions')}
+                    onClick={() => setActiveTab(tab.id as 'profile' | 'password' | 'notifications' | 'despacho' | 'privacy' | 'sessions' | 'mis-despachos')}
                     className={`$
                       {activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
@@ -479,113 +484,170 @@ const SettingsPage = () => {
             </nav>
           </div>
           <div className="p-6">
-          {/* Mensaje de éxito/error */}
-          {message && (
-            <div className={`mb-6 p-4 rounded-lg flex items-center ${
-              message.type === 'success' 
-                ? 'bg-green-50 border border-green-200 text-green-800' 
-                : 'bg-red-50 border border-red-200 text-red-800'
-            }`}>
-              {message.type === 'success' ? (
-                <CheckCircleIcon className="h-5 w-5 mr-3 flex-shrink-0" />
-              ) : (
-                <ExclamationTriangleIcon className="h-5 w-5 mr-3 flex-shrink-0" />
-              )}
-              <span>{message.text}</span>
-            </div>
-          )}
+            {/* Mensaje de éxito/error */}
+            {message && (
+              <div className={`mb-6 p-4 rounded-lg flex items-center ${
+                message.type === 'success' 
+                  ? 'bg-green-50 border border-green-200 text-green-800' 
+                  : 'bg-red-50 border border-red-200 text-red-800'
+              }`}>
+                {message.type === 'success' ? (
+                  <CheckCircleIcon className="h-5 w-5 mr-3 flex-shrink-0" />
+                ) : (
+                  <ExclamationTriangleIcon className="h-5 w-5 mr-3 flex-shrink-0" />
+                )}
+                <span>{message.text}</span>
+              </div>
+            )}
 
-          {/* Perfil Personal */}
-          {activeTab === 'profile' && (
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
+            {/* Perfil Personal */}
+            {activeTab === 'profile' && (
+              <form onSubmit={handleProfileSubmit} className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Información Personal</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                      <input
+                        type="text"
+                        value={profileData.nombre}
+                        onChange={(e) => setProfileData({ ...profileData, nombre: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+                      <input
+                        type="text"
+                        value={profileData.apellidos}
+                        onChange={(e) => setProfileData({ ...profileData, apellidos: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={profileData.email}
+                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                      <input
+                        type="tel"
+                        value={profileData.telefono}
+                        onChange={(e) => setProfileData({ ...profileData, telefono: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="+34 123 456 789"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Información de la cuenta</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Rol:</span>
+                        <span className="ml-2 font-medium">
+                          {profileData.role === 'super_admin' ? 'Super Administrador' : profileData.role === 'despacho_admin' ? 'Administrador de Despacho' : 'Usuario'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Registro:</span>
+                        <span className="ml-2">{new Date(profileData.fecha_registro).toLocaleDateString('es-ES')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Último acceso:</span>
+                        <span className="ml-2">{new Date(profileData.ultimo_acceso).toLocaleDateString('es-ES')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Mis despachos */}
+            {activeTab === 'mis-despachos' && (
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Información Personal</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre
-                    </label>
-                    <input
-                      type="text"
-                      value={profileData.nombre}
-                      onChange={(e) => setProfileData({ ...profileData, nombre: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Apellidos
-                    </label>
-                    <input
-                      type="text"
-                      value={profileData.apellidos}
-                      onChange={(e) => setProfileData({ ...profileData, apellidos: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Teléfono
-                    </label>
-                    <input
-                      type="tel"
-                      value={profileData.telefono}
-                      onChange={(e) => setProfileData({ ...profileData, telefono: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+34 123 456 789"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Información de la cuenta</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-white rounded-lg shadow p-6">
+                  {userSolicitudes.length === 0 ? (
                     <div>
-                      <span className="text-gray-500">Rol:</span>
-                      <span className="ml-2 font-medium">
-                        {profileData.role === 'super_admin' ? 'Super Administrador' : 'Administrador de Despacho'}
-                      </span>
+                      <p className="text-gray-500 mb-4">No tienes despachos solicitados ni asignados.</p>
+                      <button
+                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={() => window.location.href = '/dashboard/solicitar-despacho'}
+                      >
+                        Solicitar despacho
+                      </button>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Registro:</span>
-                      <span className="ml-2">{new Date(profileData.fecha_registro).toLocaleDateString('es-ES')}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Último acceso:</span>
-                      <span className="ml-2">{new Date(profileData.ultimo_acceso).toLocaleDateString('es-ES')}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <table className="w-full text-left border-collapse mb-4">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="px-4 py-2">Nombre</th>
+                            <th className="px-4 py-2">Localidad</th>
+                            <th className="px-4 py-2">Provincia</th>
+                            <th className="px-4 py-2">Fecha</th>
+                            <th className="px-4 py-2">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {userSolicitudes.map(s => (
+                            <tr key={s.despacho_id} className="border-b">
+                              <td className="px-4 py-2 font-semibold text-gray-900">{decodeHtml(despachosInfo[String(s.despacho_id)]?.nombre || String(s.despacho_id))}</td>
+                              <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.localidad || '-'}</td>
+                              <td className="px-4 py-2">{despachosInfo[String(s.despacho_id)]?.provincia || '-'}</td>
+                              <td className="px-4 py-2">{
+                                (() => {
+                                  const fechaLocal = new Date(s.fecha_solicitud);
+                                  if (isNaN(fechaLocal.getTime())) return '-';
+                                  fechaLocal.setHours(fechaLocal.getHours() + 2);
+                                  return fechaLocal.toLocaleString('es-ES');
+                                })()
+                              }</td>
+                              <td className="px-4 py-2 flex gap-2 items-center">
+                                {s.estado === 'pendiente' && <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pendiente</span>}
+                                {s.estado === 'aprobada' && <span className="bg-green-100 text-green-800 px-2 py-1 rounded">Aprobada</span>}
+                                {s.estado === 'denegada' && <span className="bg-red-100 text-red-800 px-2 py-1 rounded">Denegada</span>}
+                                {s.estado === 'cancelada' && <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded">Cancelada</span>}
+                                {s.estado === 'pendiente' && (
+                                  <button
+                                    className="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 transition ml-2"
+                                    onClick={() => handleCancelarSolicitud(String(s.despacho_id))}
+                                  >
+                                    Cancelar
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <button
+                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={() => window.location.href = '/dashboard/solicitar-despacho'}
+                      >
+                        Solicitar despacho
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </form>
-          )}
+            )}
 
           {/* Cambio de Contraseña */}
           {activeTab === 'password' && (

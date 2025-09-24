@@ -35,20 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        console.log('🔄 AuthContext: Loading session...');
-        console.log('📍 Current pathname:', pathname);
-        console.log('🌐 Is public page:', isPublicPage);
         
         // Solo verificar sesión si no es una página pública
         if (isPublicPage) {
-          console.log('🌐 AuthContext: Public page, skipping session check');
           setIsLoading(false);
           return;
         }
 
         // Si ya tenemos usuario y estamos navegando entre páginas internas, NO re-cargar
         if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
-          console.log('👤 AuthContext: User exists, skipping session reload for internal navigation');
           setIsLoading(false);
           return;
         }
@@ -58,13 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Timeout de seguridad más largo para evitar pérdida de sesión
         const timeoutId = setTimeout(() => {
-          console.log('⏰ AuthContext: Session loading timeout, setting isLoading to false');
           setIsLoading(false);
         }, 15000); // 15 segundos máximo
         
         // Verificar si hay una sesión activa en Supabase
         const currentUserResult = await AuthService.getCurrentUser();
-        console.log('👤 AuthContext: getCurrentUser result:', currentUserResult);
         
         // Limpiar timeout si la operación termina antes
         clearTimeout(timeoutId);
@@ -76,13 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: currentUserResult.user.name,
             role: currentUserResult.user.role as 'super_admin' | 'despacho_admin' | 'usuario'
           };
-          console.log('✅ AuthContext: Setting user data:', userData);
           setUser(userData);
           
           // Guardar en localStorage como backup
           localStorage.setItem('lexhoy_user', JSON.stringify(userData));
         } else {
-          console.log('❌ AuthContext: No user found or error:', currentUserResult.error);
           
           // Intentar recuperar desde localStorage como fallback SOLO si no es página pública
           if (!isPublicPage) {
@@ -90,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (storedUser) {
               try {
                 const userData = JSON.parse(storedUser);
-                console.log('🔄 AuthContext: Recovered user from localStorage:', userData);
                 setUser(userData);
               } catch (e) {
                 console.error('❌ AuthContext: Error parsing stored user:', e);
@@ -111,7 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (storedUser) {
             try {
               const userData = JSON.parse(storedUser);
-              console.log('🔄 AuthContext: Recovered user from localStorage after error:', userData);
               setUser(userData);
             } catch (e) {
               console.error('❌ AuthContext: Error parsing stored user after error:', e);
@@ -123,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } finally {
-        console.log('⏹️ AuthContext: Finished loading, setting isLoading to false');
         setIsLoading(false);
       }
     };
@@ -132,7 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Escuchar cambios en el estado de autenticación
     const subscription = AuthService.onAuthStateChange((authUser: AuthUser | null) => {
-      console.log('🔔 AuthContext: Auth state changed:', authUser);
       if (authUser) {
         const userData: User = {
           id: authUser.id,
@@ -140,10 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: authUser.name,
           role: authUser.role as 'super_admin' | 'despacho_admin' | 'usuario'
         };
-        console.log('✅ AuthContext: Setting user from auth change:', userData);
         setUser(userData);
       } else {
-        console.log('❌ AuthContext: Clearing user from auth change');
         setUser(null);
       }
       setIsLoading(false);

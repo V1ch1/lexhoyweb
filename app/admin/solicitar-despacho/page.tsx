@@ -1,5 +1,12 @@
+// Función segura para obtener el JWT
+function getJWT() {
+  if (typeof window !== 'undefined') {
+    return window.localStorage.getItem('supabase_jwt') || '';
+  }
+  return '';
+}
 
-'use client';
+"use client";
 import React, { useState } from 'react';
 
 interface Despacho {
@@ -23,7 +30,13 @@ export default function SolicitarDespacho() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`);
+      // Obtener el JWT de forma segura
+      const token = getJWT();
+      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error('Error al buscar despachos');
       const data = await res.json();
       setResults(data);
