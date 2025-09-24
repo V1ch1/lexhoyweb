@@ -1,3 +1,4 @@
+"use client";
 // Función segura para obtener el JWT
 function getJWT() {
   if (typeof window !== 'undefined') {
@@ -5,14 +6,22 @@ function getJWT() {
   }
   return '';
 }
-
-"use client";
 import React, { useState } from 'react';
 
 interface Despacho {
   id: number;
   title: { rendered: string };
-  meta?: any;
+  meta?: {
+    localidad?: string;
+    provincia?: string;
+    telefono?: string;
+    email_contacto?: string;
+    object_id?: string;
+    _despacho_sedes?: Array<{
+      localidad?: string;
+      provincia?: string;
+    }>;
+  };
 }
 
 export default function SolicitarDespacho() {
@@ -21,9 +30,7 @@ export default function SolicitarDespacho() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // TODO: Reemplaza con tu usuario y app password seguros
-  const username = process.env.NEXT_PUBLIC_WP_USER || '';
-  const appPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD || '';
+  // (Variables eliminadas porque no se usan)
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +47,12 @@ export default function SolicitarDespacho() {
       if (!res.ok) throw new Error('Error al buscar despachos');
       const data = await res.json();
       setResults(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error al buscar despachos');
+      }
     } finally {
       setLoading(false);
     }
