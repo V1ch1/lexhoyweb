@@ -198,7 +198,7 @@ const SettingsPage = () => {
       setTimeout(() => setMessage(null), 5000);
       
     } catch (error) {
-      console.error('Error updating profile:', error);
+  // console.error('Error updating profile:', error);
       setMessage({ type: 'error', text: 'Error al actualizar el perfil. Inténtalo de nuevo.' });
       
       // Limpiar el mensaje después de 5 segundos
@@ -241,7 +241,7 @@ const SettingsPage = () => {
       }
       
     } catch (error: unknown) {
-      console.error('Error changing password:', error);
+  // console.error('Error changing password:', error);
       setMessage({ type: 'error', text: 'Esta funcionalidad estará disponible cuando se complete la integración con Supabase Auth.' });
       setTimeout(() => setMessage(null), 5000);
     } finally {
@@ -264,7 +264,7 @@ const SettingsPage = () => {
       setTimeout(() => setMessage(null), 5000);
       
     } catch (error) {
-      console.error('Error updating notifications:', error);
+  // console.error('Error updating notifications:', error);
       setMessage({ type: 'error', text: 'Error al actualizar las notificaciones. Inténtalo de nuevo.' });
       setTimeout(() => setMessage(null), 5000);
     } finally {
@@ -287,7 +287,7 @@ const SettingsPage = () => {
       setTimeout(() => setMessage(null), 5000);
       
     } catch (error) {
-      console.error('Error updating despacho:', error);
+  // console.error('Error updating despacho:', error);
       setMessage({ type: 'error', text: 'Error al actualizar la información del despacho. Inténtalo de nuevo.' });
       setTimeout(() => setMessage(null), 5000);
     } finally {
@@ -320,7 +320,7 @@ const SettingsPage = () => {
           });
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
+  // console.error('Error loading user data:', error);
         setMessage({ 
           type: 'error', 
           text: 'Error al cargar los datos del usuario. Algunos campos pueden estar vacíos.' 
@@ -339,7 +339,7 @@ const SettingsPage = () => {
           const despachos = await userService.getUserDespachos(user.id);
           setUserDespachos(despachos.filter(d => d.activo)); // Solo despachos activos
         } catch (error) {
-          console.error('Error loading user despachos:', error);
+          // console.error('Error loading user despachos:', error);
           setUserDespachos([]);
         }
       };
@@ -362,47 +362,47 @@ const SettingsPage = () => {
     }
   }, [user]);
 
-  // Efecto para cargar solicitudes de despacho
-  useEffect(() => {
-    if (!user) return;
-    // Obtener el JWT de forma segura
-    const token = getJWT();
-    fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setUserSolicitudes(data);
-        // Mapear info directamente desde la solicitud
-        const info: Record<string, { nombre: string; localidad: string; provincia: string }> = {};
-        data.forEach((s: {
-          despacho_id: string | number;
-          despacho_nombre?: string;
-          despacho_localidad?: string;
-          despacho_provincia?: string;
-        }) => {
-          const key = String(s.despacho_id);
-          info[key] = {
-            nombre: s.despacho_nombre || `Despacho ${key}`,
-            localidad: s.despacho_localidad || '-',
-            provincia: s.despacho_provincia || '-'
-          };
-        });
-        setDespachosInfo(info);
-      })
-      .catch(() => setUserSolicitudes([]));
-  }, [user]);
+  // useEffect bloqueado: No cargar solicitudes de despacho automáticamente
+  // useEffect(() => {
+  //   if (!user) return;
+  //   // Obtener el JWT de forma segura
+  //   const token = getJWT();
+  //   fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+  //     headers: {
+  //       'Authorization': `Bearer ${token}`
+  //     }
+  //   })
+  //     .then(res => res.json())
+  //     .then(data => {
+  //       setUserSolicitudes(data);
+  //       // Mapear info directamente desde la solicitud
+  //       const info: Record<string, { nombre: string; localidad: string; provincia: string }> = {};
+  //       data.forEach((s: {
+  //         despacho_id: string | number;
+  //         despacho_nombre?: string;
+  //         despacho_localidad?: string;
+  //         despacho_provincia?: string;
+  //       }) => {
+  //         const key = String(s.despacho_id);
+  //         info[key] = {
+  //           nombre: s.despacho_nombre || `Despacho ${key}`,
+  //           localidad: s.despacho_localidad || '-',
+  //           provincia: s.despacho_provincia || '-'
+  //         };
+  //       });
+  //       setDespachosInfo(info);
+  //     })
+  //     .catch(() => setUserSolicitudes([]));
+  // }, [user]);
 
   const revokeSession = async (sessionId: string) => {
     if (confirm('¿Estás seguro de que quieres cerrar esta sesión?')) {
       try {
         // Aquí iría la llamada a la API para revocar la sesión
-        console.log('Revocando sesión:', sessionId);
+  // console.log('Revocando sesión:', sessionId);
         alert('Sesión cerrada correctamente');
       } catch (error) {
-        console.error('Error revoking session:', error);
+  // console.error('Error revoking session:', error);
         alert('Error al cerrar la sesión');
       }
     }

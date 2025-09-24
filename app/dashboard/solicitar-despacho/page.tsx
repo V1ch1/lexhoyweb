@@ -134,34 +134,32 @@ export default function SolicitarDespacho() {
     }
   };
 
-  // Función para cargar solicitudes pendientes del usuario usando el mismo endpoint que settings
-  const cargarSolicitudesPendientes = React.useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      // Obtener el JWT de forma segura
-      const token = getJWT();
-      if (!token) throw new Error("No se pudo obtener el token de sesión");
-
-      const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error("Error al cargar solicitudes");
-      const solicitudes = await res.json();
-      setSolicitudesPendientes(solicitudes);
-    } catch {
-      setError("Error al cargar solicitudes");
-    }
-  }, [user]);
-
-  React.useEffect(() => {
-    cargarSolicitudesPendientes();
-    // DEBUG: mostrar solicitudes recibidas en consola
-    setTimeout(() => {
-      console.log("Solicitudes recibidas:", solicitudesPendientes);
-    }, 1000);
-  }, [user, cargarSolicitudesPendientes, solicitudesPendientes]);
+  // Función bloqueada: No cargar solicitudes pendientes automáticamente
+  // const cargarSolicitudesPendientes = React.useCallback(async () => {
+  //   if (!user?.id) return;
+  //   try {
+  //     // Obtener el JWT de forma segura
+  //     const token = getJWT();
+  //     if (!token) throw new Error("No se pudo obtener el token de sesión");
+  //     const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     if (!res.ok) throw new Error("Error al cargar solicitudes");
+  //     const solicitudes = await res.json();
+  //     setSolicitudesPendientes(solicitudes);
+  //   } catch {
+  //     setError("Error al cargar solicitudes");
+  //   }
+  // }, [user]);
+  // React.useEffect(() => {
+  //   cargarSolicitudesPendientes();
+  //   // DEBUG: mostrar solicitudes recibidas en consola
+  //   setTimeout(() => {
+  //     console.log("Solicitudes recibidas:", solicitudesPendientes);
+  //   }, 1000);
+  // }, [user, cargarSolicitudesPendientes, solicitudesPendientes]);
   const [nombre, setNombre] = useState("");
   const [results, setResults] = useState<Despacho[]>([]);
   const [loading, setLoading] = useState(false);

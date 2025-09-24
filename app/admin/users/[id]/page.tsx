@@ -41,7 +41,7 @@ export default function EditUserPage() {
     if (params?.id && typeof params.id === "string") {
       loadUserData(params.id);
     }
-  }, [params?.id, authLoading, currentUser, router]);
+  }, [params?.id, authLoading, currentUser]);
 
   const loadUserData = async (userId: string) => {
     try {
@@ -134,7 +134,7 @@ export default function EditUserPage() {
     }
 
     try {
-  await userService.unassignDespachoFromUser(user.id, despachoId);
+      await userService.unassignDespachoFromUser(user.id, despachoId);
 
       // Actualizar la lista local de despachos
       setUserDespachos((prev) =>

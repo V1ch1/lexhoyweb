@@ -1,5 +1,12 @@
-import { supabase } from './supabase';
-import { User, UserDespacho, SyncLog, UserRole, UserStatus, PlanType } from './types';
+import { supabase } from "./supabase";
+import {
+  User,
+  UserDespacho,
+  SyncLog,
+  UserRole,
+  UserStatus,
+  PlanType,
+} from "./types";
 
 // Interfaz para los datos raw de la base de datos
 interface UserRaw {
@@ -25,32 +32,36 @@ export class UserService {
   /**
    * Cancelar solicitud de despacho: actualiza el estado a cancelada
    */
-  async cancelarSolicitudDespacho(solicitudId: string, canceladoPor: string, notas?: string): Promise<void> {
+  async cancelarSolicitudDespacho(
+    solicitudId: string,
+    canceladoPor: string,
+    notas?: string
+  ): Promise<void> {
     const { error } = await supabase
-      .from('solicitudes_despacho')
+      .from("solicitudes_despacho")
       .update({
-        estado: 'cancelada',
+        estado: "cancelada",
         fecha_respuesta: new Date().toISOString(),
         respondido_por: canceladoPor,
-        notas_respuesta: notas
+        notas_respuesta: notas,
       })
-      .eq('id', solicitudId);
+      .eq("id", solicitudId);
     if (error) throw error;
   }
-  
+
   // ======================== GESTIÓN DE USUARIOS ========================
-  
+
   /**
    * Obtener todos los usuarios (solo super_admin)
    */
   async getAllUsers(): Promise<User[]> {
     const { data, error } = await supabase
-      .from('users')
-  .select('*')
-      .order('created_at', { ascending: false });
+      .from("users")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
-    
+
     // Mapear nombres de columnas de DB a propiedades de TypeScript
     return (data || []).map((user: UserRaw) => ({
       id: user.id,
@@ -59,16 +70,20 @@ export class UserService {
       apellidos: user.apellidos,
       telefono: user.telefono,
       fechaRegistro: new Date(user.fecha_registro),
-      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      ultimoAcceso: user.ultimo_acceso
+        ? new Date(user.ultimo_acceso)
+        : undefined,
       activo: user.activo,
       emailVerificado: user.email_verificado,
       plan: user.plan as PlanType,
       rol: user.rol,
       estado: user.estado,
-      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      fechaAprobacion: user.fecha_aprobacion
+        ? new Date(user.fecha_aprobacion)
+        : undefined,
       aprobadoPor: user.aprobado_por,
       notasAdmin: user.notas_admin,
-      despachoId: user.despacho_id
+      despachoId: user.despacho_id,
     }));
   }
 
@@ -77,13 +92,13 @@ export class UserService {
    */
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
+      .from("users")
+      .select("*")
+      .eq("id", id)
       .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No encontrado
+      if (error.code === "PGRST116") return null; // No encontrado
       throw error;
     }
 
@@ -98,16 +113,20 @@ export class UserService {
       apellidos: user.apellidos,
       telefono: user.telefono,
       fechaRegistro: new Date(user.fecha_registro),
-      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      ultimoAcceso: user.ultimo_acceso
+        ? new Date(user.ultimo_acceso)
+        : undefined,
       activo: user.activo,
       emailVerificado: user.email_verificado,
       plan: user.plan as PlanType,
       rol: user.rol,
       estado: user.estado,
-      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      fechaAprobacion: user.fecha_aprobacion
+        ? new Date(user.fecha_aprobacion)
+        : undefined,
       aprobadoPor: user.aprobado_por,
       notasAdmin: user.notas_admin,
-      despachoId: user.despacho_id
+      despachoId: user.despacho_id,
     };
   }
 
@@ -116,13 +135,13 @@ export class UserService {
    */
   async getUserByEmail(email: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
+      .from("users")
+      .select("*")
+      .eq("email", email)
       .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // No encontrado
+      if (error.code === "PGRST116") return null; // No encontrado
       throw error;
     }
     return data;
@@ -140,13 +159,13 @@ export class UserService {
     estado?: UserStatus;
   }): Promise<User> {
     const { data, error } = await supabase
-      .from('users')
+      .from("users")
       .insert({
         ...userData,
         fecha_registro: new Date().toISOString(),
         activo: true,
         email_verificado: false,
-        plan: 'basico'
+        plan: "basico",
       })
       .select()
       .maybeSingle();
@@ -178,24 +197,28 @@ export class UserService {
             nombre: userData.nombre,
             apellidos: userData.apellidos,
             telefono: userData.telefono,
-            created_by_admin: true
+            created_by_admin: true,
           },
-          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/auth/confirm`
-        }
+          emailRedirectTo: `${
+            typeof window !== "undefined"
+              ? window.location.origin
+              : "http://localhost:3000"
+          }/auth/confirm`,
+        },
       });
 
       if (authError) {
-        console.error('Error creating auth user:', authError);
+        console.error("Error creating auth user:", authError);
         throw new Error(`Error de autenticación: ${authError.message}`);
       }
 
       if (!authData.user) {
-        throw new Error('No se pudo crear la cuenta de usuario');
+        throw new Error("No se pudo crear la cuenta de usuario");
       }
 
       // 3. Crear registro en nuestra tabla users con el ID de Supabase Auth
       const { data: localUser, error: localError } = await supabase
-        .from('users')
+        .from("users")
         .insert({
           id: authData.user.id, // Usar el ID de Supabase Auth
           email: userData.email,
@@ -203,24 +226,25 @@ export class UserService {
           apellidos: userData.apellidos,
           telefono: userData.telefono,
           rol: userData.rol,
-          estado: 'activo', // Activo porque fue creado por admin
+          estado: "activo", // Activo porque fue creado por admin
           fecha_registro: new Date().toISOString(),
           activo: true,
           email_verificado: authData.user.email_confirmed_at ? true : false,
-          plan: 'basico'
+          plan: "basico",
         })
         .select()
         .maybeSingle();
 
       if (localError) {
-        console.error('Error creating local user record:', localError);
-        throw new Error(`Error creando perfil de usuario: ${localError.message}`);
+        console.error("Error creating local user record:", localError);
+        throw new Error(
+          `Error creando perfil de usuario: ${localError.message}`
+        );
       }
 
       return { user: localUser, temporaryPassword };
-
     } catch (error) {
-      console.error('Error in createUserWithAuth:', error);
+      console.error("Error in createUserWithAuth:", error);
       throw error;
     }
   }
@@ -229,8 +253,8 @@ export class UserService {
    * Generar contraseña temporal segura
    */
   private generateTemporaryPassword(): string {
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    let password = '';
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+    let password = "";
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -243,23 +267,29 @@ export class UserService {
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
     // Mapear propiedades de TypeScript a nombres de columnas de DB
     const dbUpdates: Record<string, unknown> = {};
-    
+
     if (updates.nombre !== undefined) dbUpdates.nombre = updates.nombre;
-    if (updates.apellidos !== undefined) dbUpdates.apellidos = updates.apellidos;
+    if (updates.apellidos !== undefined)
+      dbUpdates.apellidos = updates.apellidos;
     if (updates.telefono !== undefined) dbUpdates.telefono = updates.telefono;
     if (updates.rol !== undefined) dbUpdates.rol = updates.rol;
     if (updates.estado !== undefined) dbUpdates.estado = updates.estado;
     if (updates.activo !== undefined) dbUpdates.activo = updates.activo;
-    if (updates.emailVerificado !== undefined) dbUpdates.email_verificado = updates.emailVerificado;
-    if (updates.notasAdmin !== undefined) dbUpdates.notas_admin = updates.notasAdmin;
-    if (updates.fechaAprobacion !== undefined) dbUpdates.fecha_aprobacion = updates.fechaAprobacion?.toISOString();
-    if (updates.aprobadoPor !== undefined) dbUpdates.aprobado_por = updates.aprobadoPor;
-    if (updates.ultimoAcceso !== undefined) dbUpdates.ultimo_acceso = updates.ultimoAcceso?.toISOString();
+    if (updates.emailVerificado !== undefined)
+      dbUpdates.email_verificado = updates.emailVerificado;
+    if (updates.notasAdmin !== undefined)
+      dbUpdates.notas_admin = updates.notasAdmin;
+    if (updates.fechaAprobacion !== undefined)
+      dbUpdates.fecha_aprobacion = updates.fechaAprobacion?.toISOString();
+    if (updates.aprobadoPor !== undefined)
+      dbUpdates.aprobado_por = updates.aprobadoPor;
+    if (updates.ultimoAcceso !== undefined)
+      dbUpdates.ultimo_acceso = updates.ultimoAcceso?.toISOString();
 
     const { data, error } = await supabase
-      .from('users')
+      .from("users")
       .update(dbUpdates)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -274,16 +304,20 @@ export class UserService {
       apellidos: user.apellidos,
       telefono: user.telefono,
       fechaRegistro: new Date(user.fecha_registro),
-      ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso) : undefined,
+      ultimoAcceso: user.ultimo_acceso
+        ? new Date(user.ultimo_acceso)
+        : undefined,
       activo: user.activo,
       emailVerificado: user.email_verificado,
       plan: user.plan as PlanType,
       rol: user.rol,
       estado: user.estado,
-      fechaAprobacion: user.fecha_aprobacion ? new Date(user.fecha_aprobacion) : undefined,
+      fechaAprobacion: user.fecha_aprobacion
+        ? new Date(user.fecha_aprobacion)
+        : undefined,
       aprobadoPor: user.aprobado_por,
       notasAdmin: user.notas_admin,
-      despachoId: user.despacho_id
+      despachoId: user.despacho_id,
     };
   }
 
@@ -292,9 +326,9 @@ export class UserService {
    */
   async approveUser(userId: string, approvedBy: string): Promise<User> {
     return this.updateUser(userId, {
-      estado: 'activo',
+      estado: "activo",
       fechaAprobacion: new Date(),
-      aprobadoPor: approvedBy
+      aprobadoPor: approvedBy,
     });
   }
 
@@ -302,16 +336,20 @@ export class UserService {
    * Asignar usuario a despacho y promocionar a despacho_admin
    */
   async assignUserToDespachoAndPromote(
-    userId: string, 
-    despachoId: string, 
+    userId: string,
+    despachoId: string,
     assignedBy: string
   ): Promise<{ user: User; assignment: UserDespacho }> {
     // 1. Asignar despacho
-    const assignment = await this.assignDespachoToUser(userId, despachoId, assignedBy);
-    
+    const assignment = await this.assignDespachoToUser(
+      userId,
+      despachoId,
+      assignedBy
+    );
+
     // 2. Cambiar rol a despacho_admin
     const updatedUser = await this.updateUser(userId, {
-      rol: 'despacho_admin'
+      rol: "despacho_admin",
     });
 
     return { user: updatedUser, assignment };
@@ -320,31 +358,34 @@ export class UserService {
   /**
    * Remover usuario de despacho y regresar a rol usuario (si no tiene más despachos)
    */
-  async removeUserFromDespachoAndDemote(userId: string, despachoId: string): Promise<User> {
+  async removeUserFromDespachoAndDemote(
+    userId: string,
+    despachoId: string
+  ): Promise<User> {
     // 1. Desactivar asignación de despacho
     await supabase
-      .from('user_despachos')
+      .from("user_despachos")
       .update({ activo: false })
-      .eq('user_id', userId)
-      .eq('despacho_id', despachoId);
+      .eq("user_id", userId)
+      .eq("despacho_id", despachoId);
 
     // 2. Verificar si el usuario tiene otros despachos activos
     const { data: activeDespachos } = await supabase
-      .from('user_despachos')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('activo', true);
+      .from("user_despachos")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("activo", true);
 
     // 3. Si no tiene más despachos, cambiar rol a usuario
     if (!activeDespachos || activeDespachos.length === 0) {
       return this.updateUser(userId, {
-        rol: 'usuario'
+        rol: "usuario",
       });
     }
 
     // Si aún tiene despachos, mantener rol despacho_admin
     const user = await this.getUserById(userId);
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) throw new Error("Usuario no encontrado");
     return user;
   }
 
@@ -355,13 +396,15 @@ export class UserService {
    */
   async getUserDespachos(userId: string): Promise<UserDespacho[]> {
     const { data, error } = await supabase
-      .from('user_despachos')
-      .select(`
+      .from("user_despachos")
+      .select(
+        `
         *,
         despachos:despacho_id (nombre, object_id, slug)
-      `)
-      .eq('user_id', userId)
-      .eq('activo', true);
+      `
+      )
+      .eq("user_id", userId)
+      .eq("activo", true);
 
     if (error) throw error;
     return data || [];
@@ -371,19 +414,19 @@ export class UserService {
    * Asignar despacho a usuario
    */
   async assignDespachoToUser(
-    userId: string, 
-    despachoId: string, 
+    userId: string,
+    despachoId: string,
     assignedBy: string,
     permisos?: { leer: boolean; escribir: boolean; eliminar: boolean }
   ): Promise<UserDespacho> {
     const { data, error } = await supabase
-      .from('user_despachos')
+      .from("user_despachos")
       .insert({
         user_id: userId,
         despacho_id: despachoId,
         asignado_por: assignedBy,
         permisos: permisos || { leer: true, escribir: true, eliminar: false },
-        activo: true
+        activo: true,
       })
       .select()
       .single();
@@ -395,12 +438,15 @@ export class UserService {
   /**
    * Quitar asignación de despacho
    */
-  async unassignDespachoFromUser(userId: string, despachoId: string): Promise<void> {
+  async unassignDespachoFromUser(
+    userId: string,
+    despachoId: string
+  ): Promise<void> {
     const { error } = await supabase
-      .from('user_despachos')
+      .from("user_despachos")
       .update({ activo: false })
-      .eq('user_id', userId)
-      .eq('despacho_id', despachoId);
+      .eq("user_id", userId)
+      .eq("despacho_id", despachoId);
 
     if (error) throw error;
   }
@@ -408,15 +454,19 @@ export class UserService {
   /**
    * Obtener usuarios asignados a un despacho
    */
-  async getDespachoUsers(despachoId: string): Promise<Array<UserDespacho & { user: User }>> {
+  async getDespachoUsers(
+    despachoId: string
+  ): Promise<Array<UserDespacho & { user: User }>> {
     const { data, error } = await supabase
-      .from('user_despachos')
-      .select(`
+      .from("user_despachos")
+      .select(
+        `
         *,
         users:user_id (*)
-      `)
-      .eq('despacho_id', despachoId)
-      .eq('activo', true);
+      `
+      )
+      .eq("despacho_id", despachoId)
+      .eq("activo", true);
 
     if (error) throw error;
     return data || [];
@@ -429,9 +479,9 @@ export class UserService {
    */
   async getAllSolicitudes(): Promise<Record<string, unknown>[]> {
     const { data, error } = await supabase
-      .from('solicitudes_despacho')
-      .select('*')
-      .order('fecha_solicitud', { ascending: false });
+      .from("solicitudes_despacho")
+      .select("*")
+      .order("fecha_solicitud", { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -451,11 +501,11 @@ export class UserService {
     estado?: string;
   }): Promise<Record<string, unknown>> {
     const { data, error } = await supabase
-      .from('solicitudes_despacho')
+      .from("solicitudes_despacho")
       .insert({
         ...solicitudData,
-        estado: solicitudData.estado || 'pendiente',
-        fecha_solicitud: new Date().toISOString()
+        estado: solicitudData.estado || "pendiente",
+        fecha_solicitud: new Date().toISOString(),
       })
       .select()
       .single();
@@ -468,31 +518,33 @@ export class UserService {
    * Aprobar solicitud (crear usuario y despacho)
    */
   async approveSolicitud(
-    solicitudId: string, 
+    solicitudId: string,
     approvedBy: string,
     notas?: string
   ): Promise<{ user: User; despacho: Record<string, unknown> }> {
     // Obtener solicitud
     const { data: solicitud, error: solicitudError } = await supabase
-      .from('solicitudes_registro')
-      .select('*')
-      .eq('id', solicitudId)
+      .from("solicitudes_registro")
+      .select("*")
+      .eq("id", solicitudId)
       .single();
 
     if (solicitudError) throw solicitudError;
 
     // Crear despacho
     const { data: despacho, error: despachoError } = await supabase
-      .from('despachos')
+      .from("despachos")
       .insert({
         object_id: `lexhoy-${Date.now()}`,
         nombre: solicitud.datos_despacho.nombre,
         descripcion: solicitud.datos_despacho.descripcion,
-        slug: solicitud.datos_despacho.nombre.toLowerCase().replace(/\s+/g, '-'),
+        slug: solicitud.datos_despacho.nombre
+          .toLowerCase()
+          .replace(/\s+/g, "-"),
         areas_practica: solicitud.datos_despacho.especialidades || [],
-        estado_registro: 'aprobado',
+        estado_registro: "aprobado",
         fecha_aprobacion: new Date().toISOString(),
-        aprobado_por: approvedBy
+        aprobado_por: approvedBy,
       })
       .select()
       .single();
@@ -501,17 +553,17 @@ export class UserService {
 
     // Crear usuario
     const { data: user, error: userError } = await supabase
-      .from('users')
+      .from("users")
       .insert({
         email: solicitud.email,
         nombre: solicitud.nombre,
         apellidos: solicitud.apellidos,
         telefono: solicitud.telefono,
-        rol: 'despacho_admin',
-        estado: 'activo',
+        rol: "despacho_admin",
+        estado: "activo",
         fecha_aprobacion: new Date().toISOString(),
         aprobado_por: approvedBy,
-        plan: 'basico'
+        plan: "basico",
       })
       .select()
       .single();
@@ -523,16 +575,16 @@ export class UserService {
 
     // Actualizar solicitud
     await supabase
-      .from('solicitudes_registro')
+      .from("solicitudes_registro")
       .update({
-        estado: 'aprobado',
+        estado: "aprobado",
         fecha_respuesta: new Date().toISOString(),
         respondido_por: approvedBy,
         notas_respuesta: notas,
         user_creado_id: user.id,
-        despacho_creado_id: despacho.id
+        despacho_creado_id: despacho.id,
       })
-      .eq('id', solicitudId);
+      .eq("id", solicitudId);
 
     return { user, despacho };
   }
@@ -541,19 +593,19 @@ export class UserService {
    * Rechazar solicitud
    */
   async rejectSolicitud(
-    solicitudId: string, 
-    rejectedBy: string, 
+    solicitudId: string,
+    rejectedBy: string,
     notas: string
   ): Promise<void> {
     const { error } = await supabase
-      .from('solicitudes_registro')
+      .from("solicitudes_registro")
       .update({
-        estado: 'rechazado',
+        estado: "rechazado",
         fecha_respuesta: new Date().toISOString(),
         respondido_por: rejectedBy,
-        notas_respuesta: notas
+        notas_respuesta: notas,
       })
-      .eq('id', solicitudId);
+      .eq("id", solicitudId);
 
     if (error) throw error;
   }
@@ -564,9 +616,9 @@ export class UserService {
    * Registrar log de sincronización
    */
   async logSync(logData: {
-    tipo: 'algolia' | 'wordpress';
-    accion: 'create' | 'update' | 'delete';
-    entidad: 'despacho' | 'sede' | 'user';
+    tipo: "algolia" | "wordpress";
+    accion: "create" | "update" | "delete";
+    entidad: "despacho" | "sede" | "user";
     entidadId: string;
     datosEnviados?: Record<string, unknown>;
     respuestaApi?: Record<string, unknown>;
@@ -574,11 +626,11 @@ export class UserService {
     errorMensaje?: string;
   }): Promise<SyncLog> {
     const { data, error } = await supabase
-      .from('sync_logs')
+      .from("sync_logs")
       .insert({
         ...logData,
         fecha_sync: new Date().toISOString(),
-        reintentos: 0
+        reintentos: 0,
       })
       .select()
       .single();
@@ -592,9 +644,9 @@ export class UserService {
    */
   async getSyncLogs(limit = 100): Promise<SyncLog[]> {
     const { data, error } = await supabase
-      .from('sync_logs')
-      .select('*')
-      .order('fecha_sync', { ascending: false })
+      .from("sync_logs")
+      .select("*")
+      .order("fecha_sync", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -607,33 +659,51 @@ export class UserService {
    * Verificar si el usuario actual es super admin
    */
   async isCurrentUserSuperAdmin(): Promise<boolean> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return false;
 
     const { data, error } = await supabase
-      .from('users')
-      .select('rol')
-      .eq('id', user.id)
+      .from("users")
+      .select("rol")
+      .eq("id", user.id)
       .single();
 
     if (error) return false;
-    return data?.rol === 'super_admin';
+    return data?.rol === "super_admin";
   }
 
   /**
    * Obtener usuario actual con sus despachos
    */
-  async getCurrentUserWithDespachos(): Promise<{ user: User; despachos: UserDespacho[] } | null> {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    console.log('[getCurrentUserWithDespachos] Resultado supabase.auth.getUser:', authUser);
+  async getCurrentUserWithDespachos(): Promise<{
+    user: User;
+    despachos: UserDespacho[];
+  } | null> {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    console.log(
+      "[getCurrentUserWithDespachos] Resultado supabase.auth.getUser:",
+      authUser
+    );
     if (!authUser) return null;
 
     const user = await this.getUserById(authUser.id);
-    console.log('[getCurrentUserWithDespachos] Buscando en tabla users con id:', authUser.id, 'Resultado:', user);
+    console.log(
+      "[getCurrentUserWithDespachos] Buscando en tabla users con id:",
+      authUser.id,
+      "Resultado:",
+      user
+    );
     if (!user) return null;
 
     const despachos = await this.getUserDespachos(user.id);
-    console.log('[getCurrentUserWithDespachos] Despachos encontrados:', despachos);
+    console.log(
+      "[getCurrentUserWithDespachos] Despachos encontrados:",
+      despachos
+    );
 
     return { user, despachos };
   }
@@ -654,48 +724,48 @@ export class UserService {
     try {
       // Total de usuarios
       const { count: totalUsers, error: usersError } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
+        .from("users")
+        .select("*", { count: "exact", head: true });
 
       if (usersError) throw usersError;
 
       // Despachos activos
       const { count: activeDespachos, error: despachosError } = await supabase
-        .from('despachos')
-        .select('*', { count: 'exact', head: true })
-        .eq('activo', true);
+        .from("despachos")
+        .select("*", { count: "exact", head: true })
+        .eq("activo", true);
 
       if (despachosError) {
-        console.error('🔍 ERROR despachos:', despachosError);
+        console.error("🔍 ERROR despachos:", despachosError);
         throw despachosError;
       }
 
-      console.log('🔍 DEBUG despachos activos:', activeDespachos);
+      console.log("🔍 DEBUG despachos activos:", activeDespachos);
 
       // Total de leads
       const { count: totalLeads, error: leadsError } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true });
+        .from("leads")
+        .select("*", { count: "exact", head: true });
 
       if (leadsError) {
-        console.error('🔍 ERROR leads:', leadsError);
+        console.error("🔍 ERROR leads:", leadsError);
         throw leadsError;
       }
 
-      console.log('🔍 DEBUG total leads:', totalLeads);
+      console.log("🔍 DEBUG total leads:", totalLeads);
 
       // Usuarios por rol
       const { data: roleData, error: roleError } = await supabase
-        .from('users')
-        .select('rol')
-        .eq('activo', true);
+        .from("users")
+        .select("rol")
+        .eq("activo", true);
 
       if (roleError) throw roleError;
 
       const usersByRole = {
         super_admin: 0,
         despacho_admin: 0,
-        usuario: 0
+        usuario: 0,
       };
 
       (roleData || []).forEach((user: { rol: string }) => {
@@ -708,10 +778,10 @@ export class UserService {
         totalUsers: totalUsers || 0,
         activeDespachos: activeDespachos || 0,
         totalLeads: totalLeads || 0,
-        usersByRole
+        usersByRole,
       };
     } catch (error) {
-      console.error('Error al obtener estadísticas:', error);
+      console.error("Error al obtener estadísticas:", error);
       return {
         totalUsers: 0,
         activeDespachos: 0,
@@ -719,8 +789,8 @@ export class UserService {
         usersByRole: {
           super_admin: 0,
           despacho_admin: 0,
-          usuario: 0
-        }
+          usuario: 0,
+        },
       };
     }
   }
@@ -736,9 +806,9 @@ export class UserService {
     try {
       // Obtener el despacho del usuario
       const { data: userDespacho, error: userError } = await supabase
-        .from('user_despachos')
-        .select('despacho_id')
-        .eq('user_id', userId)
+        .from("user_despachos")
+        .select("despacho_id")
+        .eq("user_id", userId)
         .single();
 
       if (userError || !userDespacho) {
@@ -747,40 +817,44 @@ export class UserService {
 
       // Total de leads del despacho
       const { count: totalLeads, error: totalError } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('despacho_id', userDespacho.despacho_id);
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("despacho_id", userDespacho.despacho_id);
 
       if (totalError) throw totalError;
 
       // Leads este mes
       const currentMonth = new Date();
-      const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      
+      const firstDayOfMonth = new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        1
+      );
+
       const { count: leadsThisMonth, error: monthError } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('despacho_id', userDespacho.despacho_id)
-        .gte('created_at', firstDayOfMonth.toISOString());
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("despacho_id", userDespacho.despacho_id)
+        .gte("created_at", firstDayOfMonth.toISOString());
 
       if (monthError) throw monthError;
 
       // Conversiones (leads con estado 'convertido' o similar)
       const { count: conversions, error: convError } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact', head: true })
-        .eq('despacho_id', userDespacho.despacho_id)
-        .eq('estado', 'convertido');
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("despacho_id", userDespacho.despacho_id)
+        .eq("estado", "convertido");
 
       if (convError) throw convError;
 
       return {
         leadsThisMonth: leadsThisMonth || 0,
         totalLeads: totalLeads || 0,
-        conversions: conversions || 0
+        conversions: conversions || 0,
       };
     } catch (error) {
-      console.error('Error al obtener estadísticas del despacho:', error);
+      console.error("Error al obtener estadísticas del despacho:", error);
       return { leadsThisMonth: 0, totalLeads: 0, conversions: 0 };
     }
   }
@@ -790,53 +864,63 @@ export class UserService {
    */
   async updateUserRole(userId: string, newRole: UserRole): Promise<void> {
     try {
-      console.log(`🔄 Intentando actualizar usuario ${userId} a rol: ${newRole}`);
-      
+      console.log(
+        `🔄 Intentando actualizar usuario ${userId} a rol: ${newRole}`
+      );
+
       // Primero verificar que el usuario existe
       const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('id, email, rol')
-        .eq('id', userId)
+        .from("users")
+        .select("id, email, rol")
+        .eq("id", userId)
         .single();
 
       if (checkError) {
-        console.error('❌ Error verificando usuario:', checkError);
+        console.error("❌ Error verificando usuario:", checkError);
         throw new Error(`Error verificando usuario: ${checkError.message}`);
       }
 
       if (!existingUser) {
-        throw new Error('Usuario no encontrado');
+        throw new Error("Usuario no encontrado");
       }
 
-      console.log(`👤 Usuario encontrado: ${existingUser.email}, rol actual: ${existingUser.rol}`);
+      console.log(
+        `👤 Usuario encontrado: ${existingUser.email}, rol actual: ${existingUser.rol}`
+      );
 
       // Actualización simple - SOLO campos básicos que sabemos que existen
       const { data, error } = await supabase
-        .from('users')
-        .update({ 
+        .from("users")
+        .update({
           rol: newRole,
-          estado: 'activo'
+          estado: "activo",
           // Omitimos fecha_aprobacion completamente hasta resolver el esquema
         })
-        .eq('id', userId)
+        .eq("id", userId)
         .select();
 
       if (error) {
-        console.error('❌ Error de Supabase:', error);
-        console.error('❌ Detalles completos del error:', JSON.stringify(error, null, 2));
+        console.error("❌ Error de Supabase:", error);
+        console.error(
+          "❌ Detalles completos del error:",
+          JSON.stringify(error, null, 2)
+        );
         throw new Error(`Error de base de datos: ${error.message}`);
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ No se actualizó ningún registro');
-        throw new Error('No se pudo actualizar el usuario. Verifica los permisos.');
+        console.error("❌ No se actualizó ningún registro");
+        throw new Error(
+          "No se pudo actualizar el usuario. Verifica los permisos."
+        );
       }
 
-      console.log(`✅ Usuario ${userId} actualizado correctamente a rol: ${newRole}`);
+      console.log(
+        `✅ Usuario ${userId} actualizado correctamente a rol: ${newRole}`
+      );
       console.log(`✅ Datos actualizados:`, data[0]);
-      
     } catch (error) {
-      console.error('❌ Error en updateUserRole:', error);
+      console.error("❌ Error en updateUserRole:", error);
       throw error;
     }
   }
@@ -850,19 +934,19 @@ export class UserService {
     userId: string;
     despachoId: string;
     justificacion: string;
-    tipoSolicitud: 'propiedad' | 'colaboracion' | 'otro';
+    tipoSolicitud: "propiedad" | "colaboracion" | "otro";
     documentosAdjuntos?: string[];
   }) {
     const { data, error } = await supabase
-  .from('solicitudes_despacho')
+      .from("solicitudes_despacho")
       .insert({
         user_id: solicitud.userId,
         despacho_id: solicitud.despachoId,
         fecha_solicitud: new Date().toISOString(),
-        estado: 'pendiente',
+        estado: "pendiente",
         justificacion: solicitud.justificacion,
         tipo_solicitud: solicitud.tipoSolicitud,
-        documentos_adjuntos: solicitud.documentosAdjuntos
+        documentos_adjuntos: solicitud.documentosAdjuntos,
       })
       .select()
       .single();
@@ -876,10 +960,10 @@ export class UserService {
    */
   async getSolicitudesDespachosPendientes() {
     const { data, error } = await supabase
-  .from('solicitudes_despacho')
-      .select('*')
-      .eq('estado', 'pendiente')
-  .order('fecha', { ascending: false });
+      .from("solicitudes_despacho")
+      .select("*")
+      .eq("estado", "pendiente")
+      .order("fecha", { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -890,13 +974,15 @@ export class UserService {
    */
   async getSolicitudesUsuario(userId: string) {
     const { data, error } = await supabase
-  .from('solicitudes_despacho')
-      .select(`
+      .from("solicitudes_despacho")
+      .select(
+        `
         *,
         despachos(nombre)
-      `)
-      .eq('user_id', userId)
-      .order('fecha_solicitud', { ascending: false });
+      `
+      )
+      .eq("user_id", userId)
+      .order("fecha_solicitud", { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -905,60 +991,74 @@ export class UserService {
   /**
    * Aprobar solicitud de despacho: asigna el despacho al usuario y actualiza la solicitud
    */
-  async approveSolicitudDespacho(solicitudId: string, approvedBy: string, notas?: string): Promise<void> {
+  async approveSolicitudDespacho(
+    solicitudId: string,
+    approvedBy: string,
+    notas?: string
+  ): Promise<void> {
     // Obtener la solicitud
     const { data: solicitud, error: solicitudError } = await supabase
-      .from('solicitudes_despacho')
-      .select('*')
-      .eq('id', solicitudId)
+      .from("solicitudes_despacho")
+      .select("*")
+      .eq("id", solicitudId)
       .single();
     if (solicitudError) throw solicitudError;
 
     // Sincronizar despacho desde WordPress a Supabase antes de aprobar
     const objectId = solicitud.despacho_id;
     try {
-      const syncRes = await fetch('/api/sync-despacho', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ objectId })
+      const syncRes = await fetch("/api/sync-despacho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ objectId }),
       });
       const syncData = await syncRes.json();
       if (!syncRes.ok) {
-        throw new Error(syncData.error || 'Error sincronizando despacho desde WordPress');
+        throw new Error(
+          syncData.error || "Error sincronizando despacho desde WordPress"
+        );
       }
     } catch (err) {
-      console.error('Error sincronizando despacho:', err);
+      console.error("Error sincronizando despacho:", err);
       throw err;
     }
 
     // Asignar despacho al usuario
-    await this.assignDespachoToUser(solicitud.user_id, solicitud.despacho_id, approvedBy);
+    await this.assignDespachoToUser(
+      solicitud.user_id,
+      solicitud.despacho_id,
+      approvedBy
+    );
     // Actualizar solicitud
     const { error: updateError } = await supabase
-      .from('solicitudes_despacho')
+      .from("solicitudes_despacho")
       .update({
-        estado: 'aprobado',
+        estado: "aprobado",
         fecha_respuesta: new Date().toISOString(),
         respondido_por: approvedBy,
-        notas_respuesta: notas
+        notas_respuesta: notas,
       })
-      .eq('id', solicitudId);
+      .eq("id", solicitudId);
     if (updateError) throw updateError;
   }
 
   /**
    * Rechazar solicitud de despacho: actualiza el estado y guarda la nota
    */
-  async rejectSolicitudDespacho(solicitudId: string, rejectedBy: string, notas: string): Promise<void> {
+  async rejectSolicitudDespacho(
+    solicitudId: string,
+    rejectedBy: string,
+    notas: string
+  ): Promise<void> {
     const { error } = await supabase
-      .from('solicitudes_despacho')
+      .from("solicitudes_despacho")
       .update({
-        estado: 'rechazado',
+        estado: "rechazado",
         fecha_respuesta: new Date().toISOString(),
         respondido_por: rejectedBy,
-        notas_respuesta: notas
+        notas_respuesta: notas,
       })
-      .eq('id', solicitudId);
+      .eq("id", solicitudId);
     if (error) throw error;
   }
 }

@@ -83,14 +83,8 @@ function LoginPageContent() {
       
       login(userData);
 
-      // Redirigir según el rol
-      if (authResult.user.role === 'super_admin') {
-        console.log('Redirigiendo a admin/users');
-        router.push('/admin/users');
-      } else {
-        console.log('Redirigiendo a dashboard');
-        router.push('/dashboard');
-      }
+      // Redirigir siempre a dashboard
+      router.push('/dashboard');
 
     } catch (error) {
       console.error('Error en login:', error);

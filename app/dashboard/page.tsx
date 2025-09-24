@@ -44,37 +44,25 @@ const DashboardPage = () => {
     }
     return '';
   }
-  // Cargar solicitud de despacho pendiente para el usuario actual
-  useEffect(() => {
-    if (!user?.id || user.role !== "usuario") return;
-    // Obtener el JWT de forma segura
-    const token = getJWT();
-    fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then((res) => res.json())
-      .then((data: Array<{ estado: string; despachoId: number; fecha: string }>) => {
-        const pendiente = data.find((s) => s.estado === "pendiente");
-        setSolicitudDespacho(pendiente || null);
-      })
-      .catch(() => setSolicitudDespacho(null));
-  }, [user?.id, user?.role]);
+  // useEffect bloqueado: No cargar solicitud de despacho automáticamente
+  // useEffect(() => {
+  //   if (!user?.id || user.role !== "usuario") return;
+  //   // Obtener el JWT de forma segura
+  //   const token = getJWT();
+  //   fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
+  //     headers: {
+  //       'Authorization': `Bearer ${token}`
+  //     }
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data: Array<{ estado: string; despachoId: number; fecha: string }>) => {
+  //       const pendiente = data.find((s) => s.estado === "pendiente");
+  //       setSolicitudDespacho(pendiente || null);
+  //     })
+  //     .catch(() => setSolicitudDespacho(null));
+  // }, [user?.id, user?.role]);
 
-  // Debug del usuario actual
-  useEffect(() => {
-    if (user) {
-      console.log("🔍 DASHBOARD DEBUG - Usuario actual:", {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        "Es super_admin?": user.role === "super_admin",
-        "Es usuario?": user.role === "usuario",
-      });
-    }
-  }, [user]);
+  // Eliminado debug de usuario actual
 
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {

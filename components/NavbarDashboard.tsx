@@ -10,15 +10,7 @@ const NavbarDashboard = () => {
   const { user, logout } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
 
-  useEffect(() => {
-    // Solo para super_admin
-    if (user?.role === 'super_admin') {
-      fetch('/api/solicitudes-despacho?estado=pendiente')
-        .then(res => res.json())
-        .then(data => setPendingCount(data.length || 0))
-        .catch(() => setPendingCount(0));
-    }
-  }, [user]);
+  // Eliminada la llamada a /api/solicitudes-despacho?estado=pendiente
 
   return (
     <nav className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
