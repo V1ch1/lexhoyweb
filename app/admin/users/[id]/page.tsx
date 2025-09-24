@@ -134,7 +134,7 @@ export default function EditUserPage() {
     }
 
     try {
-      await userService.desasignarDespacho(user.id, despachoId);
+  await userService.unassignDespachoFromUser(user.id, despachoId);
 
       // Actualizar la lista local de despachos
       setUserDespachos((prev) =>
