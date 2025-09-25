@@ -25,6 +25,7 @@ interface Despacho {
     telefono?: string;
     email_contacto?: string;
     object_id?: string;
+    slug?: string;
     _despacho_sedes?: Array<{
       localidad?: string;
       provincia?: string;
@@ -69,8 +70,12 @@ export default function SolicitarDespacho() {
           despachoProvincia = decodeHtml(sede.provincia || despachoProvincia);
         }
       }
-      // Usar el object_id de WordPress como despachoId
-      const objectId = despacho.meta?.object_id || `lexhoy-${despacho.id}`;
+
+      // Usa el object_id real de WordPress si existe, si no, genera uno local
+      const objectId = despacho.meta?.object_id && despacho.meta.object_id !== ""
+        ? despacho.meta.object_id
+        : `lexhoy-${despacho.id}`;
+      const slug = despacho.meta?.slug || despachoNombre.toLowerCase().replace(/ /g, "-");
 
       // Obtener el JWT de forma segura
       const token = getJWT();
@@ -90,6 +95,7 @@ export default function SolicitarDespacho() {
           despachoNombre,
           despachoLocalidad,
           despachoProvincia,
+          slug,
         }),
       });
       if (!res.ok) throw new Error("Error al solicitar vinculación");

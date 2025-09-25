@@ -11,6 +11,7 @@ export async function POST(req: Request) {
     const authHeader = req.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
     if (!token) {
+      console.log('[cancelar-solicitud] No autenticado');
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
@@ -19,8 +20,11 @@ export async function POST(req: Request) {
       global: { headers: { Authorization: `Bearer ${token}` } }
     });
 
-    const { solicitudId, userId } = await req.json();
+    const body = await req.json();
+    const { solicitudId, userId } = body;
+    console.log('[cancelar-solicitud] Params:', { solicitudId, userId });
     if (!solicitudId || !userId) {
+      console.log('[cancelar-solicitud] Faltan parámetros', body);
       return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
     }
     // Verifica que la solicitud pertenezca al usuario
@@ -29,13 +33,17 @@ export async function POST(req: Request) {
       .select('id, user_id, estado')
       .eq('id', solicitudId)
       .single();
+    console.log('[cancelar-solicitud] Resultado consulta:', { solicitud, errorSolicitud });
     if (errorSolicitud || !solicitud) {
+      console.log('[cancelar-solicitud] Solicitud no encontrada', { errorSolicitud, solicitud });
       return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 });
     }
     if (solicitud.user_id !== userId) {
+      console.log('[cancelar-solicitud] No autorizado', { solicitudUser: solicitud.user_id, userId });
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
     if (solicitud.estado !== 'pendiente') {
+      console.log('[cancelar-solicitud] Estado no pendiente', { estado: solicitud.estado });
       return NextResponse.json({ error: 'Solo se pueden cancelar solicitudes pendientes' }, { status: 400 });
     }
     // Actualiza el estado a cancelada
@@ -44,10 +52,13 @@ export async function POST(req: Request) {
       .update({ estado: 'cancelada' })
       .eq('id', solicitudId);
     if (errorUpdate) {
+      console.log('[cancelar-solicitud] Error al actualizar', errorUpdate);
       return NextResponse.json({ error: 'No se pudo cancelar la solicitud' }, { status: 500 });
     }
+    console.log('[cancelar-solicitud] Solicitud cancelada correctamente');
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.log('[cancelar-solicitud] Error inesperado', e);
     return NextResponse.json({ error: 'Error inesperado' }, { status: 500 });
   }
 }
