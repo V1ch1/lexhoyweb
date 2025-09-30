@@ -39,7 +39,6 @@ export default function SolicitarDespacho() {
   // Log de depuración para ver el ID del usuario
   React.useEffect(() => {
     if (user) {
-      console.log("ID de usuario en contexto:", user.id);
     }
   }, [user]);
   // Handler para solicitar despacho
@@ -163,8 +162,6 @@ export default function SolicitarDespacho() {
     try {
       // Obtener el JWT de forma segura
       const token = getJWT();
-      console.log("🔑 JWT actual:", token);
-      console.log("🔎 user_id en petición:", user.id);
       if (!token) throw new Error("No se pudo obtener el token de sesión");
       const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
         headers: {
@@ -180,10 +177,6 @@ export default function SolicitarDespacho() {
         throw new Error("Error al cargar solicitudes");
       }
       const solicitudes = await res.json();
-      console.log(
-        "Respuesta de la API /api/solicitudes-despacho:",
-        solicitudes
-      );
       setSolicitudesPendientes(solicitudes);
     } catch (err) {
       console.error("Error en cargarSolicitudesPendientes:", err);

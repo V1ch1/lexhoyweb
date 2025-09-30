@@ -119,12 +119,6 @@ const EditarDespachoWP: React.FC<Props> = ({
         );
         if (!res.ok) throw new Error("No se pudo cargar el despacho");
         const data = await res.json();
-        // Log para depuración de datos recibidos
-        console.log("Datos despacho WordPress:", data);
-        if (data?.meta) {
-          console.log("meta.email_contacto:", data.meta.email_contacto);
-          console.log("meta.telefono:", data.meta.telefono);
-        }
         setDespacho(data);
       } catch (e: any) {
         setError(e.message);

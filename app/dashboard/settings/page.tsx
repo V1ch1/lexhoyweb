@@ -465,7 +465,6 @@ const SettingsPage = () => {
     if (confirm("¿Estás seguro de que quieres cerrar esta sesión?")) {
       try {
         // Aquí iría la llamada a la API para revocar la sesión
-        console.log("Revocando sesión:", sessionId);
         alert("Sesión cerrada correctamente");
       } catch (error) {
         console.error("Error revoking session:", error);

@@ -73,7 +73,6 @@ const DespachosPage = () => {
       return;
     }
     // Mostrar el objeto recibido en consola para análisis
-    console.log("Despachos desde Supabase:", data);
 
     // Para cada despacho, obtener la sede principal
     const mapped = await Promise.all(

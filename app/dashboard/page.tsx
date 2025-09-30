@@ -115,16 +115,7 @@ const DashboardPage = () => {
 
   // Debug del usuario actual
   useEffect(() => {
-    if (user) {
-      console.log("🔍 DASHBOARD DEBUG - Usuario actual:", {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        "Es super_admin?": user.role === "super_admin",
-        "Es usuario?": user.role === "usuario",
-      });
-    }
+    // ...existing code...
   }, [user]);
 
   // Cargar estadísticas según el rol del usuario
