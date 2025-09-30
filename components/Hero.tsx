@@ -10,8 +10,9 @@ export default function Hero() {
           Portal Exclusivo para Despachos de Abogados
         </h1>
         <p className="text-lg text-gray-600 text-center mt-4 max-w-lg">
-          Gestiona tu despacho, actualiza tu perfil profesional y conecta con clientes potenciales 
-          a través de nuestra red de más de 10.000 despachos en España.
+          Gestiona tu despacho, actualiza tu perfil profesional y conecta con
+          clientes potenciales a través de nuestra red de más de 10.000
+          despachos en España.
         </p>
         <div className="flex space-x-4 mt-6">
           <Link

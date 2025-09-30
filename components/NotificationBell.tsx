@@ -1,6 +1,6 @@
-import { BellIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import { useState } from 'react';
+import { BellIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { useState } from "react";
 
 export function NotificationBell({ count }: { count: number }) {
   const [open, setOpen] = useState(false);
@@ -21,9 +21,14 @@ export function NotificationBell({ count }: { count: number }) {
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg z-50">
-          <div className="p-4 border-b font-semibold text-gray-700">Solicitudes pendientes</div>
+          <div className="p-4 border-b font-semibold text-gray-700">
+            Solicitudes pendientes
+          </div>
           <div className="p-4 text-sm text-gray-600">
-            <Link href="/admin/solicitudes-despachos" className="text-blue-600 hover:underline">
+            <Link
+              href="/admin/solicitudes-despachos"
+              className="text-blue-600 hover:underline"
+            >
               Ver todas las solicitudes
             </Link>
           </div>

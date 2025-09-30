@@ -4,7 +4,8 @@ import SectionTitle from "@/components/SectionTitle";
 
 export const metadata: Metadata = {
   title: "Servicios - Lexhoy Portal",
-  description: "Descubre todos los servicios que Lexhoy.com ofrece a despachos de abogados: portal de noticias, directorio profesional, generación de leads y marketing digital legal.",
+  description:
+    "Descubre todos los servicios que Lexhoy.com ofrece a despachos de abogados: portal de noticias, directorio profesional, generación de leads y marketing digital legal.",
 };
 
 export default function Servicios() {
@@ -18,8 +19,9 @@ export default function Servicios() {
               Nuestros Servicios
             </h1>
             <p className="text-xl text-gray-600 font-workSans max-w-3xl mx-auto">
-              Descubre cómo Lexhoy.com puede ayudar a tu despacho a crecer y conectar 
-              con más clientes potenciales a través de nuestros servicios especializados.
+              Descubre cómo Lexhoy.com puede ayudar a tu despacho a crecer y
+              conectar con más clientes potenciales a través de nuestros
+              servicios especializados.
             </p>
           </div>
         </div>
@@ -34,7 +36,7 @@ export default function Servicios() {
           "Noticias diarias del sector jurídico",
           "Análisis de cambios legislativos",
           "Jurisprudencia relevante",
-          "Newsletter semanal especializada"
+          "Newsletter semanal especializada",
         ]}
         buttonText="Ver Noticias"
         buttonLink="https://lexhoy.com"
@@ -49,7 +51,7 @@ export default function Servicios() {
           "Perfil profesional completo y verificado",
           "Búsqueda por especialidad jurídica",
           "Geolocalización y búsqueda por proximidad",
-          "Integración con Algolia para búsquedas rápidas"
+          "Integración con Algolia para búsquedas rápidas",
         ]}
         buttonText="Registrar Despacho"
         buttonLink="/register"
@@ -63,7 +65,7 @@ export default function Servicios() {
           "Leads segmentados por especialidad jurídica",
           "Información completa del cliente potencial",
           "Dashboard para gestión y seguimiento",
-          "Notificaciones en tiempo real"
+          "Notificaciones en tiempo real",
         ]}
         buttonText="Ver Dashboard"
         buttonLink="/dashboard"
@@ -78,7 +80,7 @@ export default function Servicios() {
           "Optimización SEO para búsquedas legales",
           "Content marketing jurídico especializado",
           "Publicidad digital segmentada",
-          "Análisis y métricas de rendimiento"
+          "Análisis y métricas de rendimiento",
         ]}
         buttonText="Solicitar Información"
         buttonLink="/contacto"
@@ -96,7 +98,7 @@ export default function Servicios() {
               Elige el plan que mejor se adapte a las necesidades de tu despacho
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {/* Plan Básico */}
             <div className="border border-gray-200 rounded-xl p-8 relative">
@@ -217,7 +219,8 @@ export default function Servicios() {
             ¿Listo para hacer crecer tu despacho?
           </h2>
           <p className="text-xl text-gray-300 font-workSans mb-8">
-            Únete a miles de despachos que ya confían en Lexhoy para generar más clientes y hacer crecer su negocio.
+            Únete a miles de despachos que ya confían en Lexhoy para generar más
+            clientes y hacer crecer su negocio.
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <a

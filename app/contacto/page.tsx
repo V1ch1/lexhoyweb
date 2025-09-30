@@ -3,7 +3,8 @@ import ContactForm from "@/components/ContactForm";
 
 export const metadata: Metadata = {
   title: "Contacto - Lexhoy Portal",
-  description: "Contacta con el equipo de Lexhoy.com. Estamos aquí para ayudarte con cualquier consulta sobre nuestros servicios para despachos de abogados.",
+  description:
+    "Contacta con el equipo de Lexhoy.com. Estamos aquí para ayudarte con cualquier consulta sobre nuestros servicios para despachos de abogados.",
 };
 
 export default function Contacto() {
@@ -17,8 +18,8 @@ export default function Contacto() {
               Contacta con Nosotros
             </h1>
             <p className="text-xl text-gray-600 font-workSans max-w-3xl mx-auto">
-              ¿Tienes dudas sobre nuestros servicios? ¿Necesitas ayuda con tu registro? 
-              Nuestro equipo está aquí para ayudarte.
+              ¿Tienes dudas sobre nuestros servicios? ¿Necesitas ayuda con tu
+              registro? Nuestro equipo está aquí para ayudarte.
             </p>
           </div>
         </div>
@@ -28,13 +29,12 @@ export default function Contacto() {
       <section className="py-16" id="formulario-contacto">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12">
-            
             {/* Información de Contacto */}
             <div>
               <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-8">
                 Información de Contacto
               </h2>
-              
+
               <div className="space-y-8">
                 {/* Datos Generales */}
                 <div className="flex items-start space-x-4">
@@ -46,7 +46,8 @@ export default function Contacto() {
                       Oficinas Centrales
                     </h3>
                     <p className="text-gray-600 font-workSans">
-                      Calle Torreiro, 13 - 2ºB<br />
+                      Calle Torreiro, 13 - 2ºB
+                      <br />
                       15003 A Coruña, España
                     </p>
                   </div>
@@ -61,7 +62,8 @@ export default function Contacto() {
                       Teléfono
                     </h3>
                     <p className="text-gray-600 font-workSans">
-                      +34 649 528 552<br />
+                      +34 649 528 552
+                      <br />
                       Lunes a Viernes: 9:00 - 18:00
                     </p>
                   </div>
@@ -76,10 +78,17 @@ export default function Contacto() {
                       Email
                     </h3>
                     <p className="text-gray-600 font-workSans">
-                      <a href="mailto:contacto@lexhoy.com" className="hover:text-primary transition-colors">
+                      <a
+                        href="mailto:contacto@lexhoy.com"
+                        className="hover:text-primary transition-colors"
+                      >
                         contacto@lexhoy.com
-                      </a><br />
-                      <a href="mailto:despachos@lexhoy.com" className="hover:text-primary transition-colors">
+                      </a>
+                      <br />
+                      <a
+                        href="mailto:despachos@lexhoy.com"
+                        className="hover:text-primary transition-colors"
+                      >
                         despachos@lexhoy.com
                       </a>
                     </p>
@@ -92,7 +101,7 @@ export default function Contacto() {
                 <h3 className="text-2xl font-bold text-gray-900 font-bigShouldersText mb-6">
                   Departamentos Especializados
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div className="bg-white p-6 rounded-lg shadow-sm border">
                     <h4 className="text-lg font-bold text-gray-900 font-workSans mb-2">
@@ -101,7 +110,10 @@ export default function Contacto() {
                     <p className="text-gray-600 font-workSans text-sm mb-2">
                       Altas, modificaciones y gestión de perfiles de despachos
                     </p>
-                    <a href="mailto:despachos@lexhoy.com" className="text-primary hover:underline font-workSans">
+                    <a
+                      href="mailto:despachos@lexhoy.com"
+                      className="text-primary hover:underline font-workSans"
+                    >
                       despachos@lexhoy.com
                     </a>
                   </div>
@@ -113,7 +125,10 @@ export default function Contacto() {
                     <p className="text-gray-600 font-workSans text-sm mb-2">
                       Contacto directo con el responsable de gestión
                     </p>
-                    <a href="mailto:manuel.blanco@lexhoy.com" className="text-primary hover:underline font-workSans">
+                    <a
+                      href="mailto:manuel.blanco@lexhoy.com"
+                      className="text-primary hover:underline font-workSans"
+                    >
                       manuel.blanco@lexhoy.com
                     </a>
                   </div>
@@ -125,7 +140,10 @@ export default function Contacto() {
                     <p className="text-gray-600 font-workSans text-sm mb-2">
                       Ayuda con el portal, problemas técnicos, gestión de perfil
                     </p>
-                    <a href="mailto:contacto@lexhoy.com" className="text-primary hover:underline font-workSans">
+                    <a
+                      href="mailto:contacto@lexhoy.com"
+                      className="text-primary hover:underline font-workSans"
+                    >
                       contacto@lexhoy.com
                     </a>
                   </div>
@@ -158,8 +176,9 @@ export default function Contacto() {
                   ¿Cómo registro mi despacho?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Puedes registrar tu despacho gratuitamente desde el botón &quot;Registrar Despacho&quot; 
-                  en la página principal. El proceso toma menos de 5 minutos.
+                  Puedes registrar tu despacho gratuitamente desde el botón
+                  &quot;Registrar Despacho&quot; en la página principal. El
+                  proceso toma menos de 5 minutos.
                 </p>
               </div>
 
@@ -168,8 +187,9 @@ export default function Contacto() {
                   ¿Cuánto cuesta el servicio?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Ofrecemos un plan gratuito básico y planes premium desde 49€/mes. 
-                  Consulta nuestra página de servicios para más detalles.
+                  Ofrecemos un plan gratuito básico y planes premium desde
+                  49€/mes. Consulta nuestra página de servicios para más
+                  detalles.
                 </p>
               </div>
 
@@ -178,8 +198,9 @@ export default function Contacto() {
                   ¿Cómo funciona el sistema de leads?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Los leads se generan a través de nuestro portal principal cuando los usuarios 
-                  buscan servicios jurídicos. Te notificamos cuando hay leads compatibles con tu especialidad.
+                  Los leads se generan a través de nuestro portal principal
+                  cuando los usuarios buscan servicios jurídicos. Te notificamos
+                  cuando hay leads compatibles con tu especialidad.
                 </p>
               </div>
             </div>
@@ -190,8 +211,9 @@ export default function Contacto() {
                   ¿Puedo modificar mis datos después del registro?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Sí, puedes actualizar toda la información de tu despacho desde tu área personal 
-                  en cualquier momento. Los cambios se sincronizan automáticamente.
+                  Sí, puedes actualizar toda la información de tu despacho desde
+                  tu área personal en cualquier momento. Los cambios se
+                  sincronizan automáticamente.
                 </p>
               </div>
 
@@ -200,8 +222,9 @@ export default function Contacto() {
                   ¿Qué soporte técnico ofrecen?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Ofrecemos soporte por email para todos los usuarios y soporte prioritario 
-                  para clientes de planes premium. También tenemos una base de conocimientos online.
+                  Ofrecemos soporte por email para todos los usuarios y soporte
+                  prioritario para clientes de planes premium. También tenemos
+                  una base de conocimientos online.
                 </p>
               </div>
 
@@ -210,8 +233,9 @@ export default function Contacto() {
                   ¿Hay compromiso de permanencia?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  No, nuestros planes son flexibles sin compromiso de permanencia. 
-                  Puedes cancelar o cambiar de plan en cualquier momento.
+                  No, nuestros planes son flexibles sin compromiso de
+                  permanencia. Puedes cancelar o cambiar de plan en cualquier
+                  momento.
                 </p>
               </div>
             </div>

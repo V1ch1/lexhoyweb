@@ -430,27 +430,32 @@ const SettingsPage = () => {
     const token = getJWT();
     fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setUserSolicitudes(data);
         // Mapear info directamente desde la solicitud
-        const info: Record<string, { nombre: string; localidad: string; provincia: string }> = {};
-        data.forEach((s: {
-          despacho_id: string | number;
-          despacho_nombre?: string;
-          despacho_localidad?: string;
-          despacho_provincia?: string;
-        }) => {
-          const key = String(s.despacho_id);
-          info[key] = {
-            nombre: s.despacho_nombre || `Despacho ${key}`,
-            localidad: s.despacho_localidad || '-',
-            provincia: s.despacho_provincia || '-'
-          };
-        });
+        const info: Record<
+          string,
+          { nombre: string; localidad: string; provincia: string }
+        > = {};
+        data.forEach(
+          (s: {
+            despacho_id: string | number;
+            despacho_nombre?: string;
+            despacho_localidad?: string;
+            despacho_provincia?: string;
+          }) => {
+            const key = String(s.despacho_id);
+            info[key] = {
+              nombre: s.despacho_nombre || `Despacho ${key}`,
+              localidad: s.despacho_localidad || "-",
+              provincia: s.despacho_provincia || "-",
+            };
+          }
+        );
         setDespachosInfo(info);
       })
       .catch(() => setUserSolicitudes([]));

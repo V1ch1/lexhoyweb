@@ -1,7 +1,13 @@
 "use client"; // Asegúrate de que este archivo sea un componente del cliente
 
 import { useRouter, usePathname } from "next/navigation";
-import { HomeIcon, ClipboardIcon, CogIcon, UserGroupIcon, BuildingOfficeIcon } from "@heroicons/react/24/solid"; // Usando ClipboardIcon
+import {
+  HomeIcon,
+  ClipboardIcon,
+  CogIcon,
+  UserGroupIcon,
+  BuildingOfficeIcon,
+} from "@heroicons/react/24/solid"; // Usando ClipboardIcon
 import { useAuth } from "@/lib/authContext";
 
 const Sidebar = () => {
@@ -25,23 +31,23 @@ const Sidebar = () => {
         <ul>
           <li>
             <button
-              onClick={() => handleNavigation('/dashboard')}
+              onClick={() => handleNavigation("/dashboard")}
               className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                pathname === '/dashboard' ? 'bg-gray-700' : ''
+                pathname === "/dashboard" ? "bg-gray-700" : ""
               }`}
             >
               <HomeIcon className="h-5 w-5" />
               Dashboard
             </button>
           </li>
-          
+
           {/* Despachos - Solo para despacho_admin y super_admin */}
-          {(user.role === 'despacho_admin' || user.role === 'super_admin') && (
+          {(user.role === "despacho_admin" || user.role === "super_admin") && (
             <li>
               <button
-                onClick={() => handleNavigation('/dashboard/despachos')}
+                onClick={() => handleNavigation("/dashboard/despachos")}
                 className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === '/dashboard/despachos' ? 'bg-gray-700' : ''
+                  pathname === "/dashboard/despachos" ? "bg-gray-700" : ""
                 }`}
               >
                 <BuildingOfficeIcon className="h-5 w-5" />
@@ -49,14 +55,14 @@ const Sidebar = () => {
               </button>
             </li>
           )}
-          
+
           {/* Leads - Solo para despacho_admin y super_admin */}
-          {(user.role === 'despacho_admin' || user.role === 'super_admin') && (
+          {(user.role === "despacho_admin" || user.role === "super_admin") && (
             <li>
               <button
-                onClick={() => handleNavigation('/dashboard/leads')}
+                onClick={() => handleNavigation("/dashboard/leads")}
                 className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === '/dashboard/leads' ? 'bg-gray-700' : ''
+                  pathname === "/dashboard/leads" ? "bg-gray-700" : ""
                 }`}
               >
                 <ClipboardIcon className="h-5 w-5" />
@@ -64,27 +70,27 @@ const Sidebar = () => {
               </button>
             </li>
           )}
-          
+
           {/* Administración - Solo para super_admin */}
-          {user.role === 'super_admin' && (
+          {user.role === "super_admin" && (
             <li>
               <button
-                onClick={() => handleNavigation('/admin/users')}
+                onClick={() => handleNavigation("/admin/users")}
                 className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === '/admin/users' ? 'bg-gray-700' : ''
+                  pathname === "/admin/users" ? "bg-gray-700" : ""
                 }`}
               >
                 <UserGroupIcon className="h-5 w-5" />
-                Administración
+                Usuarios
               </button>
             </li>
           )}
-          
+
           <li>
             <button
-              onClick={() => handleNavigation('/dashboard/settings')}
+              onClick={() => handleNavigation("/dashboard/settings")}
               className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                pathname === '/dashboard/settings' ? 'bg-gray-700' : ''
+                pathname === "/dashboard/settings" ? "bg-gray-700" : ""
               }`}
             >
               <CogIcon className="h-5 w-5" />

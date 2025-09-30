@@ -8,7 +8,14 @@ function decodeHtml(html: string): string {
     return txt.value;
   } else {
     // SSR fallback
-    return html.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec)).replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">" ).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#8211;/g, "–");
+    return html
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#8211;/g, "–");
   }
 }
 
@@ -59,50 +66,83 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setResultados([]);
     setImportResult(null);
     try {
-      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`);
+      const res = await fetch(
+        `/api/search-despachos?query=${encodeURIComponent(query)}`
+      );
       if (!res.ok) throw new Error("Error al buscar despachos");
       const data = await res.json();
-      console.log('API WordPress data:', data);
+      console.log("API WordPress data:", data);
       // Mapear resultados a la interfaz DespachoWP
-      const resultadosWP: DespachoWP[] = (data || []).map((d: unknown, i: number) => {
-        if (typeof d === "object" && d !== null) {
-          const obj = d as Record<string, unknown>;
-          console.log(`Despacho[${i}]`, obj);
-          // Localidad principal
-          const localidadPrincipal =
-            obj.meta && typeof obj.meta === "object" && obj.meta !== null && "localidad" in obj.meta
-              ? (obj.meta as MetaWP).localidad
-              : (obj.meta && typeof obj.meta === "object" && obj.meta !== null && Array.isArray((obj.meta as MetaWP)._despacho_sedes) && (obj.meta as MetaWP)._despacho_sedes?.[0]?.localidad)
+      const resultadosWP: DespachoWP[] = (data || []).map(
+        (d: unknown, i: number) => {
+          if (typeof d === "object" && d !== null) {
+            const obj = d as Record<string, unknown>;
+            console.log(`Despacho[${i}]`, obj);
+            // Localidad principal
+            const localidadPrincipal =
+              obj.meta &&
+              typeof obj.meta === "object" &&
+              obj.meta !== null &&
+              "localidad" in obj.meta
+                ? (obj.meta as MetaWP).localidad
+                : obj.meta &&
+                  typeof obj.meta === "object" &&
+                  obj.meta !== null &&
+                  Array.isArray((obj.meta as MetaWP)._despacho_sedes) &&
+                  (obj.meta as MetaWP)._despacho_sedes?.[0]?.localidad
                 ? (obj.meta as MetaWP)._despacho_sedes?.[0]?.localidad
                 : "";
 
-          // Buscar sede que coincida con la localidad principal
-          let sedeCoincidente: SedeWP | undefined;
-          if (obj.meta && typeof obj.meta === "object" && obj.meta !== null && Array.isArray((obj.meta as MetaWP)._despacho_sedes)) {
-            sedeCoincidente = (obj.meta as MetaWP)._despacho_sedes?.find(
-              (sede) => sede.localidad && sede.localidad.toLowerCase() === localidadPrincipal?.toLowerCase()
-            );
-          }
+            // Buscar sede que coincida con la localidad principal
+            let sedeCoincidente: SedeWP | undefined;
+            if (
+              obj.meta &&
+              typeof obj.meta === "object" &&
+              obj.meta !== null &&
+              Array.isArray((obj.meta as MetaWP)._despacho_sedes)
+            ) {
+              sedeCoincidente = (obj.meta as MetaWP)._despacho_sedes?.find(
+                (sede) =>
+                  sede.localidad &&
+                  sede.localidad.toLowerCase() ===
+                    localidadPrincipal?.toLowerCase()
+              );
+            }
 
-          return {
-            object_id: obj.id?.toString() || obj.object_id || "",
-            nombre:
-              obj.title && typeof obj.title === "object" && obj.title !== null && "rendered" in obj.title
-                ? decodeHtml((obj.title as { rendered?: string }).rendered || "")
-                : decodeHtml(typeof obj.nombre === "string" ? obj.nombre : ""),
-            localidad: localidadPrincipal,
-            provincia:
-              obj.meta && typeof obj.meta === "object" && obj.meta !== null && "provincia" in obj.meta
-                ? (obj.meta as MetaWP).provincia
-                : (obj.meta && typeof obj.meta === "object" && obj.meta !== null && Array.isArray((obj.meta as MetaWP)._despacho_sedes) && (obj.meta as MetaWP)._despacho_sedes?.[0]?.provincia)
+            return {
+              object_id: obj.id?.toString() || obj.object_id || "",
+              nombre:
+                obj.title &&
+                typeof obj.title === "object" &&
+                obj.title !== null &&
+                "rendered" in obj.title
+                  ? decodeHtml(
+                      (obj.title as { rendered?: string }).rendered || ""
+                    )
+                  : decodeHtml(
+                      typeof obj.nombre === "string" ? obj.nombre : ""
+                    ),
+              localidad: localidadPrincipal,
+              provincia:
+                obj.meta &&
+                typeof obj.meta === "object" &&
+                obj.meta !== null &&
+                "provincia" in obj.meta
+                  ? (obj.meta as MetaWP).provincia
+                  : obj.meta &&
+                    typeof obj.meta === "object" &&
+                    obj.meta !== null &&
+                    Array.isArray((obj.meta as MetaWP)._despacho_sedes) &&
+                    (obj.meta as MetaWP)._despacho_sedes?.[0]?.provincia
                   ? (obj.meta as MetaWP)._despacho_sedes?.[0]?.provincia
                   : "",
-            // ...no mostrar email ni teléfono
-            ...obj
-          };
+              // ...no mostrar email ni teléfono
+              ...obj,
+            };
+          }
+          return { object_id: "", nombre: "" };
         }
-        return { object_id: "", nombre: "" };
-      });
+      );
       setResultados(resultadosWP);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -144,13 +184,16 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
 
   return (
     <div className="mb-6">
-      <form onSubmit={buscarDespachos} className="flex flex-col sm:flex-row gap-4 items-center mb-4">
+      <form
+        onSubmit={buscarDespachos}
+        className="flex flex-col sm:flex-row gap-4 items-center mb-4"
+      >
         <input
           type="text"
           className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
           placeholder="Buscar despacho por nombre"
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           required
         />
         <button
@@ -186,18 +229,26 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                       onClick={() => importarDespacho(d.object_id)}
                       disabled={importando === d.object_id}
                     >
-                      {importando === d.object_id ? "Importando..." : "Importar"}
+                      {importando === d.object_id
+                        ? "Importando..."
+                        : "Importar"}
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {importResult && <div className="mt-2 text-sm font-semibold text-green-700">{importResult}</div>}
+          {importResult && (
+            <div className="mt-2 text-sm font-semibold text-green-700">
+              {importResult}
+            </div>
+          )}
           {importSummary && importSummary.despacho && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded p-4 text-xs text-gray-800">
               <div className="font-bold mb-2">Resumen de importación:</div>
-              <pre className="overflow-x-auto whitespace-pre-wrap">{JSON.stringify(importSummary, null, 2)}</pre>
+              <pre className="overflow-x-auto whitespace-pre-wrap">
+                {JSON.stringify(importSummary, null, 2)}
+              </pre>
             </div>
           )}
         </div>

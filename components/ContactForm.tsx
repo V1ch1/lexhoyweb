@@ -26,21 +26,27 @@ export default function ContactForm() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
+
+    if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: checked
+        [name]: checked,
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -66,13 +72,15 @@ ${formData.mensaje}
 Enviado desde el formulario de contacto de Lexhoy Portal
       `.trim();
 
-      const mailtoLink = `mailto:contacto@lexhoy.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      
+      const mailtoLink = `mailto:contacto@lexhoy.com?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(body)}`;
+
       // Abrir cliente de correo
       window.location.href = mailtoLink;
-      
-      setSubmitStatus('success');
-      
+
+      setSubmitStatus("success");
+
       // Resetear formulario después de 3 segundos
       setTimeout(() => {
         setFormData({
@@ -85,11 +93,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
           mensaje: "",
           aceptaPrivacidad: false,
         });
-        setSubmitStatus('idle');
+        setSubmitStatus("idle");
       }, 3000);
-
     } catch {
-      setSubmitStatus('error');
+      setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
     }
@@ -100,29 +107,34 @@ Enviado desde el formulario de contacto de Lexhoy Portal
       <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
         Envíanos un Mensaje
       </h2>
-      
-      {submitStatus === 'success' && (
+
+      {submitStatus === "success" && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-800 font-workSans">
-            ✅ ¡Formulario completado! Se ha abierto tu cliente de correo con todos los datos. 
-            Si no se abrió automáticamente, puedes copiar la información y enviarla a: <strong>contacto@lexhoy.com</strong>
+            ✅ ¡Formulario completado! Se ha abierto tu cliente de correo con
+            todos los datos. Si no se abrió automáticamente, puedes copiar la
+            información y enviarla a: <strong>contacto@lexhoy.com</strong>
           </p>
         </div>
       )}
 
-      {submitStatus === 'error' && (
+      {submitStatus === "error" && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-800 font-workSans">
-            ❌ Hubo un problema al procesar el formulario. Por favor, contacta directamente a: <strong>contacto@lexhoy.com</strong> 
-            o llama al <strong>649 528 552</strong>
+            ❌ Hubo un problema al procesar el formulario. Por favor, contacta
+            directamente a: <strong>contacto@lexhoy.com</strong>o llama al{" "}
+            <strong>649 528 552</strong>
           </p>
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+            <label
+              htmlFor="nombre"
+              className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+            >
               Nombre *
             </label>
             <input
@@ -137,7 +149,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
             />
           </div>
           <div>
-            <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+            <label
+              htmlFor="apellidos"
+              className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+            >
               Apellidos *
             </label>
             <input
@@ -154,7 +169,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+          >
             Email *
           </label>
           <input
@@ -170,7 +188,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         </div>
 
         <div>
-          <label htmlFor="despacho" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+          <label
+            htmlFor="despacho"
+            className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+          >
             Nombre del Despacho
           </label>
           <input
@@ -185,7 +206,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         </div>
 
         <div>
-          <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+          <label
+            htmlFor="telefono"
+            className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+          >
             Teléfono
           </label>
           <input
@@ -200,7 +224,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         </div>
 
         <div>
-          <label htmlFor="asunto" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+          <label
+            htmlFor="asunto"
+            className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+          >
             Asunto *
           </label>
           <select
@@ -224,7 +251,10 @@ Enviado desde el formulario de contacto de Lexhoy Portal
         </div>
 
         <div>
-          <label htmlFor="mensaje" className="block text-sm font-medium text-gray-700 font-workSans mb-2">
+          <label
+            htmlFor="mensaje"
+            className="block text-sm font-medium text-gray-700 font-workSans mb-2"
+          >
             Mensaje *
           </label>
           <textarea
@@ -249,13 +279,22 @@ Enviado desde el formulario de contacto de Lexhoy Portal
             onChange={handleChange}
             className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
           />
-          <label htmlFor="acepto-politica" className="text-sm text-gray-600 font-workSans">
+          <label
+            htmlFor="acepto-politica"
+            className="text-sm text-gray-600 font-workSans"
+          >
             Acepto la{" "}
-            <a href="/politica-privacidad" className="text-primary hover:underline">
+            <a
+              href="/politica-privacidad"
+              className="text-primary hover:underline"
+            >
               política de privacidad
             </a>{" "}
             y el{" "}
-            <a href="/terminos-servicio" className="text-primary hover:underline">
+            <a
+              href="/terminos-servicio"
+              className="text-primary hover:underline"
+            >
               tratamiento de mis datos
             </a>{" "}
             personales *
@@ -267,18 +306,20 @@ Enviado desde el formulario de contacto de Lexhoy Portal
           disabled={isSubmitting}
           className="w-full bg-primary text-white py-3 px-6 rounded-lg font-workSans font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Preparando mensaje...' : 'Preparar Email de Contacto'}
+          {isSubmitting
+            ? "Preparando mensaje..."
+            : "Preparar Email de Contacto"}
         </button>
 
         <div className="text-center">
           <p className="text-sm text-gray-500 font-workSans">
             También puedes contactarnos directamente en:{" "}
-            <a 
-              href="mailto:contacto@lexhoy.com" 
+            <a
+              href="mailto:contacto@lexhoy.com"
               className="text-primary hover:underline"
               onClick={() => {
                 // Copiar email al portapapeles como fallback
-                navigator.clipboard?.writeText('contacto@lexhoy.com');
+                navigator.clipboard?.writeText("contacto@lexhoy.com");
               }}
             >
               contacto@lexhoy.com

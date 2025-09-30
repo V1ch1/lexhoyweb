@@ -8,7 +8,8 @@ import { useEffect, useState } from "react";
 // Utilidad para decodificar entidades HTML
 function decodeHtmlEntities(str: string) {
   if (!str) return "";
-  return str.replace(/&#([0-9]{1,4});/g, (match, dec) => String.fromCharCode(dec))
+  return str
+    .replace(/&#([0-9]{1,4});/g, (match, dec) => String.fromCharCode(dec))
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -18,7 +19,6 @@ function decodeHtmlEntities(str: string) {
     .replace(/&#8211;/g, "–");
 }
 import { supabase } from "@/lib/supabase";
-
 
 // ...existing code...
 import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
@@ -40,8 +40,6 @@ type DespachoSummary = {
   owner_apellidos?: string;
   owner_email?: string;
 };
-
-
 
 const DespachosPage = () => {
   const { user, isLoading } = useAuth();
@@ -67,25 +65,43 @@ const DespachosPage = () => {
     }
     const { data, error, count } = await query;
     if (error) {
-      console.error('Supabase error al cargar despachos:', error);
+      console.error("Supabase error al cargar despachos:", error);
       setError("Error al cargar los despachos: " + JSON.stringify(error));
       setDespachos([]);
       setTotal(0);
       setLoadingDespachos(false);
       return;
     }
-    const mapped = (data || []).map((d: any) => ({
-      id: d.id,
-      object_id: d.object_id, // Añadido para edición WP
-      nombre: decodeHtmlEntities(d.nombre),
-      num_sedes: d.num_sedes,
-      created_at: d.created_at,
-      estado: d.estado,
-      localidad: d.localidad || "",
-      provincia: d.provincia || "",
-      telefono: d.telefono || "",
-      email: d.email_contacto || d.email || "",
-    }));
+    // Mostrar el objeto recibido en consola para análisis
+    console.log("Despachos desde Supabase:", data);
+
+    // Para cada despacho, obtener la sede principal
+    const mapped = await Promise.all(
+      (data || []).map(async (d: any) => {
+        let sedePrincipal = null;
+        if (d.id) {
+          const { data: sedes } = await supabase
+            .from("sedes")
+            .select("*")
+            .eq("despacho_id", d.id)
+            .eq("es_principal", true)
+            .single();
+          sedePrincipal = sedes || null;
+        }
+        return {
+          id: d.id,
+          object_id: d.object_id,
+          nombre: decodeHtmlEntities(d.nombre),
+          num_sedes: d.num_sedes,
+          created_at: d.created_at,
+          estado: d.estado,
+          localidad: sedePrincipal?.localidad || "",
+          provincia: sedePrincipal?.provincia || "",
+          telefono: sedePrincipal?.telefono || "",
+          email: sedePrincipal?.email_contacto || "",
+        };
+      })
+    );
     setDespachos(mapped);
     setTotal(count || 0);
     setLoadingDespachos(false);
@@ -159,7 +175,9 @@ const DespachosPage = () => {
             <div className="flex justify-between">
               <span className="text-gray-600">Rol:</span>
               <span className="font-semibold capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                {user?.role === "super_admin" ? "Super Admin" : "Despacho Admin"}
+                {user?.role === "super_admin"
+                  ? "Super Admin"
+                  : "Despacho Admin"}
               </span>
             </div>
             <div className="flex justify-between">
@@ -192,20 +210,29 @@ const DespachosPage = () => {
               className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
               placeholder="Buscar por nombre, localidad o provincia"
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
             <div className="flex gap-2 items-center">
               <button
                 className="px-2 py-1 rounded border text-xs"
                 disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >Anterior</button>
-              <span className="text-xs">Página {page} de {totalPages || 1}</span>
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </button>
+              <span className="text-xs">
+                Página {page} de {totalPages || 1}
+              </span>
               <button
                 className="px-2 py-1 rounded border text-xs"
                 disabled={page === totalPages || totalPages === 0}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >Siguiente</button>
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Siguiente
+              </button>
             </div>
           </div>
           {loadingDespachos ? (
@@ -223,33 +250,60 @@ const DespachosPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Provincia</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nº Sedes</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Propietario</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Nombre
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Localidad
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Provincia
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Teléfono
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Email
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Nº Sedes
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Propietario
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
                   {despachos.map((d) => (
                     <tr key={d.id}>
-                      <td className="px-4 py-2 text-sm font-semibold text-gray-900">{d.nombre}</td>
-                      <td className="px-4 py-2 text-sm">{d.localidad || "-"}</td>
-                      <td className="px-4 py-2 text-sm">{d.provincia || "-"}</td>
+                      <td className="px-4 py-2 text-sm font-semibold text-gray-900">
+                        {d.nombre}
+                      </td>
+                      <td className="px-4 py-2 text-sm">
+                        {d.localidad || "-"}
+                      </td>
+                      <td className="px-4 py-2 text-sm">
+                        {d.provincia || "-"}
+                      </td>
                       <td className="px-4 py-2 text-sm">{d.telefono || "-"}</td>
                       <td className="px-4 py-2 text-sm">{d.email || "-"}</td>
-                      <td className="px-4 py-2 text-sm text-center">{d.num_sedes}</td>
+                      <td className="px-4 py-2 text-sm text-center">
+                        {d.num_sedes}
+                      </td>
                       <td className="px-4 py-2 text-sm">
-                        {/* Propietario no disponible en este join */}
-                        -
+                        {/* Propietario no disponible en este join */}-
                       </td>
                       <td className="px-4 py-2 text-sm">
                         <button
                           className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                          onClick={() => router.push(`/dashboard/despachos/${d.object_id}/editar`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/despachos/${d.object_id}/editar`
+                            )
+                          }
                         >
                           Editar
                         </button>
@@ -264,6 +318,6 @@ const DespachosPage = () => {
       </div>
     </div>
   );
-}
+};
 
 export default DespachosPage;

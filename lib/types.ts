@@ -40,9 +40,9 @@ export interface SolicitudAsignacionDespacho {
   userId: string;
   despachoId: string;
   fechaSolicitud: Date;
-  estado: 'pendiente' | 'aprobada' | 'rechazada';
+  estado: "pendiente" | "aprobada" | "rechazada";
   justificacion: string; // Por qué el usuario debe tener acceso a este despacho
-  tipoSolicitud: 'propiedad' | 'colaboracion' | 'otro';
+  tipoSolicitud: "propiedad" | "colaboracion" | "otro";
   documentosAdjuntos?: string[]; // URLs de documentos que comprueban la propiedad
   fechaRespuesta?: Date;
   respondidoPor?: string;
@@ -102,9 +102,9 @@ export interface SolicitudRegistro {
 
 export interface SyncLog {
   id: string;
-  tipo: 'algolia' | 'wordpress';
-  accion: 'create' | 'update' | 'delete';
-  entidad: 'despacho' | 'sede' | 'user';
+  tipo: "algolia" | "wordpress";
+  accion: "create" | "update" | "delete";
+  entidad: "despacho" | "sede" | "user";
   entidadId: string;
   datosEnviados?: Record<string, unknown>;
   respuestaApi?: Record<string, unknown>;
@@ -144,7 +144,7 @@ export interface Sede {
   numero_colegiado?: string;
   colegio?: string;
   experiencia?: string;
-  
+
   // Dirección
   calle?: string;
   numero?: string;
@@ -153,19 +153,19 @@ export interface Sede {
   provincia?: string;
   codigo_postal?: string;
   pais?: string;
-  
+
   // Información profesional
   especialidades?: string;
   servicios_especificos?: string;
   areas_practica: string[];
-  
+
   // Estados
-  estado_verificacion: 'pendiente' | 'verificado' | 'rechazado';
-  estado_registro: 'activo' | 'inactivo' | 'suspendido';
+  estado_verificacion: "pendiente" | "verificado" | "rechazado";
+  estado_registro: "activo" | "inactivo" | "suspendido";
   is_verified: boolean;
   es_principal: boolean;
   activa: boolean;
-  
+
   // Multimedia y contacto
   foto_perfil?: string;
   horarios: {
@@ -183,7 +183,7 @@ export interface Sede {
     linkedin?: string;
     instagram?: string;
   };
-  
+
   // Notas internas
   observaciones?: string;
 }
@@ -192,29 +192,29 @@ export interface Lead {
   id: string;
   despacho_id: string;
   sede_id?: string;
-  
+
   // Información del cliente
   cliente_nombre: string;
   cliente_email: string;
   cliente_telefono?: string;
-  
+
   // Información de la consulta
   consulta: string;
   especialidad: string;
   urgencia?: UrgenciaLevel;
   presupuestoEstimado?: number;
-  
+
   // Ubicación
   provincia?: string;
   ciudad?: string;
   codigo_postal?: string;
-  
+
   // Estado y gestión
-  estado: 'nuevo' | 'contactado' | 'cerrado';
+  estado: "nuevo" | "contactado" | "cerrado";
   fechaCreacion: Date;
   fechaAsignacion?: Date;
   fechaCierre?: Date;
-  
+
   // Origen
   fuente: string;
   utm?: {
@@ -222,7 +222,7 @@ export interface Lead {
     medium?: string;
     campaign?: string;
   };
-  
+
   // Seguimiento
   notas?: string;
   valoracion?: number;
@@ -270,41 +270,46 @@ export interface Analytics {
 export type PlanType = "basico" | "profesional" | "enterprise";
 export type UserRole = "super_admin" | "despacho_admin" | "usuario";
 export type UserStatus = "pendiente" | "activo" | "inactivo" | "suspendido";
-export type DespachoStatus = "borrador" | "pendiente" | "aprobado" | "rechazado" | "suspendido";
+export type DespachoStatus =
+  | "borrador"
+  | "pendiente"
+  | "aprobado"
+  | "rechazado"
+  | "suspendido";
 export type SolicitudStatus = "pendiente" | "aprobado" | "rechazado";
 
-export type LeadStatus = 
-  | "nuevo" 
-  | "asignado" 
-  | "contactado" 
-  | "en_negociacion" 
-  | "convertido" 
-  | "perdido" 
+export type LeadStatus =
+  | "nuevo"
+  | "asignado"
+  | "contactado"
+  | "en_negociacion"
+  | "convertido"
+  | "perdido"
   | "rechazado";
 
 export type UrgenciaLevel = "baja" | "media" | "alta" | "urgente";
 
-export type InteractionType = 
-  | "llamada" 
-  | "email" 
-  | "reunion" 
-  | "propuesta" 
-  | "contrato" 
+export type InteractionType =
+  | "llamada"
+  | "email"
+  | "reunion"
+  | "propuesta"
+  | "contrato"
   | "nota";
 
-export type InteractionResult = 
-  | "exitoso" 
-  | "sin_respuesta" 
-  | "reagendar" 
-  | "no_interesado" 
+export type InteractionResult =
+  | "exitoso"
+  | "sin_respuesta"
+  | "reagendar"
+  | "no_interesado"
   | "convertido";
 
-export type NotificationType = 
-  | "nuevo_lead" 
-  | "lead_expirado" 
-  | "mensaje_sistema" 
-  | "actualizacion_perfil" 
-  | "facturacion" 
+export type NotificationType =
+  | "nuevo_lead"
+  | "lead_expirado"
+  | "mensaje_sistema"
+  | "actualizacion_perfil"
+  | "facturacion"
   | "promocion";
 
 // Interfaces para formularios actualizadas

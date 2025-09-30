@@ -28,7 +28,8 @@ export default function RootLayout({
   const pathname = usePathname();
 
   // Ocultar navbar y footer en dashboard y admin
-  const isAdminOrDashboard = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+  const isAdminOrDashboard =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   return (
     <html lang="es">

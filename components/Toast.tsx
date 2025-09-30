@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import type { ToastProps } from "@/lib/types";
 
-export default function Toast({ type, message, duration = 3000, onClose }: ToastProps) {
+export default function Toast({
+  type,
+  message,
+  duration = 3000,
+  onClose,
+}: ToastProps) {
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
@@ -19,8 +24,12 @@ export default function Toast({ type, message, duration = 3000, onClose }: Toast
   };
 
   return (
-    <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded shadow-lg border ${colors[type]} animate-fade-in`}>
-      <span className="font-semibold mr-2 capitalize">{type === "success" ? "✔" : type === "error" ? "✖" : "!"}</span>
+    <div
+      className={`fixed top-6 right-6 z-50 px-4 py-3 rounded shadow-lg border ${colors[type]} animate-fade-in`}
+    >
+      <span className="font-semibold mr-2 capitalize">
+        {type === "success" ? "✔" : type === "error" ? "✖" : "!"}
+      </span>
       {message}
       <button
         className="ml-4 text-xs text-gray-500 hover:text-gray-700"

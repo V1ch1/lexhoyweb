@@ -1,14 +1,12 @@
-
 "use client";
 // Función segura para obtener el JWT
 function getJWT() {
-  if (typeof window !== 'undefined') {
-    return window.localStorage.getItem('supabase_jwt') || '';
+  if (typeof window !== "undefined") {
+    return window.localStorage.getItem("supabase_jwt") || "";
   }
-  return '';
+  return "";
 }
-import React, { useState } from 'react';
-
+import React, { useState } from "react";
 
 interface Despacho {
   id: number;
@@ -26,9 +24,8 @@ interface Despacho {
   };
 }
 
-
 export default function SolicitarDespacho() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<Despacho[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,19 +40,22 @@ export default function SolicitarDespacho() {
     setSuccess(null);
     try {
       const token = getJWT();
-      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const res = await fetch(
+        `/api/search-despachos?query=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
-      if (!res.ok) throw new Error('Error al buscar despachos');
+      );
+      if (!res.ok) throw new Error("Error al buscar despachos");
       const data = await res.json();
       setResults(data);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Error al buscar despachos');
+        setError(err.message || "Error al buscar despachos");
       } else {
-        setError('Error al buscar despachos');
+        setError("Error al buscar despachos");
       }
     } finally {
       setLoading(false);
@@ -68,10 +68,14 @@ export default function SolicitarDespacho() {
     setSuccess(null);
     try {
       // Obtener datos del despacho desde WordPress
-      const despachoNombre = despacho.title?.rendered || '';
-      let despachoLocalidad = despacho.meta?.localidad || '';
-      let despachoProvincia = despacho.meta?.provincia || '';
-      if ((!despachoLocalidad || !despachoProvincia) && Array.isArray(despacho.meta?._despacho_sedes) && despacho.meta?._despacho_sedes.length > 0) {
+      const despachoNombre = despacho.title?.rendered || "";
+      let despachoLocalidad = despacho.meta?.localidad || "";
+      let despachoProvincia = despacho.meta?.provincia || "";
+      if (
+        (!despachoLocalidad || !despachoProvincia) &&
+        Array.isArray(despacho.meta?._despacho_sedes) &&
+        despacho.meta?._despacho_sedes.length > 0
+      ) {
         const sede = despacho.meta._despacho_sedes[0];
         despachoLocalidad = sede.localidad || despachoLocalidad;
         despachoProvincia = sede.provincia || despachoProvincia;
@@ -80,20 +84,22 @@ export default function SolicitarDespacho() {
 
       // Obtener el JWT de forma segura
       const token = getJWT();
-      if (!token) throw new Error('No se pudo obtener el token de sesión');
+      if (!token) throw new Error("No se pudo obtener el token de sesión");
 
       // Simular datos de usuario (puedes adaptar esto si tienes contexto de usuario)
-      const userId = window.localStorage.getItem('supabase_user_id') || '';
-      const userEmail = window.localStorage.getItem('supabase_user_email') || '';
-      const userName = window.localStorage.getItem('supabase_user_name') || '';
-      if (!userId || !userEmail || !userName) throw new Error('No se encontró información de usuario');
+      const userId = window.localStorage.getItem("supabase_user_id") || "";
+      const userEmail =
+        window.localStorage.getItem("supabase_user_email") || "";
+      const userName = window.localStorage.getItem("supabase_user_name") || "";
+      if (!userId || !userEmail || !userName)
+        throw new Error("No se encontró información de usuario");
 
       // Guardar la solicitud en Supabase usando el objectId como despachoId
-      const res = await fetch('/api/solicitar-despacho', {
-        method: 'POST',
+      const res = await fetch("/api/solicitar-despacho", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userId,
@@ -102,18 +108,19 @@ export default function SolicitarDespacho() {
           userName,
           despachoNombre,
           despachoLocalidad,
-          despachoProvincia
+          despachoProvincia,
         }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Error al solicitar vinculación');
-      setSolicitados(prev => [...prev, despacho.id]);
-      setSuccess('Solicitud enviada correctamente');
+      if (!res.ok)
+        throw new Error(result.error || "Error al solicitar vinculación");
+      setSolicitados((prev) => [...prev, despacho.id]);
+      setSuccess("Solicitud enviada correctamente");
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Error al solicitar vinculación');
+        setError(err.message || "Error al solicitar vinculación");
       } else {
-        setError('Error al solicitar vinculación');
+        setError("Error al solicitar vinculación");
       }
     }
   };
@@ -125,25 +132,39 @@ export default function SolicitarDespacho() {
         <input
           type="text"
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Nombre, localidad, etc."
           className="border rounded px-2 py-1 flex-1"
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded">Buscar</button>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-1 rounded"
+        >
+          Buscar
+        </button>
       </form>
       {loading && <p>Buscando...</p>}
       {error && <p className="text-red-600">{error}</p>}
       {success && <p className="text-green-600">{success}</p>}
       <ul>
-        {results.map(despacho => (
-          <li key={despacho.id} className="border-b py-2 flex justify-between items-center">
+        {results.map((despacho) => (
+          <li
+            key={despacho.id}
+            className="border-b py-2 flex justify-between items-center"
+          >
             <span>{despacho.title.rendered}</span>
             <button
-              className={`bg-green-600 text-white px-2 py-1 rounded ${solicitados.includes(despacho.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-green-600 text-white px-2 py-1 rounded ${
+                solicitados.includes(despacho.id)
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
               disabled={solicitados.includes(despacho.id)}
               onClick={() => handleSolicitar(despacho)}
             >
-              {solicitados.includes(despacho.id) ? 'Solicitado' : 'Solicitar vinculación'}
+              {solicitados.includes(despacho.id)
+                ? "Solicitado"
+                : "Solicitar vinculación"}
             </button>
           </li>
         ))}

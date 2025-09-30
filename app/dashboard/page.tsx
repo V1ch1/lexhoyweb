@@ -39,7 +39,9 @@ const DashboardPage = () => {
     estado: string;
   } | null>(null);
   // Solicitudes pendientes para super_admin
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<number | null>(null);
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<
+    number | null
+  >(null);
   // Lista completa de solicitudes (solo super_admin)
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
@@ -48,7 +50,8 @@ const DashboardPage = () => {
     if (user?.role === "super_admin") {
       setSolicitudesLoading(true);
       const userService = new UserService();
-      userService.getAllSolicitudes()
+      userService
+        .getAllSolicitudes()
         .then((data) => {
           const mapped = data.map((s: any) => ({
             id: s.id as string,
@@ -59,9 +62,13 @@ const DashboardPage = () => {
             despacho_nombre: s.despacho_nombre as string | undefined,
             despacho_localidad: s.despacho_localidad as string | undefined,
             despacho_provincia: s.despacho_provincia as string | undefined,
-            estado: s.estado as 'pendiente' | 'aprobado' | 'rechazado',
-            fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud) : new Date(0),
-            fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta) : undefined,
+            estado: s.estado as "pendiente" | "aprobado" | "rechazado",
+            fechaSolicitud: s.fecha_solicitud
+              ? new Date(s.fecha_solicitud)
+              : new Date(0),
+            fechaRespuesta: s.fecha_respuesta
+              ? new Date(s.fecha_respuesta)
+              : undefined,
             respondidoPor: s.respondidoPor as string | undefined,
             notasRespuesta: s.notasRespuesta as string | undefined,
             userCreadoId: s.userCreadoId as string | undefined,
@@ -72,7 +79,8 @@ const DashboardPage = () => {
             telefono: s.telefono as string | undefined,
             empresa: s.empresa as string | undefined,
             mensaje: s.mensaje as string | undefined,
-            datosDespacho: s.datosDespacho as SolicitudRegistro['datosDespacho'],
+            datosDespacho:
+              s.datosDespacho as SolicitudRegistro["datosDespacho"],
           }));
           setSolicitudes(mapped);
         })
@@ -189,19 +197,24 @@ const DashboardPage = () => {
         )}
       </div>
 
-  <div className="space-y-6">
+      <div className="space-y-6">
         {/* Card de Solicitudes Pendientes (solo para super_admin) */}
-  {/* Card de pendientes y tabla de solicitudes para super_admin */}
+        {/* Card de pendientes y tabla de solicitudes para super_admin */}
         {user.role === "super_admin" && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-yellow-900 mb-1 flex items-center gap-2">
                 <span>Solicitudes de despacho pendientes</span>
                 <span className="inline-block bg-yellow-200 text-yellow-900 px-2 py-1 rounded text-sm font-bold">
-                  {solicitudesLoading ? "..." : solicitudes.filter((s) => s.estado === "pendiente").length}
+                  {solicitudesLoading
+                    ? "..."
+                    : solicitudes.filter((s) => s.estado === "pendiente")
+                        .length}
                 </span>
               </h3>
-              <p className="text-yellow-800 text-sm">Revisa y gestiona las solicitudes de vinculación de despachos.</p>
+              <p className="text-yellow-800 text-sm">
+                Revisa y gestiona las solicitudes de vinculación de despachos.
+              </p>
             </div>
             <button
               onClick={() => router.push("/admin/users?tab=solicitudes")}

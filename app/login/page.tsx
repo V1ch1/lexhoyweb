@@ -18,8 +18,8 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
-  
-  const isConfirmed = searchParams.get('confirmed') === 'true';
+
+  const isConfirmed = searchParams.get("confirmed") === "true";
 
   const [form, setForm] = useState<FormState>({
     email: "",
@@ -46,18 +46,18 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
-      console.log('Intentando login con email:', form.email);
-      
+      console.log("Intentando login con email:", form.email);
+
       // Usar AuthService para autenticación real con Supabase
       const authResult = await AuthService.signIn(form.email, form.password);
-      
+
       if (authResult.error) {
-        console.log('Error de autenticación:', authResult.error);
-        
+        console.log("Error de autenticación:", authResult.error);
+
         // Mensaje más claro para email no confirmado
-        if (authResult.error.includes('Email not confirmed')) {
+        if (authResult.error.includes("Email not confirmed")) {
           setError(
-            'Tu cuenta aún no ha sido confirmada. Por favor, revisa tu email y haz clic en el enlace de confirmación. Si no has recibido el email, revisa la carpeta de spam.'
+            "Tu cuenta aún no ha sido confirmada. Por favor, revisa tu email y haz clic en el enlace de confirmación. Si no has recibido el email, revisa la carpeta de spam."
           );
         } else {
           setError(authResult.error);
@@ -66,29 +66,31 @@ function LoginPageContent() {
       }
 
       if (!authResult.user) {
-        console.log('Usuario no encontrado');
+        console.log("Usuario no encontrado");
         setError("Error de autenticación");
         return;
       }
 
-      console.log('Login exitoso con Supabase Auth');
-      
+      console.log("Login exitoso con Supabase Auth");
+
       // Usar el contexto de autenticación
       const userData = {
         id: authResult.user.id,
         email: authResult.user.email,
         name: authResult.user.name,
-        role: authResult.user.role as 'super_admin' | 'despacho_admin' | 'usuario'
+        role: authResult.user.role as
+          | "super_admin"
+          | "despacho_admin"
+          | "usuario",
       };
-      
+
       login(userData);
 
       // Redirigir siempre a dashboard
-      router.push('/dashboard');
-
+      router.push("/dashboard");
     } catch (error) {
-      console.error('Error en login:', error);
-      
+      console.error("Error en login:", error);
+
       if (error instanceof Error) {
         setError(`Error: ${error.message}`);
       } else {
@@ -105,21 +107,34 @@ function LoginPageContent() {
         <h2 className="text-3xl font-bold text-text text-center">
           Iniciar Sesión
         </h2>
-        
+
         {isConfirmed && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 text-green-600 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
-              <h3 className="text-green-800 font-medium">¡Cuenta confirmada!</h3>
+              <h3 className="text-green-800 font-medium">
+                ¡Cuenta confirmada!
+              </h3>
             </div>
             <p className="text-green-700 text-sm mt-2">
-              Tu email ha sido verificado exitosamente. Ahora puedes iniciar sesión con tu cuenta.
+              Tu email ha sido verificado exitosamente. Ahora puedes iniciar
+              sesión con tu cuenta.
             </p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="email"
@@ -174,7 +189,7 @@ function LoginPageContent() {
                 Verificando...
               </>
             ) : (
-              'Iniciar Sesión'
+              "Iniciar Sesión"
             )}
           </button>
 
@@ -205,14 +220,16 @@ function LoginPageContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Cargando...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <LoginPageContent />
     </Suspense>
   );

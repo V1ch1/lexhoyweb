@@ -1,12 +1,12 @@
 "use client";
 // Función segura para obtener el JWT
 function getJWT() {
-  if (typeof window !== 'undefined') {
-    return window.localStorage.getItem('supabase_jwt') || '';
+  if (typeof window !== "undefined") {
+    return window.localStorage.getItem("supabase_jwt") || "";
   }
-  return '';
+  return "";
 }
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface Despacho {
   id: number;
@@ -25,7 +25,7 @@ interface Despacho {
 }
 
 export default function SolicitarDespacho() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<Despacho[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,19 +39,22 @@ export default function SolicitarDespacho() {
     try {
       // Obtener el JWT de forma segura
       const token = getJWT();
-      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const res = await fetch(
+        `/api/search-despachos?query=${encodeURIComponent(query)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
-      if (!res.ok) throw new Error('Error al buscar despachos');
+      );
+      if (!res.ok) throw new Error("Error al buscar despachos");
       const data = await res.json();
       setResults(data);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Error al buscar despachos');
+        setError("Error al buscar despachos");
       }
     } finally {
       setLoading(false);
@@ -65,19 +68,29 @@ export default function SolicitarDespacho() {
         <input
           type="text"
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Nombre, localidad, etc."
           className="border rounded px-2 py-1 flex-1"
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded">Buscar</button>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-1 rounded"
+        >
+          Buscar
+        </button>
       </form>
       {loading && <p>Buscando...</p>}
       {error && <p className="text-red-600">{error}</p>}
       <ul>
-        {results.map(despacho => (
-          <li key={despacho.id} className="border-b py-2 flex justify-between items-center">
+        {results.map((despacho) => (
+          <li
+            key={despacho.id}
+            className="border-b py-2 flex justify-between items-center"
+          >
             <span>{despacho.title.rendered}</span>
-            <button className="bg-green-600 text-white px-2 py-1 rounded">Solicitar vinculación</button>
+            <button className="bg-green-600 text-white px-2 py-1 rounded">
+              Solicitar vinculación
+            </button>
           </li>
         ))}
       </ul>

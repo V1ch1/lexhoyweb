@@ -35,13 +35,16 @@ export default function ImportarDespachoForm({ onSuccess }: Props) {
   };
 
   return (
-    <form onSubmit={handleImport} className="mb-6 flex flex-col sm:flex-row gap-4 items-center">
+    <form
+      onSubmit={handleImport}
+      className="mb-6 flex flex-col sm:flex-row gap-4 items-center"
+    >
       <input
         type="text"
         className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
         placeholder="Introduce el Object ID del despacho"
         value={objectId}
-        onChange={e => setObjectId(e.target.value)}
+        onChange={(e) => setObjectId(e.target.value)}
         required
         disabled={loading}
       />

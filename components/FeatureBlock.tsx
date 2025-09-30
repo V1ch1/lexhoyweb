@@ -53,7 +53,10 @@ export default function FeatureBlock({
           {features && features.length > 0 && (
             <ul className="space-y-3 mb-6">
               {features.map((feature, index) => (
-                <li key={index} className="flex items-center text-gray-600 font-workSans">
+                <li
+                  key={index}
+                  className="flex items-center text-gray-600 font-workSans"
+                >
                   <span className="text-green-500 mr-3 text-xl">✓</span>
                   {feature}
                 </li>

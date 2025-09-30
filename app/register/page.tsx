@@ -15,7 +15,6 @@ interface FormState {
 }
 
 export default function RegisterPage() {
-
   // Tipamos el estado 'form' usando la interfaz FormState
   const [form, setForm] = useState<FormState>({
     fullName: "",
@@ -53,16 +52,16 @@ export default function RegisterPage() {
 
     try {
       // Separar nombre y apellidos del fullName
-      const nameParts = form.fullName.trim().split(' ');
-      const nombre = nameParts[0] || '';
-      const apellidos = nameParts.slice(1).join(' ') || '';
+      const nameParts = form.fullName.trim().split(" ");
+      const nombre = nameParts[0] || "";
+      const apellidos = nameParts.slice(1).join(" ") || "";
 
       // Usar AuthService para registro real con Supabase
       const authResult = await AuthService.signUp(form.email, form.password, {
         nombre,
-        apellidos
+        apellidos,
       });
-      
+
       if (authResult.error) {
         setError(authResult.error);
         setIsLoading(false);
@@ -71,7 +70,7 @@ export default function RegisterPage() {
 
       // Si llegamos aquí, el registro fue exitoso
       setSuccess(true);
-      
+
       // Limpiar el formulario
       setForm({
         fullName: "",
@@ -83,11 +82,13 @@ export default function RegisterPage() {
 
       // No redirigir automáticamente, mostrar mensaje de confirmación por email
     } catch (error: unknown) {
-      console.error('Error en registro:', error);
-      
+      console.error("Error en registro:", error);
+
       if (error instanceof Error) {
-        if (error.message.includes('Timeout')) {
-          setError("El registro está tardando demasiado. Por favor, verifica tu conexión y vuelve a intentarlo.");
+        if (error.message.includes("Timeout")) {
+          setError(
+            "El registro está tardando demasiado. Por favor, verifica tu conexión y vuelve a intentarlo."
+          );
         } else {
           setError(`Error de conexión: ${error.message}`);
         }
@@ -202,7 +203,7 @@ export default function RegisterPage() {
                 Registrando...
               </>
             ) : (
-              'Registrarse'
+              "Registrarse"
             )}
           </button>
           <p className="mt-2 text-gray-600 text-center">
@@ -214,33 +215,46 @@ export default function RegisterPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-red-600 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <h3 className="text-red-800 font-medium">Error de registro</h3>
               </div>
               <p className="text-red-700 text-sm mt-2">{error}</p>
-              {error.includes('ya está registrado') && (
+              {error.includes("ya está registrado") && (
                 <div className="mt-3">
-                  <Link 
-                    href="/login" 
+                  <Link
+                    href="/login"
                     className="inline-block bg-primary text-white px-4 py-2 rounded text-sm hover:bg-red-600 transition-colors"
                   >
                     Ir al Login
                   </Link>
                 </div>
               )}
-              {error.includes('debes esperar') && (
+              {error.includes("debes esperar") && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
                   <p className="text-yellow-800 text-xs">
-                    <strong>💡 Consejo:</strong> Mientras esperas, puedes intentar hacer login si ya tienes una cuenta, o cambiar a un email diferente.
+                    <strong>💡 Consejo:</strong> Mientras esperas, puedes
+                    intentar hacer login si ya tienes una cuenta, o cambiar a un
+                    email diferente.
                   </p>
                 </div>
               )}
-              {error.includes('límite de emails') && (
+              {error.includes("límite de emails") && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                   <p className="text-blue-800 text-xs">
-                    <strong>🔒 Protección contra spam:</strong> Supabase limita los emails para prevenir spam. Puedes:
+                    <strong>🔒 Protección contra spam:</strong> Supabase limita
+                    los emails para prevenir spam. Puedes:
                   </p>
                   <ul className="text-blue-700 text-xs mt-1 ml-4 list-disc">
                     <li>Esperar 1 hora y volver a intentar</li>
@@ -254,16 +268,31 @@ export default function RegisterPage() {
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-5 h-5 text-green-600 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-                <h3 className="text-green-800 font-medium">¡Registro exitoso!</h3>
+                <h3 className="text-green-800 font-medium">
+                  ¡Registro exitoso!
+                </h3>
               </div>
               <p className="text-green-700 text-sm mt-2">
-                Te hemos enviado un email de confirmación. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.
+                Te hemos enviado un email de confirmación. Por favor, revisa tu
+                bandeja de entrada y haz clic en el enlace para activar tu
+                cuenta.
               </p>
               <p className="text-green-600 text-xs mt-2">
-                <strong>Nota:</strong> Revisa también la carpeta de spam si no ves el email.
+                <strong>Nota:</strong> Revisa también la carpeta de spam si no
+                ves el email.
               </p>
             </div>
           )}

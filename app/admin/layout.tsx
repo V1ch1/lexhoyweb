@@ -1,9 +1,9 @@
 "use client";
 
-import { ReactNode } from 'react';
-import { useAuth } from '@/lib/authContext';
-import Sidebar from '@/components/Sidebar';
-import NavbarDashboard from '@/components/NavbarDashboard';
+import { ReactNode } from "react";
+import { useAuth } from "@/lib/authContext";
+import Sidebar from "@/components/Sidebar";
+import NavbarDashboard from "@/components/NavbarDashboard";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isLoading } = useAuth();
 
-  if (isLoading && !user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -23,13 +23,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // Verificar permisos de admin
-  if (!user || user.role !== 'super_admin') {
+  // Solo mostrar acceso denegado si ya terminó de cargar y el usuario no tiene el rol adecuado
+  if (!user || user.role !== "super_admin") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
-          <p className="text-gray-600">No tienes permisos para acceder a esta sección.</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Acceso Denegado
+          </h1>
+          <p className="text-gray-600">
+            No tienes permisos para acceder a esta sección.
+          </p>
         </div>
       </div>
     );

@@ -9,7 +9,7 @@ export default function Navbar() {
           Lexhoy Portal
         </h1>
       </Link>
-      
+
       {/* Navegación central */}
       <div className="hidden md:flex space-x-8">
         <Link

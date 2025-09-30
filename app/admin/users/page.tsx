@@ -21,7 +21,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"users" | "solicitudes" | "create">("users");
+  const [selectedTab, setSelectedTab] = useState<
+    "users" | "solicitudes" | "create"
+  >("users");
   const [userDespachos, setUserDespachos] = useState<
     Record<string, UserDespacho[]>
   >({});
@@ -104,9 +106,13 @@ export default function AdminUsersPage() {
           despacho_nombre: s.despacho_nombre as string | undefined,
           despacho_localidad: s.despacho_localidad as string | undefined,
           despacho_provincia: s.despacho_provincia as string | undefined,
-          estado: s.estado as 'pendiente' | 'aprobado' | 'rechazado',
-          fechaSolicitud: s.fecha_solicitud ? new Date(s.fecha_solicitud as string) : new Date(0),
-          fechaRespuesta: s.fecha_respuesta ? new Date(s.fecha_respuesta as string) : undefined,
+          estado: s.estado as "pendiente" | "aprobado" | "rechazado",
+          fechaSolicitud: s.fecha_solicitud
+            ? new Date(s.fecha_solicitud as string)
+            : new Date(0),
+          fechaRespuesta: s.fecha_respuesta
+            ? new Date(s.fecha_respuesta as string)
+            : undefined,
           respondidoPor: s.respondidoPor as string | undefined,
           notasRespuesta: s.notasRespuesta as string | undefined,
           userCreadoId: s.userCreadoId as string | undefined,
@@ -117,7 +123,7 @@ export default function AdminUsersPage() {
           telefono: s.telefono as string | undefined,
           empresa: s.empresa as string | undefined,
           mensaje: s.mensaje as string | undefined,
-          datosDespacho: s.datosDespacho as SolicitudRegistro['datosDespacho'],
+          datosDespacho: s.datosDespacho as SolicitudRegistro["datosDespacho"],
         }))
       );
     } catch (error) {
@@ -176,17 +182,31 @@ export default function AdminUsersPage() {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();
       if (!currentUser) {
-        setToast({ type: "error", message: "No hay sesión activa o permisos insuficientes." });
-        console.error("No hay sesión activa o permisos insuficientes para aprobar.");
+        setToast({
+          type: "error",
+          message: "No hay sesión activa o permisos insuficientes.",
+        });
+        console.error(
+          "No hay sesión activa o permisos insuficientes para aprobar."
+        );
         return;
       }
-      await userService.approveSolicitudDespacho(solicitudId, currentUser.user.id);
+      await userService.approveSolicitudDespacho(
+        solicitudId,
+        currentUser.user.id
+      );
       await loadSolicitudes();
       await loadUsers();
-      setToast({ type: "success", message: "Solicitud aprobada y despacho asignado correctamente." });
+      setToast({
+        type: "success",
+        message: "Solicitud aprobada y despacho asignado correctamente.",
+      });
     } catch (error) {
       console.error("Error approving solicitud de despacho:", error);
-      setToast({ type: "error", message: "Error al aprobar la solicitud de despacho." });
+      setToast({
+        type: "error",
+        message: "Error al aprobar la solicitud de despacho.",
+      });
     }
   };
 
@@ -194,16 +214,28 @@ export default function AdminUsersPage() {
     try {
       const currentUser = await userService.getCurrentUserWithDespachos();
       if (!currentUser) {
-        setToast({ type: "error", message: "No hay sesión activa o permisos insuficientes." });
-        console.error("No hay sesión activa o permisos insuficientes para rechazar.");
+        setToast({
+          type: "error",
+          message: "No hay sesión activa o permisos insuficientes.",
+        });
+        console.error(
+          "No hay sesión activa o permisos insuficientes para rechazar."
+        );
         return;
       }
-      await userService.rejectSolicitudDespacho(solicitudId, currentUser.user.id, notas);
+      await userService.rejectSolicitudDespacho(
+        solicitudId,
+        currentUser.user.id,
+        notas
+      );
       await loadSolicitudes();
       setToast({ type: "info", message: "Solicitud rechazada correctamente." });
     } catch (error) {
       console.error("Error rejecting solicitud de despacho:", error);
-      setToast({ type: "error", message: "Error al rechazar la solicitud de despacho." });
+      setToast({
+        type: "error",
+        message: "Error al rechazar la solicitud de despacho.",
+      });
     }
   };
 
@@ -279,7 +311,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-w-7xl w-full mx-auto p-6">
       {toast && (
         <Toast
           type={toast.type}
@@ -288,12 +320,10 @@ export default function AdminUsersPage() {
           onClose={() => setToast(null)}
         />
       )}
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl w-full mx-auto">
         {/* Título de la página */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Administración de Usuarios
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Usuarios</h1>
           <p className="mt-2 text-gray-600">
             Gestiona usuarios, roles y permisos del sistema
           </p>
@@ -302,14 +332,21 @@ export default function AdminUsersPage() {
         {/* Tabs */}
         <div className="mb-8">
           <nav className="flex space-x-8">
-            { [
+            {[
               { key: "users", label: "Usuarios", count: users.length },
-              { key: "solicitudes", label: "Solicitudes de Despachos", count: solicitudes.filter((s) => s.estado === "pendiente").length },
+              {
+                key: "solicitudes",
+                label: "Solicitudes de Despachos",
+                count: solicitudes.filter((s) => s.estado === "pendiente")
+                  .length,
+              },
               { key: "create", label: "Crear Usuario", count: null },
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setSelectedTab(tab.key as "users" | "solicitudes" | "create")}
+                onClick={() =>
+                  setSelectedTab(tab.key as "users" | "solicitudes" | "create")
+                }
                 className={`flex items-center pb-4 px-1 border-b-2 font-medium text-sm ${
                   selectedTab === tab.key
                     ? "border-blue-500 text-blue-600"
@@ -444,7 +481,8 @@ export default function AdminUsersPage() {
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
                 Solicitudes de Despachos (
-                {solicitudes.filter((s) => s.estado === "pendiente").length} pendientes)
+                {solicitudes.filter((s) => s.estado === "pendiente").length}{" "}
+                pendientes)
               </h3>
             </div>
             <div className="divide-y divide-gray-200">
@@ -453,10 +491,14 @@ export default function AdminUsersPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h4 className="text-lg font-medium text-gray-900">
-                        {solicitud.user_name ? solicitud.user_name : "Sin nombre"}
+                        {solicitud.user_name
+                          ? solicitud.user_name
+                          : "Sin nombre"}
                       </h4>
                       <p className="text-sm text-gray-600 mt-1">
-                        {solicitud.user_email ? solicitud.user_email : "Sin email"}
+                        {solicitud.user_email
+                          ? solicitud.user_email
+                          : "Sin email"}
                         {solicitud.telefono ? ` • ${solicitud.telefono}` : ""}
                       </p>
                       {solicitud.despacho_nombre && (
@@ -476,20 +518,55 @@ export default function AdminUsersPage() {
                           </h5>
                           <div className="text-sm text-gray-600 space-y-1">
                             <p>
-                              <strong>Nombre:</strong> {(solicitud.datosDespacho as Record<string, unknown>).nombre as string}
+                              <strong>Nombre:</strong>{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).nombre as string
+                              }
                             </p>
                             <p>
-                              <strong>Especialidades:</strong> {((solicitud.datosDespacho as Record<string, unknown>).especialidades as string[])?.join(", ")}
+                              <strong>Especialidades:</strong>{" "}
+                              {(
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).especialidades as string[]
+                              )?.join(", ")}
                             </p>
                             <p>
-                              <strong>Ubicación:</strong> {(solicitud.datosDespacho as Record<string, unknown>).ciudad as string}, {(solicitud.datosDespacho as Record<string, unknown>).provincia as string}
+                              <strong>Ubicación:</strong>{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).ciudad as string
+                              }
+                              ,{" "}
+                              {
+                                (
+                                  solicitud.datosDespacho as Record<
+                                    string,
+                                    unknown
+                                  >
+                                ).provincia as string
+                              }
                             </p>
                           </div>
                         </div>
                       )}
                       {solicitud.mensaje && (
                         <div className="mt-3">
-                          <p className="text-sm text-gray-600"><strong>Mensaje:</strong> {solicitud.mensaje}</p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Mensaje:</strong> {solicitud.mensaje}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -507,13 +584,17 @@ export default function AdminUsersPage() {
                       </span>
                       <p className="text-xs text-gray-500">
                         {solicitud.fechaSolicitud
-                          ? (typeof solicitud.fechaSolicitud === "string"
-                              ? !isNaN(Date.parse(solicitud.fechaSolicitud))
-                                ? new Date(solicitud.fechaSolicitud).toLocaleDateString("es-ES")
-                                : "Fecha no disponible"
-                              : solicitud.fechaSolicitud instanceof Date
-                                ? solicitud.fechaSolicitud.toLocaleDateString("es-ES")
-                                : "Fecha no disponible")
+                          ? typeof solicitud.fechaSolicitud === "string"
+                            ? !isNaN(Date.parse(solicitud.fechaSolicitud))
+                              ? new Date(
+                                  solicitud.fechaSolicitud
+                                ).toLocaleDateString("es-ES")
+                              : "Fecha no disponible"
+                            : solicitud.fechaSolicitud instanceof Date
+                            ? solicitud.fechaSolicitud.toLocaleDateString(
+                                "es-ES"
+                              )
+                            : "Fecha no disponible"
                           : "Fecha no disponible"}
                       </p>
                       {solicitud.estado === "pendiente" && (
@@ -525,7 +606,12 @@ export default function AdminUsersPage() {
                             Aprobar
                           </button>
                           <button
-                            onClick={() => handleRejectSolicitud(solicitud.id, "Rechazado por el administrador")}
+                            onClick={() =>
+                              handleRejectSolicitud(
+                                solicitud.id,
+                                "Rechazado por el administrador"
+                              )
+                            }
                             className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
                           >
                             Rechazar

@@ -39,7 +39,7 @@ export default function SolicitarDespacho() {
   // Log de depuración para ver el ID del usuario
   React.useEffect(() => {
     if (user) {
-      console.log('ID de usuario en contexto:', user.id);
+      console.log("ID de usuario en contexto:", user.id);
     }
   }, [user]);
   // Handler para solicitar despacho
@@ -72,10 +72,12 @@ export default function SolicitarDespacho() {
       }
 
       // Usa el object_id real de WordPress si existe, si no, genera uno local
-      const objectId = despacho.meta?.object_id && despacho.meta.object_id !== ""
-        ? despacho.meta.object_id
-        : `lexhoy-${despacho.id}`;
-      const slug = despacho.meta?.slug || despachoNombre.toLowerCase().replace(/ /g, "-");
+      const objectId =
+        despacho.meta?.object_id && despacho.meta.object_id !== ""
+          ? despacho.meta.object_id
+          : `lexhoy-${despacho.id}`;
+      const slug =
+        despacho.meta?.slug || despachoNombre.toLowerCase().replace(/ /g, "-");
 
       // Obtener el JWT de forma segura
       const token = getJWT();
@@ -161,8 +163,8 @@ export default function SolicitarDespacho() {
     try {
       // Obtener el JWT de forma segura
       const token = getJWT();
-      console.log('🔑 JWT actual:', token);
-      console.log('🔎 user_id en petición:', user.id);
+      console.log("🔑 JWT actual:", token);
+      console.log("🔎 user_id en petición:", user.id);
       if (!token) throw new Error("No se pudo obtener el token de sesión");
       const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
         headers: {
@@ -170,14 +172,21 @@ export default function SolicitarDespacho() {
         },
       });
       if (!res.ok) {
-        console.error('Error al cargar solicitudes:', res.status, await res.text());
+        console.error(
+          "Error al cargar solicitudes:",
+          res.status,
+          await res.text()
+        );
         throw new Error("Error al cargar solicitudes");
       }
       const solicitudes = await res.json();
-      console.log('Respuesta de la API /api/solicitudes-despacho:', solicitudes);
+      console.log(
+        "Respuesta de la API /api/solicitudes-despacho:",
+        solicitudes
+      );
       setSolicitudesPendientes(solicitudes);
     } catch (err) {
-      console.error('Error en cargarSolicitudesPendientes:', err);
+      console.error("Error en cargarSolicitudesPendientes:", err);
       setError("Error al cargar solicitudes");
     }
   }, [user]);
@@ -252,7 +261,8 @@ export default function SolicitarDespacho() {
         <h3 className="text-lg font-semibold mb-2">
           Mis solicitudes de despacho (pendientes)
         </h3>
-        {solicitudesPendientes.filter(s => s.estado === "pendiente").length === 0 ? (
+        {solicitudesPendientes.filter((s) => s.estado === "pendiente")
+          .length === 0 ? (
           <p className="text-gray-500">No tienes solicitudes pendientes.</p>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -267,47 +277,49 @@ export default function SolicitarDespacho() {
               </tr>
             </thead>
             <tbody>
-              {solicitudesPendientes.filter(s => s.estado === "pendiente").map((solicitud) => (
-                <tr key={solicitud.id} className="border-b">
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
-                  </td>
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_localidad || "-")}
-                  </td>
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_provincia || "-")}
-                  </td>
-                  <td className="px-4 py-2">
-                    {solicitud.fecha_solicitud
-                      ? (() => {
-                          const fechaLocal = new Date(
-                            solicitud.fecha_solicitud!
-                          );
-                          if (isNaN(fechaLocal.getTime())) return "-";
-                          fechaLocal.setHours(fechaLocal.getHours() + 2);
-                          return fechaLocal.toLocaleString("es-ES");
-                        })()
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-2 flex gap-2 items-center">
-                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                      {solicitud.estado || "Sin estado"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    {(!solicitud.estado ||
-                      solicitud.estado === "pendiente") && (
-                      <button
-                        className="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 transition ml-2"
-                        onClick={() => handleCancelarSolicitud(solicitud.id)}
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {solicitudesPendientes
+                .filter((s) => s.estado === "pendiente")
+                .map((solicitud) => (
+                  <tr key={solicitud.id} className="border-b">
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
+                    </td>
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_localidad || "-")}
+                    </td>
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_provincia || "-")}
+                    </td>
+                    <td className="px-4 py-2">
+                      {solicitud.fecha_solicitud
+                        ? (() => {
+                            const fechaLocal = new Date(
+                              solicitud.fecha_solicitud!
+                            );
+                            if (isNaN(fechaLocal.getTime())) return "-";
+                            fechaLocal.setHours(fechaLocal.getHours() + 2);
+                            return fechaLocal.toLocaleString("es-ES");
+                          })()
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-2 flex gap-2 items-center">
+                      <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                        {solicitud.estado || "Sin estado"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      {(!solicitud.estado ||
+                        solicitud.estado === "pendiente") && (
+                        <button
+                          className="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 transition ml-2"
+                          onClick={() => handleCancelarSolicitud(solicitud.id)}
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         )}
@@ -315,10 +327,9 @@ export default function SolicitarDespacho() {
 
       {/* Renderizado de solicitudes canceladas */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-2">
-          Solicitudes canceladas
-        </h3>
-        {solicitudesPendientes.filter(s => s.estado === "cancelada").length === 0 ? (
+        <h3 className="text-lg font-semibold mb-2">Solicitudes canceladas</h3>
+        {solicitudesPendientes.filter((s) => s.estado === "cancelada")
+          .length === 0 ? (
           <p className="text-gray-500">No tienes solicitudes canceladas.</p>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -332,36 +343,38 @@ export default function SolicitarDespacho() {
               </tr>
             </thead>
             <tbody>
-              {solicitudesPendientes.filter(s => s.estado === "cancelada").map((solicitud) => (
-                <tr key={solicitud.id} className="border-b bg-red-50">
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
-                  </td>
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_localidad || "-")}
-                  </td>
-                  <td className="px-4 py-2">
-                    {decodeHtml(solicitud.despacho_provincia || "-")}
-                  </td>
-                  <td className="px-4 py-2">
-                    {solicitud.fecha_solicitud
-                      ? (() => {
-                          const fechaLocal = new Date(
-                            solicitud.fecha_solicitud!
-                          );
-                          if (isNaN(fechaLocal.getTime())) return "-";
-                          fechaLocal.setHours(fechaLocal.getHours() + 2);
-                          return fechaLocal.toLocaleString("es-ES");
-                        })()
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
-                      Cancelada
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {solicitudesPendientes
+                .filter((s) => s.estado === "cancelada")
+                .map((solicitud) => (
+                  <tr key={solicitud.id} className="border-b bg-red-50">
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_nombre || solicitud.id)}
+                    </td>
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_localidad || "-")}
+                    </td>
+                    <td className="px-4 py-2">
+                      {decodeHtml(solicitud.despacho_provincia || "-")}
+                    </td>
+                    <td className="px-4 py-2">
+                      {solicitud.fecha_solicitud
+                        ? (() => {
+                            const fechaLocal = new Date(
+                              solicitud.fecha_solicitud!
+                            );
+                            if (isNaN(fechaLocal.getTime())) return "-";
+                            fechaLocal.setHours(fechaLocal.getHours() + 2);
+                            return fechaLocal.toLocaleString("es-ES");
+                          })()
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                        Cancelada
+                      </span>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         )}

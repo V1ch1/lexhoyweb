@@ -6,7 +6,16 @@ export async function POST(request: Request) {
   try {
     // Recibe todos los datos posibles del despacho
     const body = await request.json();
-    const { objectId, nombre, descripcion, localidad, provincia, slug, num_sedes, areas_practica } = body;
+    const {
+      objectId,
+      nombre,
+      descripcion,
+      localidad,
+      provincia,
+      slug,
+      num_sedes,
+      areas_practica,
+    } = body;
     if (!objectId) {
       return NextResponse.json({ error: "Falta objectId" }, { status: 400 });
     }
@@ -44,7 +53,11 @@ export async function POST(request: Request) {
       if (wpRes.ok) {
         const wpData = await wpRes.json();
         if (wpData && wpData.length) {
-          despachoWP = wpData.find((d: any) => d.id?.toString() === objectId || d.meta?.object_id === objectId) || wpData[0];
+          despachoWP =
+            wpData.find(
+              (d: any) =>
+                d.id?.toString() === objectId || d.meta?.object_id === objectId
+            ) || wpData[0];
         }
       }
     }
@@ -108,7 +121,10 @@ export async function POST(request: Request) {
         .update(despachoSupabase)
         .eq("object_id", despachoSupabase.object_id);
     } else {
-      const insertResult = await supabase.from("despachos").insert(despachoSupabase).select("id");
+      const insertResult = await supabase
+        .from("despachos")
+        .insert(despachoSupabase)
+        .select("id");
       if (insertResult.error) {
         console.error("Supabase error:", insertResult.error);
         return NextResponse.json(
@@ -131,46 +147,58 @@ export async function POST(request: Request) {
     if (Array.isArray(despachoWP.meta?._despacho_sedes)) {
       // Eliminar sedes antiguas
       await supabase.from("sedes").delete().eq("despacho_id", despachoId);
+      // Mostrar datos de cada sede para depuración
+      // Solo dejar el log de sedes para depuración (elimina otros console.log si existen)
+      despachoWP.meta._despacho_sedes.forEach((sede: any, idx: number) => {
+        console.log(`Sede[${idx}]`, sede);
+      });
       // Insertar nuevas sedes
-      const sedesToInsert = despachoWP.meta._despacho_sedes.map((sede: any, idx: number) => ({
-        despacho_id: despachoId,
-        nombre: sede.nombre || `Sede ${idx + 1}`,
-        descripcion: sede.descripcion || "",
-        web: sede.web || "",
-        ano_fundacion: sede.ano_fundacion || "",
-        tamano_despacho: sede.tamano_despacho || "",
-        persona_contacto: sede.persona_contacto || "",
-        email_contacto: sede.email || sede.web?.includes("@") ? sede.web : "",
-        telefono: sede.telefono || "",
-        numero_colegiado: sede.numero_colegiado || "",
-        colegio: sede.colegio || "",
-        experiencia: sede.experiencia || "",
-        calle: sede.calle || "",
-        numero: sede.numero || "",
-        piso: sede.piso || "",
-        localidad: sede.localidad || "",
-        provincia: sede.provincia || "",
-        codigo_postal: sede.codigo_postal || "",
-        pais: sede.pais || "España",
-        especialidades: sede.especialidades || "",
-        servicios_especificos: sede.servicios_especificos || "",
-        areas_practica: Array.isArray(sede.areas_practica) ? sede.areas_practica : [],
-        estado_verificacion: sede.estado_verificacion || "pendiente",
-        estado_registro: sede.estado_registro || "activo",
-        is_verified: sede.is_verified ?? false,
-        es_principal: idx === 0,
-        activa: true,
-        foto_perfil: sede.foto_perfil || "",
-        horarios: sede.horarios || {},
-        redes_sociales: sede.redes_sociales || {},
-        observaciones: sede.observaciones || "",
-      }));
+      const sedesToInsert = despachoWP.meta._despacho_sedes.map(
+        (sede: any, idx: number) => ({
+          despacho_id: despachoId,
+          nombre: sede.nombre || `Sede ${idx + 1}`,
+          descripcion: sede.descripcion || "",
+          web: sede.web || "",
+          ano_fundacion: sede.ano_fundacion || "",
+          tamano_despacho: sede.tamano_despacho || "",
+          persona_contacto: sede.persona_contacto || sede.contacto || "",
+          email_contacto: sede.email_contacto || sede.email || "",
+          telefono: sede.telefono || sede.telefono_contacto || "",
+          numero_colegiado: sede.numero_colegiado || "",
+          colegio: sede.colegio || "",
+          experiencia: sede.experiencia || "",
+          calle: sede.calle || "",
+          numero: sede.numero || "",
+          piso: sede.piso || "",
+          localidad: sede.localidad || "",
+          provincia: sede.provincia || "",
+          codigo_postal: sede.codigo_postal || "",
+          pais: sede.pais || "España",
+          especialidades: sede.especialidades || "",
+          servicios_especificos: sede.servicios_especificos || "",
+          areas_practica: Array.isArray(sede.areas_practica)
+            ? sede.areas_practica
+            : [],
+          estado_verificacion: sede.estado_verificacion || "pendiente",
+          estado_registro: sede.estado_registro || "activo",
+          is_verified: sede.is_verified ?? false,
+          es_principal: idx === 0,
+          activa: true,
+          foto_perfil: sede.foto_perfil || "",
+          horarios: sede.horarios || {},
+          redes_sociales: sede.redes_sociales || {},
+          observaciones: sede.observaciones || "",
+        })
+      );
       if (sedesToInsert.length > 0) {
         const sedesResult = await supabase.from("sedes").insert(sedesToInsert);
         if (sedesResult.error) {
           console.error("Supabase error (sedes):", sedesResult.error);
           return NextResponse.json(
-            { error: "Error guardando sedes en Supabase", details: sedesResult.error },
+            {
+              error: "Error guardando sedes en Supabase",
+              details: sedesResult.error,
+            },
             { status: 500 }
           );
         }
