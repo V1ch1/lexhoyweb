@@ -4,6 +4,19 @@ import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
+
+// Utilidad para decodificar entidades HTML
+function decodeHtmlEntities(str: string) {
+  if (!str) return "";
+  return str.replace(/&#([0-9]{1,4});/g, (match, dec) => String.fromCharCode(dec))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#8211;/g, "–");
+}
 import { supabase } from "@/lib/supabase";
 
 
@@ -64,7 +77,7 @@ const DespachosPage = () => {
     const mapped = (data || []).map((d: any) => ({
       id: d.id,
       object_id: d.object_id, // Añadido para edición WP
-      nombre: d.nombre,
+      nombre: decodeHtmlEntities(d.nombre),
       num_sedes: d.num_sedes,
       created_at: d.created_at,
       estado: d.estado,
