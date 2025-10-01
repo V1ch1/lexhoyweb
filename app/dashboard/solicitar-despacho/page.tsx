@@ -216,7 +216,7 @@ export default function SolicitarDespacho() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6 text-blue-900">
+      <h2 className="text-2xl font-bold mb-6 text-gray-900">
         Buscar y solicitar vinculación de despacho
       </h2>
       <form onSubmit={handleSearch} className="flex gap-4 mb-6">

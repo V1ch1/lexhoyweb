@@ -1,3 +1,7 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+
 // Áreas de práctica predefinidas para los checkboxes (solo para uso interno, no se muestra en el render)
 const AREAS_PRACTICA: string[] = [
   "Administrativo",
@@ -23,7 +27,6 @@ const AREAS_PRACTICA: string[] = [
   "Urbanismo",
   "Vivienda",
 ];
-import React, { useEffect, useState } from "react";
 
 interface SedeWP {
   nombre?: string;

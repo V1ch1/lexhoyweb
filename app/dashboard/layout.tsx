@@ -44,7 +44,11 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
       <div className="flex-1 flex flex-col">
         {/* Navbar específico para el Dashboard */}
         <NavbarDashboard />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-6 py-6">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

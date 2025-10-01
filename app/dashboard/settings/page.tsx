@@ -520,7 +520,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-6">
+    <>
       {/* Header Configuración */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
@@ -1382,7 +1382,7 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

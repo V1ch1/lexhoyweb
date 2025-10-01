@@ -32,6 +32,11 @@ export interface UserDespacho {
     escribir: boolean;
     eliminar: boolean;
   };
+  despachos?: {
+    nombre: string;
+    object_id?: string;
+    slug?: string;
+  };
 }
 
 // Nueva interfaz para solicitudes de asignación de despachos

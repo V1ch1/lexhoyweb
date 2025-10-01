@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -25,8 +27,8 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
     const fetchUsers = async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, nombre, apellidos, despacho_nombre")
-        .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%,despacho_nombre.ilike.%${searchUser}%`)
+        .select("id, email, nombre, apellidos, despacho_id")
+        .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
         .limit(10);
       if (error) {
         setUserError("Error al buscar usuarios");
@@ -43,10 +45,11 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
     if (!selectedUser || !despachoId) return;
     setUserLoading(true);
     setUserError(null);
+    // Asignar el despacho al usuario (actualizar users)
     const { error } = await supabase
-      .from("despachos")
-      .update({ owner_email: selectedUser.email })
-      .eq("id", despachoId);
+      .from("users")
+      .update({ despacho_id: despachoId })
+      .eq("id", selectedUser.id);
     if (error) {
       setUserError("Error al asignar propietario");
     } else {
@@ -79,11 +82,11 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
           {userResults.length > 0 ? (
             <ul className="divide-y divide-gray-200">
               {userResults.map(u => (
-                <li key={u.id} className={`py-2 px-2 cursor-pointer rounded hover:bg-blue-50 ${selectedUser?.id === u.id ? 'bg-blue-100' : ''}`}
-                    onClick={() => setSelectedUser(u)}>
+                <li key={u.id} className={`py-2 px-2 rounded ${u.despacho_id ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer hover:bg-blue-50'} ${selectedUser?.id === u.id ? 'bg-blue-100' : ''}`}
+                    onClick={() => !u.despacho_id && setSelectedUser(u)}>
                   <div className="font-semibold text-blue-700">{u.nombre} {u.apellidos}</div>
                   <div className="text-xs text-gray-500">{u.email}</div>
-                  {u.despacho_nombre && <div className="text-xs text-gray-400">Despacho: {u.despacho_nombre}</div>}
+                  {u.despacho_id && <div className="text-xs text-red-500">Ya administra un despacho</div>}
                 </li>
               ))}
             </ul>
@@ -101,7 +104,7 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
           <button
             className="bg-green-600 text-white px-4 py-2 rounded flex-1"
             onClick={handleAsignar}
-            disabled={!selectedUser || userLoading}
+            disabled={!selectedUser || userLoading || selectedUser?.despacho_id}
           >
             Asignar propietario
           </button>

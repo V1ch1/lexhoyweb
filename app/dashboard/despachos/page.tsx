@@ -127,11 +127,13 @@ const DespachosPage = () => {
     }
     // Mostrar el objeto recibido en consola para análisis
 
-    // Para cada despacho, obtener la sede principal
+    // Para cada despacho, obtener la sede principal y el propietario (usuario con ese despacho_id)
     const mapped = await Promise.all(
       (data || []).map(async (d: any) => {
         let sedePrincipal = null;
+        let ownerEmail = null;
         if (d.id) {
+          // Sede principal
           const { data: sedes } = await supabase
             .from("sedes")
             .select("*")
@@ -139,6 +141,14 @@ const DespachosPage = () => {
             .eq("es_principal", true)
             .single();
           sedePrincipal = sedes || null;
+          // Buscar usuario administrador
+          const { data: admins } = await supabase
+            .from("users")
+            .select("email")
+            .eq("despacho_id", d.id);
+          if (admins && admins.length > 0) {
+            ownerEmail = admins[0].email;
+          }
         }
         return {
           id: d.id,
@@ -151,6 +161,7 @@ const DespachosPage = () => {
           provincia: sedePrincipal?.provincia || "",
           telefono: sedePrincipal?.telefono || "",
           email: sedePrincipal?.email_contacto || "",
+          owner_email: ownerEmail,
         };
       })
     );
@@ -177,8 +188,7 @@ const DespachosPage = () => {
         onClose={() => setShowAsignarModal(false)}
         onAsignar={fetchDespachos}
       />
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Despachos</h1>
           <p className="text-gray-600 mt-2">Gestiona la información de los despachos jurídicos</p>
         </div>
@@ -261,10 +271,25 @@ const DespachosPage = () => {
                         <td className="px-4 py-2 text-sm text-center">{d.num_sedes}</td>
                         <td className="px-4 py-2 text-sm">
                           {d.owner_email ? (
-                            <a href={`mailto:${d.owner_email}`} className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2" title={`Ir a ficha de propietario (${d.owner_email})`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12v1a4 4 0 01-8 0v-1m8 0V8a4 4 0 00-8 0v4m8 0a4 4 0 01-8 0m8 0v1a4 4 0 01-8 0v-1" /></svg>
+                            <button 
+                              onClick={async () => {
+                                // Buscar el ID del usuario por email
+                                const { data: userData } = await supabase
+                                  .from("users")
+                                  .select("id")
+                                  .eq("email", d.owner_email)
+                                  .single();
+                                
+                                if (userData?.id) {
+                                  router.push(`/admin/users/${userData.id}`);
+                                }
+                              }}
+                              className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2" 
+                              title={`Ir a ficha de propietario (${d.owner_email})`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                               {d.owner_email}
-                            </a>
+                            </button>
                           ) : (
                             <button className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1" onClick={() => { setAsignarDespachoId(d.id); setShowAsignarModal(true); }}>
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -285,7 +310,6 @@ const DespachosPage = () => {
             )}
           </div>
         </div>
-      </div>
     </>
   );
 };

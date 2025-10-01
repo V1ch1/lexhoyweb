@@ -1,16 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
-  },
   images: {
     domains: ['oepcitgbnqylfpdryffx.supabase.co'], // Tu dominio de Supabase
   },
@@ -28,6 +18,10 @@ const nextConfig: NextConfig = {
             value: 'nosniff',
           },
           {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
@@ -35,16 +29,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Eliminamos el redirect automático de home a login
-  // async redirects() {
-  //   return [
-  //     {
-  //       source: '/',
-  //       destination: '/login',
-  //       permanent: false,
-  //     },
-  //   ];
-  // },
 };
 
 export default nextConfig;
