@@ -28,76 +28,90 @@ const Sidebar = () => {
     <div className="w-64 bg-gray-800 text-white h-full flex flex-col">
       <div className="flex-1 p-6">
         <h2 className="text-2xl font-semibold mb-6">LexHoy Leads</h2>
-        <ul>
-          <li>
-            <button
-              onClick={() => handleNavigation("/dashboard")}
-              className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                pathname === "/dashboard" ? "bg-gray-700" : ""
-              }`}
-            >
-              <HomeIcon className="h-5 w-5" />
-              Dashboard
-            </button>
-          </li>
-
-          {/* Despachos - Solo para despacho_admin y super_admin */}
-          {(user.role === "despacho_admin" || user.role === "super_admin") && (
+        <nav>
+          <ul className="space-y-1">
+            {/* Dashboard - Visible para todos */}
             <li>
               <button
-                onClick={() => handleNavigation("/dashboard/despachos")}
-                className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === "/dashboard/despachos" ? "bg-gray-700" : ""
+                onClick={() => handleNavigation("/dashboard")}
+                className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  pathname === "/dashboard" 
+                    ? "bg-gray-700 text-white" 
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
                 }`}
               >
-                <BuildingOfficeIcon className="h-5 w-5" />
-                Despachos
+                <HomeIcon className="h-5 w-5" />
+                <span>Dashboard</span>
               </button>
             </li>
-          )}
 
-          {/* Leads - Solo para despacho_admin y super_admin */}
-          {(user.role === "despacho_admin" || user.role === "super_admin") && (
+            {/* Despachos - Solo para despacho_admin y super_admin */}
+            {(user.role === "despacho_admin" || user.role === "super_admin") && (
+              <li>
+                <button
+                  onClick={() => handleNavigation("/dashboard/despachos")}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/dashboard/despachos" 
+                      ? "bg-gray-700 text-white" 
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  }`}
+                >
+                  <BuildingOfficeIcon className="h-5 w-5" />
+                  <span>Despachos</span>
+                </button>
+              </li>
+            )}
+
+            {/* Leads - Solo para despacho_admin y super_admin */}
+            {(user.role === "despacho_admin" || user.role === "super_admin") && (
+              <li>
+                <button
+                  onClick={() => handleNavigation("/dashboard/leads")}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/dashboard/leads" 
+                      ? "bg-gray-700 text-white" 
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  }`}
+                >
+                  <ClipboardIcon className="h-5 w-5" />
+                  <span>Leads</span>
+                </button>
+              </li>
+            )}
+
+            {/* Usuarios - Solo para super_admin */}
+            {user.role === "super_admin" && (
+              <li>
+                <button
+                  onClick={() => handleNavigation("/admin/users")}
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    pathname === "/admin/users" 
+                      ? "bg-gray-700 text-white" 
+                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                  }`}
+                >
+                  <UserGroupIcon className="h-5 w-5" />
+                  <span>Usuarios</span>
+                </button>
+              </li>
+            )}
+
+            {/* Configuración - Visible para todos */}
             <li>
               <button
-                onClick={() => handleNavigation("/dashboard/leads")}
-                className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === "/dashboard/leads" ? "bg-gray-700" : ""
+                onClick={() => handleNavigation("/dashboard/settings")}
+                className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  pathname === "/dashboard/settings" 
+                    ? "bg-gray-700 text-white" 
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
                 }`}
               >
-                <ClipboardIcon className="h-5 w-5" />
-                Leads
+                <CogIcon className="h-5 w-5" />
+                <span>Configuración</span>
               </button>
             </li>
-          )}
-
-          {/* Administración - Solo para super_admin */}
-          {user.role === "super_admin" && (
-            <li>
-              <button
-                onClick={() => handleNavigation("/admin/users")}
-                className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                  pathname === "/admin/users" ? "bg-gray-700" : ""
-                }`}
-              >
-                <UserGroupIcon className="h-5 w-5" />
-                Usuarios
-              </button>
-            </li>
-          )}
-
-          <li>
-            <button
-              onClick={() => handleNavigation("/dashboard/settings")}
-              className={`w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 ${
-                pathname === "/dashboard/settings" ? "bg-gray-700" : ""
-              }`}
-            >
-              <CogIcon className="h-5 w-5" />
-              Configuración
-            </button>
-          </li>
-        </ul>
+          </ul>
+        </nav>
       </div>
     </div>
   );
