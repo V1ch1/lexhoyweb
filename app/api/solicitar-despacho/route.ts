@@ -24,41 +24,50 @@ export async function POST(request: Request) {
     debugBody = body;
     const {
       userId,
-      despachoId,
+      despachoId: objectId,
       userEmail,
       userName,
       despachoNombre,
       despachoLocalidad,
       despachoProvincia,
+      slug,
     } = body;
-    if (!userId || !despachoId || !userEmail || !userName || !despachoNombre) {
+    if (!userId || !objectId || !userEmail || !userName || !despachoNombre) {
       console.error("Faltan datos en la solicitud:", body);
       return NextResponse.json(
         { error: "Faltan datos", body },
         { status: 400 }
       );
     }
-    // 1. Sincronizar y crear el despacho en Supabase (si no existe)
-    const syncRes = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-      }/api/sync-despacho`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectId: despachoId }),
+    // 1. Intentar sincronizar el despacho en Supabase (si no existe)
+    // NOTA: Si falla la sincronización, continuamos de todas formas
+    try {
+      const syncRes = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+        }/api/sync-despacho`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            objectId,
+            nombre: despachoNombre,
+            localidad: despachoLocalidad,
+            provincia: despachoProvincia,
+            slug
+          }),
+        }
+      );
+      
+      if (syncRes.ok) {
+        const syncData = await syncRes.json();
+        console.log("✅ Despacho sincronizado:", syncData);
+      } else {
+        const errorText = await syncRes.text();
+        console.warn("⚠️ No se pudo sincronizar despacho, pero continuamos:", errorText);
       }
-    );
-    const syncData = await syncRes.json();
-    if (!syncRes.ok) {
-      console.error(
-        "Error sincronizando despacho antes de crear solicitud:",
-        syncData
-      );
-      return NextResponse.json(
-        { error: "Error sincronizando despacho", details: syncData },
-        { status: 500 }
-      );
+    } catch (syncError) {
+      console.warn("⚠️ Error sincronizando despacho, pero continuamos:", syncError);
     }
 
     // 2. Comprobar si ya existe una solicitud pendiente o aprobada para este usuario y despacho
@@ -67,20 +76,20 @@ export async function POST(request: Request) {
         .from("solicitudes_despacho")
         .select("id, estado")
         .eq("user_id", userId)
-        .eq("despacho_id", String(despachoId))
+        .eq("despacho_id", String(objectId))
         .in("estado", ["pendiente", "aprobada"]);
     if (errorExistente) {
       console.error(
         "Error al comprobar solicitudes existentes:",
         errorExistente,
-        { userId, despachoId }
+        { userId, objectId }
       );
       return NextResponse.json(
         {
           error: "Error al comprobar solicitudes existentes",
           details: String(errorExistente),
           userId,
-          despachoId,
+          despachoId: objectId,
         },
         { status: 500 }
       );
@@ -102,7 +111,7 @@ export async function POST(request: Request) {
       user_id: userId,
       user_email: userEmail,
       user_name: userName,
-      despacho_id: String(despachoId),
+      despacho_id: String(objectId),
       despacho_nombre: despachoNombre,
       despacho_localidad: despachoLocalidad,
       despacho_provincia: despachoProvincia,
@@ -112,7 +121,7 @@ export async function POST(request: Request) {
     if (error) {
       console.error("Error al crear solicitud:", error, {
         userId,
-        despachoId,
+        despachoId: objectId,
         userEmail,
         userName,
         despachoNombre,
@@ -124,7 +133,7 @@ export async function POST(request: Request) {
           error: "Error al crear solicitud",
           details: JSON.stringify(error),
           userId,
-          despachoId,
+          despachoId: objectId,
           userEmail,
           userName,
           despachoNombre,
@@ -134,7 +143,48 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    console.log("Solicitud creada correctamente para", userId, despachoId);
+    console.log("Solicitud creada correctamente para", userId, objectId);
+
+    // Notificar a todos los super admins
+    try {
+      const { NotificationService } = await import("@/lib/notificationService");
+      await NotificationService.notifyAllSuperAdmins({
+        tipo: "solicitud_recibida",
+        titulo: "📨 Nueva solicitud de despacho",
+        mensaje: `${userName} ha solicitado acceso al despacho "${despachoNombre}"`,
+        url: "/admin/users?tab=solicitudes",
+        metadata: {
+          userId,
+          despachoId: objectId,
+          despachoNombre,
+          userEmail,
+        },
+      });
+      console.log("✅ Notificaciones enviadas a super admins");
+    } catch (error) {
+      console.error("⚠️ Error creando notificaciones:", error);
+    }
+
+    // Enviar email a super admins
+    try {
+      const { EmailService } = await import("@/lib/emailService");
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      
+      await EmailService.sendToSuperAdmins({
+        subject: `Nueva solicitud de despacho - ${userName}`,
+        html: EmailService.templateSolicitudRecibida({
+          userName,
+          despachoName: despachoNombre,
+          userEmail,
+          fecha: new Date().toLocaleString("es-ES"),
+          url: `${baseUrl}/admin/users?tab=solicitudes`,
+        }),
+      });
+      console.log("✅ Emails enviados a super admins");
+    } catch (error) {
+      console.error("⚠️ Error enviando emails:", error);
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Error interno en /api/solicitar-despacho:", err);

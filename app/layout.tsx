@@ -34,7 +34,8 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${inter.variable} ${workSans.variable} bg-background text-text font-sans`}
+        suppressHydrationWarning={true}
+        className={`${inter.variable} ${workSans.variable} font-sans bg-gray-50`}
       >
         <AuthProvider>
           {/* Solo mostramos el Navbar genérico si no estamos en dashboard o admin */}

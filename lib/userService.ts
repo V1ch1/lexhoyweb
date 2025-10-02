@@ -393,21 +393,91 @@ export class UserService {
 
   /**
    * Obtener despachos asignados a un usuario
+   * Incluye: despachos en user_despachos Y despachos donde es owner_email
    */
   async getUserDespachos(userId: string): Promise<UserDespacho[]> {
-    const { data, error } = await supabase
-      .from("user_despachos")
-      .select(
-        `
-        *,
-        despachos:despacho_id (nombre, object_id, slug)
-      `
-      )
-      .eq("user_id", userId)
-      .eq("activo", true);
+    try {
+      // 1. Obtener usuario para conseguir su email
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", userId)
+        .single();
 
-    if (error) throw error;
-    return data || [];
+      if (userError) throw userError;
+
+      // 2. Obtener despachos de user_despachos (asignaciones manuales)
+      console.log("🔍 Buscando asignaciones para user_id:", userId);
+      const { data: assignedDespachos, error: assignedError } = await supabase
+        .from("user_despachos")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("activo", true);
+
+      if (assignedError) {
+        console.error("❌ Error obteniendo asignaciones:", assignedError);
+        throw assignedError;
+      }
+
+      console.log("📋 Asignaciones encontradas:", assignedDespachos);
+      console.log("📊 Total asignaciones:", assignedDespachos?.length || 0);
+
+      // 2b. Para cada asignación, obtener los datos del despacho
+      const assignedDespachosWithData = await Promise.all(
+        (assignedDespachos || []).map(async (ud) => {
+          const { data: despacho } = await supabase
+            .from("despachos")
+            .select("id, nombre, object_id, slug")
+            .eq("id", ud.despacho_id)
+            .single();
+          
+          return {
+            ...ud,
+            despachos: despacho || { nombre: "Despacho no encontrado", object_id: "", slug: "" }
+          };
+        })
+      );
+
+      console.log("📋 Asignaciones con datos:", assignedDespachosWithData);
+
+      // 3. Obtener despachos donde el usuario es propietario (owner_email)
+      const { data: ownedDespachos, error: ownedError } = await supabase
+        .from("despachos")
+        .select("id, nombre, object_id, slug")
+        .eq("owner_email", userData.email);
+
+      if (ownedError) throw ownedError;
+
+      // 4. Convertir despachos propios al formato UserDespacho
+      const ownedDespachosFormatted: UserDespacho[] = (ownedDespachos || []).map((d) => ({
+        id: `owned-${d.id}`, // ID único para evitar conflictos
+        userId,
+        despachoId: d.id.toString(),
+        fechaAsignacion: new Date().toISOString(),
+        activo: true,
+        permisos: { leer: true, escribir: true, eliminar: true }, // Propietario tiene todos los permisos
+        asignadoPor: "owner", // Indicador de que es propietario
+        despachos: {
+          nombre: d.nombre,
+          object_id: d.object_id,
+          slug: d.slug,
+        },
+      }));
+
+      // 5. Combinar ambas listas (evitando duplicados)
+      const allDespachos = [...(assignedDespachosWithData || []), ...ownedDespachosFormatted];
+      
+      // Eliminar duplicados basados en despachoId
+      const uniqueDespachos = allDespachos.filter(
+        (despacho, index, self) =>
+          index === self.findIndex((d) => d.despachoId === despacho.despachoId)
+      );
+
+      return uniqueDespachos;
+    } catch (error) {
+      console.error("Error en getUserDespachos:", error);
+      return [];
+    }
   }
 
   /**
@@ -419,6 +489,37 @@ export class UserService {
     assignedBy: string,
     permisos?: { leer: boolean; escribir: boolean; eliminar: boolean }
   ): Promise<UserDespacho> {
+    // Verificar si ya existe una asignación
+    const { data: existing, error: checkError } = await supabase
+      .from("user_despachos")
+      .select("id, activo")
+      .eq("user_id", userId)
+      .eq("despacho_id", despachoId)
+      .single();
+
+    if (checkError && checkError.code !== "PGRST116") {
+      // PGRST116 = no rows returned (está bien)
+      throw checkError;
+    }
+
+    // Si ya existe, actualizar en lugar de insertar
+    if (existing) {
+      console.log("⚠️ Asignación ya existe, actualizando...");
+      const { data, error } = await supabase
+        .from("user_despachos")
+        .update({
+          activo: true,
+          permisos: permisos || { leer: true, escribir: true, eliminar: false },
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    // Si no existe, insertar nuevo
     const { data, error } = await supabase
       .from("user_despachos")
       .insert({
@@ -437,18 +538,55 @@ export class UserService {
 
   /**
    * Quitar asignación de despacho
+   * Maneja AMBOS casos: asignación manual (user_despachos) Y propiedad (owner_email)
    */
   async unassignDespachoFromUser(
     userId: string,
     despachoId: string
   ): Promise<void> {
-    const { error } = await supabase
-      .from("user_despachos")
-      .update({ activo: false })
-      .eq("user_id", userId)
-      .eq("despacho_id", despachoId);
+    try {
+      console.log("🗑️ Eliminando propiedad/asignación:", { userId, despachoId });
 
-    if (error) throw error;
+      // 1. Obtener email del usuario
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", userId)
+        .single();
+
+      if (userError) throw userError;
+
+      // 2. Desactivar asignación manual en user_despachos (si existe)
+      const { error: unassignError } = await supabase
+        .from("user_despachos")
+        .update({ activo: false })
+        .eq("user_id", userId)
+        .eq("despacho_id", despachoId);
+
+      if (unassignError) {
+        console.warn("⚠️ No se encontró asignación manual:", unassignError);
+      } else {
+        console.log("✅ Asignación manual desactivada");
+      }
+
+      // 3. Eliminar owner_email del despacho (si el usuario es propietario)
+      const { error: ownerError } = await supabase
+        .from("despachos")
+        .update({ owner_email: null })
+        .eq("id", despachoId)
+        .eq("owner_email", userData.email);
+
+      if (ownerError) {
+        console.warn("⚠️ No se pudo eliminar owner_email:", ownerError);
+      } else {
+        console.log("✅ Propiedad (owner_email) eliminada");
+      }
+
+      console.log("✅ Propiedad/asignación eliminada correctamente");
+    } catch (error) {
+      console.error("❌ Error en unassignDespachoFromUser:", error);
+      throw error;
+    }
   }
 
   /**
@@ -996,16 +1134,26 @@ export class UserService {
     approvedBy: string,
     notas?: string
   ): Promise<void> {
+    console.log("🔄 Aprobando solicitud:", solicitudId);
+    
     // Obtener la solicitud
     const { data: solicitud, error: solicitudError } = await supabase
       .from("solicitudes_despacho")
       .select("*")
       .eq("id", solicitudId)
       .single();
-    if (solicitudError) throw solicitudError;
+    
+    if (solicitudError) {
+      console.error("❌ Error obteniendo solicitud:", solicitudError);
+      throw solicitudError;
+    }
+    
+    console.log("📋 Solicitud obtenida:", solicitud);
 
     // Sincronizar despacho desde WordPress a Supabase antes de aprobar
     const objectId = solicitud.despacho_id;
+    console.log("🔄 Sincronizando despacho con object_id:", objectId);
+    
     try {
       const syncRes = await fetch("/api/sync-despacho", {
         method: "POST",
@@ -1013,23 +1161,49 @@ export class UserService {
         body: JSON.stringify({ objectId }),
       });
       const syncData = await syncRes.json();
+      
       if (!syncRes.ok) {
+        console.error("❌ Error en sync-despacho:", syncData);
         throw new Error(
           syncData.error || "Error sincronizando despacho desde WordPress"
         );
       }
+      
+      console.log("✅ Despacho sincronizado:", syncData);
     } catch (err) {
-      console.error("Error sincronizando despacho:", err);
+      console.error("💥 Error sincronizando despacho:", err);
       throw err;
     }
 
-    // Asignar despacho al usuario
+    // Obtener el ID numérico del despacho en Supabase usando el object_id
+    console.log("🔍 Buscando despacho en Supabase con object_id:", objectId);
+    const { data: despacho, error: despachoError } = await supabase
+      .from("despachos")
+      .select("id")
+      .eq("object_id", objectId)
+      .single();
+
+    if (despachoError || !despacho) {
+      console.error("❌ Error: Despacho no encontrado en Supabase:", despachoError);
+      throw new Error(
+        `Despacho con object_id ${objectId} no encontrado en Supabase. Detalles: ${despachoError?.message || "No data"}`
+      );
+    }
+
+    console.log("✅ Despacho encontrado en Supabase, ID:", despacho.id);
+
+    // Asignar despacho al usuario usando el ID numérico de Supabase
+    console.log("🔗 Asignando despacho al usuario:", solicitud.user_id);
     await this.assignDespachoToUser(
       solicitud.user_id,
-      solicitud.despacho_id,
+      despacho.id.toString(), // Convertir a string para consistencia
       approvedBy
     );
+    
+    console.log("✅ Despacho asignado correctamente");
+
     // Actualizar solicitud
+    console.log("📝 Actualizando estado de solicitud a 'aprobado'");
     const { error: updateError } = await supabase
       .from("solicitudes_despacho")
       .update({
@@ -1039,7 +1213,55 @@ export class UserService {
         notas_respuesta: notas,
       })
       .eq("id", solicitudId);
-    if (updateError) throw updateError;
+      
+    if (updateError) {
+      console.error("❌ Error actualizando solicitud:", updateError);
+      throw updateError;
+    }
+    
+    console.log("✅ Solicitud aprobada exitosamente");
+
+    // Crear notificación para el usuario
+    try {
+      const { NotificationService } = await import("./notificationService");
+      await NotificationService.create({
+        userId: solicitud.user_id,
+        tipo: "solicitud_aprobada",
+        titulo: "✅ Solicitud aprobada",
+        mensaje: `Tu solicitud para el despacho "${solicitud.despacho_nombre}" ha sido aprobada`,
+        url: "/dashboard/settings?tab=mis-despachos",
+        metadata: {
+          solicitudId,
+          despachoId: despacho.id,
+          despachoNombre: solicitud.despacho_nombre,
+        },
+      });
+      console.log("✅ Notificación creada para el usuario");
+    } catch (error) {
+      console.error("⚠️ Error creando notificación:", error);
+    }
+
+    // Enviar email al usuario
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: solicitud.user_email,
+          subject: "✅ Tu solicitud ha sido aprobada - LexHoy",
+          template: "solicitud-aprobada",
+          data: {
+            userName: solicitud.user_name,
+            despachoName: solicitud.despacho_nombre,
+            url: `${baseUrl}/dashboard/settings?tab=mis-despachos`,
+          },
+        }),
+      });
+      console.log("✅ Email enviado al usuario");
+    } catch (error) {
+      console.error("⚠️ Error enviando email:", error);
+    }
   }
 
   /**
@@ -1050,6 +1272,21 @@ export class UserService {
     rejectedBy: string,
     notas: string
   ): Promise<void> {
+    console.log("❌ Rechazando solicitud:", solicitudId);
+
+    // Obtener la solicitud primero
+    const { data: solicitud, error: solicitudError } = await supabase
+      .from("solicitudes_despacho")
+      .select("*")
+      .eq("id", solicitudId)
+      .single();
+
+    if (solicitudError) {
+      console.error("❌ Error obteniendo solicitud:", solicitudError);
+      throw solicitudError;
+    }
+
+    // Actualizar solicitud
     const { error } = await supabase
       .from("solicitudes_despacho")
       .update({
@@ -1059,6 +1296,54 @@ export class UserService {
         notas_respuesta: notas,
       })
       .eq("id", solicitudId);
-    if (error) throw error;
+
+    if (error) {
+      console.error("❌ Error actualizando solicitud:", error);
+      throw error;
+    }
+
+    console.log("✅ Solicitud rechazada");
+
+    // Crear notificación para el usuario
+    try {
+      const { NotificationService } = await import("./notificationService");
+      await NotificationService.create({
+        userId: solicitud.user_id,
+        tipo: "solicitud_rechazada",
+        titulo: "Solicitud no aprobada",
+        mensaje: `Tu solicitud para el despacho "${solicitud.despacho_nombre}" no ha sido aprobada`,
+        url: "/dashboard/settings?tab=mis-despachos",
+        metadata: {
+          solicitudId,
+          despachoNombre: solicitud.despacho_nombre,
+          motivoRechazo: notas,
+        },
+      });
+      console.log("✅ Notificación creada para el usuario");
+    } catch (error) {
+      console.error("⚠️ Error creando notificación:", error);
+    }
+
+    // Enviar email al usuario
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: solicitud.user_email,
+          subject: "Actualización sobre tu solicitud - LexHoy",
+          template: "solicitud-rechazada",
+          data: {
+            userName: solicitud.user_name,
+            despachoName: solicitud.despacho_nombre,
+            motivoRechazo: notas,
+          },
+        }),
+      });
+      console.log("✅ Email enviado al usuario");
+    } catch (error) {
+      console.error("⚠️ Error enviando email:", error);
+    }
   }
 }

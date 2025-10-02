@@ -141,14 +141,8 @@ const DespachosPage = () => {
             .eq("es_principal", true)
             .single();
           sedePrincipal = sedes || null;
-          // Buscar usuario administrador
-          const { data: admins } = await supabase
-            .from("users")
-            .select("email")
-            .eq("despacho_id", d.id);
-          if (admins && admins.length > 0) {
-            ownerEmail = admins[0].email;
-          }
+          // Obtener owner_email directamente del despacho
+          ownerEmail = d.owner_email || null;
         }
         return {
           id: d.id,
@@ -290,17 +284,27 @@ const DespachosPage = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                               {d.owner_email}
                             </button>
-                          ) : (
+                          ) : user?.role === "super_admin" ? (
                             <button className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1" onClick={() => { setAsignarDespachoId(d.id); setShowAsignarModal(true); }}>
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                               Añadir
                             </button>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">Sin propietario</span>
                           )}
                         </td>
                         <td className="px-4 py-2 text-sm">
-                          <button className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs" onClick={() => router.push(`/dashboard/despachos/${d.object_id}/editar`)}>
-                            Editar
-                          </button>
+                          {/* Solo puede editar si es super_admin O es el propietario del despacho */}
+                          {user?.role === "super_admin" || d.owner_email === user?.email ? (
+                            <button 
+                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs" 
+                              onClick={() => router.push(`/dashboard/despachos/${d.object_id}/editar`)}
+                            >
+                              Editar
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">Sin permisos</span>
+                          )}
                         </td>
                       </tr>
                     ))}

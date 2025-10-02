@@ -13,7 +13,8 @@ function decodeHtml(html: string) {
   txt.innerHTML = html;
   return txt.value;
 }
-import React, { useState } from "react";
+"use client";
+import React, { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
 
 interface Despacho {
@@ -34,17 +35,35 @@ interface Despacho {
 }
 
 export default function SolicitarDespacho() {
-  // ...declaraciones únicas y handlers ya presentes arriba...
+  // Estados del componente
+  const [nombre, setNombre] = useState("");
+  const [results, setResults] = useState<Despacho[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [solicitados, setSolicitados] = useState<number[]>([]);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loadingSolicitud, setLoadingSolicitud] = useState<number | null>(null);
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Array<{
+    id: string;
+    estado: string;
+    despacho_nombre?: string;
+    despacho_localidad?: string;
+    despacho_provincia?: string;
+    fecha_solicitud?: string;
+    despachos?: { nombre?: string };
+  }>>([]);
+
   const { user } = useAuth();
-  // Log de depuración para ver el ID del usuario
-  React.useEffect(() => {
-    if (user) {
-    }
+  
+  // Cargar solicitudes pendientes al cargar el componente
+  useEffect(() => {
+    cargarSolicitudesPendientes();
   }, [user]);
   // Handler para solicitar despacho
   const handleSolicitar = async (despachoId: number) => {
     setError(null);
     setSuccess(null);
+    setLoadingSolicitud(despachoId);
     try {
       if (!user?.id) throw new Error("Usuario no autenticado");
       const userId = user.id;
@@ -111,28 +130,18 @@ export default function SolicitarDespacho() {
       }, 2000);
     } catch {
       setError("Error al solicitar vinculación");
+    } finally {
+      setLoadingSolicitud(null);
     }
   };
 
-  // Estado para solicitudes pendientes del usuario
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<
-    Array<{
-      id: string;
-      estado: string;
-      despacho_nombre?: string;
-      despacho_localidad?: string;
-      despacho_provincia?: string;
-      fecha_solicitud?: string;
-      despachos?: { nombre?: string };
-    }>
-  >([]);
-
-  // Handler para cancelar solicitud usando el mismo endpoint que settings
+  // Handler para cancelar solicitud
   const handleCancelarSolicitud = async (solicitudId: string) => {
     setError(null);
     setSuccess(null);
     try {
       if (!user?.id) throw new Error("Usuario no autenticado");
+      
       // Obtener el JWT de forma segura
       const token = getJWT();
       if (!token) throw new Error("No se pudo obtener el token de sesión");
@@ -145,53 +154,34 @@ export default function SolicitarDespacho() {
         },
         body: JSON.stringify({ solicitudId, userId: user.id }),
       });
+      
       if (!res.ok) throw new Error("Error al cancelar la solicitud");
+      
       setSuccess("Solicitud cancelada correctamente");
       await cargarSolicitudesPendientes();
+      
       setTimeout(() => {
         setSuccess(null);
       }, 2000);
-    } catch {
+    } catch (err) {
+      console.error("Error al cancelar solicitud:", err);
       setError("Error al cancelar la solicitud");
     }
   };
 
-  // Activar carga automática de solicitudes pendientes
-  const cargarSolicitudesPendientes = React.useCallback(async () => {
+  // Cargar solicitudes pendientes
+  const cargarSolicitudesPendientes = useCallback(async () => {
     if (!user?.id) return;
+    
     try {
-      // Obtener el JWT de forma segura
-      const token = getJWT();
-      if (!token) throw new Error("No se pudo obtener el token de sesión");
-      const res = await fetch(`/api/solicitudes-despacho?userId=${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        console.error(
-          "Error al cargar solicitudes:",
-          res.status,
-          await res.text()
-        );
-        throw new Error("Error al cargar solicitudes");
-      }
-      const solicitudes = await res.json();
-      setSolicitudesPendientes(solicitudes);
+      // Endpoint de solicitudes-despacho deshabilitado
+      console.log("La funcionalidad de carga de solicitudes está temporalmente deshabilitada");
+      setSolicitudesPendientes([]);
     } catch (err) {
       console.error("Error en cargarSolicitudesPendientes:", err);
       setError("Error al cargar solicitudes");
     }
   }, [user]);
-  React.useEffect(() => {
-    cargarSolicitudesPendientes();
-  }, [user, cargarSolicitudesPendientes]);
-  const [nombre, setNombre] = useState("");
-  const [results, setResults] = useState<Despacho[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [solicitados, setSolicitados] = useState<number[]>([]);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,15 +189,22 @@ export default function SolicitarDespacho() {
     setError(null);
     setResults([]);
     setSuccess(null);
+    
     try {
       const res = await fetch(
         `/api/search-despachos?query=${encodeURIComponent(nombre)}`
       );
-      if (!res.ok) throw new Error("Error al buscar despachos");
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error al buscar despachos");
+      }
+      
       const data = await res.json();
       setResults(data);
-    } catch {
-      setError("Error al buscar despachos");
+    } catch (err) {
+      console.error("Error en búsqueda de despachos:", err);
+      setError(err instanceof Error ? err.message : "Error al buscar despachos");
     } finally {
       setLoading(false);
     }
@@ -406,10 +403,41 @@ export default function SolicitarDespacho() {
                       </button>
                     ) : (
                       <button
-                        className="bg-primary text-white px-4 py-2 rounded shadow hover:bg-primary-dark transition"
+                        className={`px-4 py-2 rounded shadow transition flex items-center gap-2 ${
+                          loadingSolicitud === despacho.id
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-primary text-white hover:bg-primary-dark"
+                        }`}
                         onClick={() => handleSolicitar(despacho.id)}
+                        disabled={loadingSolicitud === despacho.id}
                       >
-                        Solicitar
+                        {loadingSolicitud === despacho.id ? (
+                          <>
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Solicitando...
+                          </>
+                        ) : (
+                          "Solicitar"
+                        )}
                       </button>
                     )}
                   </td>

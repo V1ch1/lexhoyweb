@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import Sidebar from "@/components/Sidebar";
 import NavbarDashboard from "@/components/NavbarDashboard";
@@ -11,8 +12,10 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (isLoading) {
+  // Mostrar loading solo si está cargando Y no hay usuario todavía
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -23,8 +26,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // Solo mostrar acceso denegado si ya terminó de cargar y el usuario no tiene el rol adecuado
-  if (!user || user.role !== "super_admin") {
+  // Si no hay usuario, verificar localStorage o mostrar acceso denegado
+  if (!user) {
+    // Intentar recuperar usuario de localStorage
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("lexhoy_user");
+      if (!storedUser) {
+        // No hay usuario guardado, redirigir a login
+        router.push("/login");
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Si el usuario no es super_admin, mostrar acceso denegado
+  if (user.role !== "super_admin") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -32,7 +49,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Acceso Denegado
           </h1>
           <p className="text-gray-600">
-            No tienes permisos para acceder a esta sección.
+            Solo los super administradores pueden acceder a esta sección.
           </p>
         </div>
       </div>

@@ -4,22 +4,18 @@
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@/lib/authContext";
 import { NotificationBell } from "@/components/NotificationBell";
-import { useEffect, useState } from "react";
 
 const NavbarDashboard = () => {
   const { user, logout } = useAuth();
-  const [pendingCount, setPendingCount] = useState(0);
-
-  // Eliminada la llamada a /api/solicitudes-despacho?estado=pendiente
 
   return (
     <nav className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
       <div className="text-2xl font-semibold">Dashboard</div>
 
       <div className="flex items-center space-x-4">
-        {/* Campana de notificaciones para super_admin */}
-        {user?.role === "super_admin" && (
-          <NotificationBell count={pendingCount} />
+        {/* Campana de notificaciones para todos los usuarios */}
+        {user && (
+          <NotificationBell userId={user.id} userRole={user.role} />
         )}
 
         {/* Información del usuario */}

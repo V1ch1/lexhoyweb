@@ -30,58 +30,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
-  // Páginas públicas que no requieren autenticación
-  const publicPages = [
-    "/",
-    "/sobre-nosotros",
-    "/servicios",
-    "/contacto",
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-    "/auth/confirm",
-    "/test",
-    "/diagnostic",
-  ];
-  const isPublicPage = publicPages.includes(pathname);
-
-  // Cargar sesión al iniciar
+  // Cargar sesión al iniciar - SOLO UNA VEZ
   useEffect(() => {
+    let mounted = true;
+    
     const loadSession = async () => {
       try {
-        // Solo verificar sesión si no es una página pública
-        if (isPublicPage) {
-          setIsLoading(false);
-          return;
+        // Primero intentar cargar desde localStorage (más rápido)
+        const storedUser = localStorage.getItem("lexhoy_user");
+        if (storedUser && mounted) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            console.log("✅ Usuario cargado desde localStorage:", userData.email);
+          } catch (e) {
+            console.error("❌ Error parsing stored user:", e);
+            localStorage.removeItem("lexhoy_user");
+          }
         }
 
-        // Si ya tenemos usuario y estamos navegando entre páginas internas, NO re-cargar
-        if (
-          user &&
-          (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
-        ) {
-          setIsLoading(false);
-          return;
-        }
-
-        // Solo aquí activamos loading para verificaciones reales
-        setIsLoading(true);
-
-        // Timeout de seguridad más largo para evitar pérdida de sesión
-        const timeoutId = setTimeout(() => {
-          setIsLoading(false);
-        }, 15000); // 15 segundos máximo
-
-        // Verificar si hay una sesión activa en Supabase
+        // Luego verificar con Supabase en segundo plano (sin bloquear UI)
         const currentUserResult = await AuthService.getCurrentUser();
 
-        // Limpiar timeout si la operación termina antes
-        clearTimeout(timeoutId);
-
-        if (currentUserResult.user) {
+        if (currentUserResult.user && mounted) {
           const userData: User = {
             id: currentUserResult.user.id,
             email: currentUserResult.user.email,
@@ -92,58 +64,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               | "usuario",
           };
           setUser(userData);
-
-          // Guardar en localStorage como backup
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-        } else {
-          // Intentar recuperar desde localStorage como fallback SOLO si no es página pública
-          if (!isPublicPage) {
-            const storedUser = localStorage.getItem("lexhoy_user");
-            if (storedUser) {
-              try {
-                const userData = JSON.parse(storedUser);
-                setUser(userData);
-              } catch (e) {
-                console.error("❌ AuthContext: Error parsing stored user:", e);
-                localStorage.removeItem("lexhoy_user");
-                setUser(null);
-              }
-            } else {
-              setUser(null);
-            }
-          }
+          console.log("✅ Usuario verificado con Supabase:", userData.email);
+        } else if (!storedUser && mounted) {
+          // Solo limpiar si no hay usuario en localStorage tampoco
+          setUser(null);
         }
       } catch (error) {
-        console.error("💥 AuthContext: Error loading session:", error);
-
-        // Intentar recuperar desde localStorage en caso de error SOLO si no es página pública
-        if (!isPublicPage) {
-          const storedUser = localStorage.getItem("lexhoy_user");
-          if (storedUser) {
-            try {
-              const userData = JSON.parse(storedUser);
-              setUser(userData);
-            } catch (e) {
-              console.error(
-                "❌ AuthContext: Error parsing stored user after error:",
-                e
-              );
-              localStorage.removeItem("lexhoy_user");
-              setUser(null);
-            }
-          } else {
-            setUser(null);
+        console.error("💥 Error loading session:", error);
+        // En caso de error, mantener el usuario de localStorage si existe
+        const storedUser = localStorage.getItem("lexhoy_user");
+        if (storedUser && mounted) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            console.log("⚠️ Usando usuario de localStorage por error de red");
+          } catch (e) {
+            console.error("❌ Error parsing stored user after error:", e);
           }
         }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadSession();
+
     // Escuchar cambios en el estado de autenticación
     const subscription = AuthService.onAuthStateChange(
       (authUser: AuthUser | null) => {
+        if (!mounted) return;
+        
         if (authUser) {
           const userData: User = {
             id: authUser.id,
@@ -152,18 +105,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: authUser.role as "super_admin" | "despacho_admin" | "usuario",
           };
           setUser(userData);
+          localStorage.setItem("lexhoy_user", JSON.stringify(userData));
+          console.log("🔄 Usuario actualizado por auth state change:", userData.email);
         } else {
-          setUser(null);
+          // NO limpiar el usuario inmediatamente, verificar localStorage primero
+          const storedUser = localStorage.getItem("lexhoy_user");
+          if (!storedUser) {
+            setUser(null);
+            console.log("🚪 Usuario desconectado");
+          } else {
+            console.log("⚠️ Auth state null pero manteniendo usuario de localStorage");
+          }
         }
-        setIsLoading(false);
       }
     );
 
     // Cleanup del listener
     return () => {
+      mounted = false;
       subscription.data.subscription.unsubscribe();
     };
-  }, [pathname, isPublicPage]);
+  }, []); // ⚠️ IMPORTANTE: Array vacío para que solo se ejecute UNA VEZ al montar
 
   const login = (userData: User) => {
     // El login real se maneja en AuthService.signIn
@@ -176,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log("🚪 Cerrando sesión...");
       await AuthService.signOut();
       setUser(null);
       // Limpiar localStorage

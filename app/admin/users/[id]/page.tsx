@@ -5,73 +5,34 @@ import { useRouter, useParams } from "next/navigation";
 import { UserService } from "@/lib/userService";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
-import { supabase } from "@/lib/supabase";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
 
 const userService = new UserService();
 
 export default function EditUserPage() {
-  const [showModalAsignar, setShowModalAsignar] = useState(false);
-  // Estados para el buscador de despachos
-  const [searchDespacho, setSearchDespacho] = useState("");
-  const [despachoResultados, setDespachoResultados] = useState<any[]>([]);
-  const [selectedDespacho, setSelectedDespacho] = useState<any>(null);
-
-  // Buscar despachos en tiempo real
-  useEffect(() => {
-    if (!searchDespacho) {
-      setDespachoResultados([]);
-      return;
-    }
-    const fetchDespachos = async () => {
-      const { data, error } = await supabase
-        .from("despachos")
-        .select("id, nombre, localidad, provincia")
-        .or(
-          `nombre.ilike.%${searchDespacho}%,localidad.ilike.%${searchDespacho}%,provincia.ilike.%${searchDespacho}%`
-        )
-        .limit(10);
-      if (error) {
-        setDespachoResultados([]);
-      } else {
-        setDespachoResultados(data || []);
-      }
-    };
-    fetchDespachos();
-  }, [searchDespacho]);
-
-  // Asignar despacho seleccionado al usuario
-  const handleAsignarDespacho = async () => {
-    if (!user || !selectedDespacho) return;
-    try {
-      setSaving(true);
-      await userService.assignDespachoToUser(
-        user.id,
-        selectedDespacho.id,
-        currentUser?.id || "admin"
-      );
-      setSuccessMessage("Despacho asignado exitosamente");
-      setSelectedDespacho(null);
-      setSearchDespacho("");
-      setDespachoResultados([]);
-      // Actualizar despachos asignados
-      const despachos = await userService.getUserDespachos(user.id);
-      setUserDespachos(despachos);
-    } catch (error) {
-      setError("Error al asignar el despacho");
-    } finally {
-      setSaving(false);
-    }
-  };
   const router = useRouter();
   const params = useParams();
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showModalAsignar, setShowModalAsignar] = useState(false);
+
+  // Recargar despachos después de asignar desde el modal
+  const handleAsignarDespacho = async () => {
+    if (!user) return;
+    try {
+      setSuccessMessage("Despacho asignado exitosamente");
+      // Actualizar despachos asignados
+      const despachos = await userService.getUserDespachos(user.id);
+      setUserDespachos(despachos);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      console.error("Error al recargar despachos:", err);
+    }
+  };
 
   // Estados para los campos del formulario
   const [formData, setFormData] = useState({
@@ -95,11 +56,11 @@ export default function EditUserPage() {
     if (params?.id && typeof params.id === "string") {
       loadUserData(params.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params?.id, authLoading, currentUser]);
 
   const loadUserData = async (userId: string) => {
     try {
-      setLoading(true);
       setError(null);
 
       const userData = await userService.getUserById(userId);
@@ -127,8 +88,6 @@ export default function EditUserPage() {
     } catch (error) {
       console.error("Error loading user:", error);
       setError("Error al cargar los datos del usuario");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -190,12 +149,9 @@ export default function EditUserPage() {
     try {
       await userService.unassignDespachoFromUser(user.id, despachoId);
 
-      // Actualizar la lista local de despachos
-      setUserDespachos((prev) =>
-        prev.map((d) =>
-          d.despachoId === despachoId ? { ...d, activo: false } : d
-        )
-      );
+      // Recargar la lista completa de despachos del usuario
+      const updatedDespachos = await userService.getUserDespachos(user.id);
+      setUserDespachos(updatedDespachos.filter((d) => d.activo));
 
       setSuccessMessage("Despacho desasignado exitosamente");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -500,6 +456,125 @@ export default function EditUserPage() {
                     "Guardar cambios"
                   )}
                 </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Columna derecha */}
+        <div className="space-y-6">
+          {/* Despachos Asignados */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Despachos Asignados</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Despachos que este usuario puede gestionar
+              </p>
+            </div>
+            <div className="p-6">
+              {userDespachos.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="h-12 w-12 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <p className="text-gray-500 mb-4">
+                    Este usuario no tiene despachos asignados.
+                  </p>
+                  <button
+                    onClick={() => setShowModalAsignar(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    Asignar Despacho
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userDespachos.map((despacho) => (
+                    <div
+                      key={despacho.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">
+                            {despacho.despachos?.nombre || "Despacho"}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {despacho.despachos?.slug || ""}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex gap-2">
+                          {despacho.permisos?.leer && (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                              Leer
+                            </span>
+                          )}
+                          {despacho.permisos?.escribir && (
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                              Escribir
+                            </span>
+                          )}
+                          {despacho.permisos?.eliminar && (
+                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">
+                              Eliminar
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDesasignarDespacho(despacho.despachoId)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Desasignar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => setShowModalAsignar(true)}
+                    className="w-full mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Asignar Otro Despacho
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Estadísticas del Usuario */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Estadísticas</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Despachos asignados:</span>
+                <span className="text-lg font-bold text-blue-600">{userDespachos.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Fecha de registro:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {user.fechaRegistro
+                    ? new Date(user.fechaRegistro).toLocaleDateString("es-ES")
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Último acceso:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {user.ultimoAcceso
+                    ? new Date(user.ultimoAcceso).toLocaleDateString("es-ES")
+                    : "-"}
+                </span>
+              </div>
             </div>
           </div>
         </div>

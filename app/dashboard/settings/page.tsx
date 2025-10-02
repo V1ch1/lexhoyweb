@@ -13,6 +13,7 @@ import { UserService } from "@/lib/userService";
 import { AuthService } from "@/lib/authService";
 import { UserDespacho } from "@/lib/types";
 import { decodeHtml } from "@/lib/decodeHtml";
+import ModalConfirmarEliminar from "@/components/ModalConfirmarEliminar";
 import {
   UserIcon,
   KeyIcon,
@@ -24,6 +25,8 @@ import {
   EyeSlashIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  XCircleIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 
 interface UserProfile {
@@ -118,6 +121,13 @@ const SettingsPage = () => {
 
   // Estado para despachos del usuario
   const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
+  
+  // Estado para modal de confirmación
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [despachoToDelete, setDespachoToDelete] = useState<{
+    id: string;
+    nombre: string;
+  } | null>(null);
 
   const [despachoData, setDespachoData] = useState({
     nombre: "",
@@ -395,10 +405,17 @@ const SettingsPage = () => {
       // Cargar despachos del usuario
       const loadUserDespachos = async () => {
         try {
+          console.log("🔍 Cargando despachos para usuario:", user.id, user.email);
           const despachos = await userService.getUserDespachos(user.id);
-          setUserDespachos(despachos.filter((d) => d.activo)); // Solo despachos activos
+          console.log("📦 Despachos obtenidos:", despachos);
+          console.log("📊 Total despachos:", despachos.length);
+          
+          const despachosActivos = despachos.filter((d) => d.activo);
+          console.log("✅ Despachos activos:", despachosActivos.length);
+          
+          setUserDespachos(despachosActivos);
         } catch (error) {
-          console.error("Error loading user despachos:", error);
+          console.error("❌ Error loading user despachos:", error);
           setUserDespachos([]);
         }
       };
@@ -461,7 +478,7 @@ const SettingsPage = () => {
       .catch(() => setUserSolicitudes([]));
   }, [user]);
 
-  const revokeSession = async (sessionId: string) => {
+  const revokeSession = async (_sessionId: string) => {
     if (confirm("¿Estás seguro de que quieres cerrar esta sesión?")) {
       try {
         // Aquí iría la llamada a la API para revocar la sesión
@@ -706,104 +723,278 @@ const SettingsPage = () => {
 
             {/* Mis despachos */}
             {activeTab === "mis-despachos" && (
-              <div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  {userSolicitudes.length === 0 ? (
-                    <div>
-                      <p className="text-gray-500 mb-4">
-                        No tienes despachos solicitados ni asignados.
-                      </p>
-                      <button
-                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={() =>
-                          (window.location.href =
-                            "/dashboard/solicitar-despacho")
-                        }
-                      >
-                        Solicitar despacho
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <table className="w-full text-left border-collapse mb-4">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="px-4 py-2">Nombre</th>
-                            <th className="px-4 py-2">Localidad</th>
-                            <th className="px-4 py-2">Provincia</th>
-                            <th className="px-4 py-2">Fecha</th>
-                            <th className="px-4 py-2">Estado</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {userSolicitudes.map((s) => (
-                            <tr key={s.despacho_id} className="border-b">
-                              <td className="px-4 py-2 font-semibold text-gray-900">
-                                {decodeHtml(
-                                  despachosInfo[String(s.despacho_id)]
-                                    ?.nombre || String(s.despacho_id)
-                                )}
-                              </td>
-                              <td className="px-4 py-2">
-                                {despachosInfo[String(s.despacho_id)]
-                                  ?.localidad || "-"}
-                              </td>
-                              <td className="px-4 py-2">
-                                {despachosInfo[String(s.despacho_id)]
-                                  ?.provincia || "-"}
-                              </td>
-                              <td className="px-4 py-2">
-                                {formatFecha(s.fecha_solicitud)}
-                              </td>
-                              <td className="px-4 py-2 flex gap-2 items-center">
-                                {s.estado === "pendiente" && (
-                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                    Pendiente
-                                  </span>
-                                )}
-                                {s.estado === "aprobada" && (
-                                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                                    Aprobada
-                                  </span>
-                                )}
-                                {s.estado === "denegada" && (
-                                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
-                                    Denegada
-                                  </span>
-                                )}
-                                {s.estado === "cancelada" && (
-                                  <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded">
-                                    Cancelada
-                                  </span>
-                                )}
-                                {s.estado === "pendiente" && (
-                                  <button
-                                    className="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 transition ml-2"
-                                    onClick={() =>
-                                      handleCancelarSolicitud(
-                                        String(s.despacho_id)
-                                      )
+              <div className="space-y-6">
+                {/* Despachos Asignados (Aprobados) */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-white">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <BuildingOfficeIcon className="h-6 w-6 text-green-600" />
+                      Mis Despachos Asignados
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Despachos que tienes asignados y puedes gestionar
+                    </p>
+                  </div>
+                  <div className="p-6">
+                    {userDespachos.length === 0 ? (
+                      <div className="text-center py-8">
+                        <BuildingOfficeIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-500 mb-4">
+                          No tienes despachos asignados todavía.
+                        </p>
+                        <button
+                          className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                          onClick={() =>
+                            (window.location.href = "/dashboard/solicitar-despacho")
+                          }
+                        >
+                          Solicitar despacho
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {userDespachos.map((despacho) => (
+                          <div
+                            key={despacho.id}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                                  {despacho.despachos?.nombre || "Despacho"}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                  <div>
+                                    <span className="font-medium">Fecha asignación:</span>
+                                    <br />
+                                    {despacho.fechaAsignacion
+                                      ? new Date(despacho.fechaAsignacion).toLocaleDateString("es-ES")
+                                      : "-"}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Permisos:</span>
+                                    <br />
+                                    <div className="flex gap-2 mt-1">
+                                      {despacho.permisos?.leer && (
+                                        <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                          Leer
+                                        </span>
+                                      )}
+                                      {despacho.permisos?.escribir && (
+                                        <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                                          Escribir
+                                        </span>
+                                      )}
+                                      {despacho.permisos?.eliminar && (
+                                        <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs">
+                                          Eliminar
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  if (
+                                    confirm(
+                                      `¿Estás seguro de que quieres eliminar tu propiedad del despacho "${despacho.despachos?.nombre}"?\n\nEsta acción desactivará tu acceso al despacho.`
+                                    )
+                                  ) {
+                                    try {
+                                      setLoading(true);
+                                      console.log("Eliminando despacho (inline):", {
+                                        userId: user.id,
+                                        despachoId: despacho.despachoId,
+                                        despachoIdFromDespachos: despacho.despachos?.id,
+                                        despacho: despacho
+                                      });
+                                      
+                                      // Usar el ID correcto del despacho
+                                      const despachoIdToDelete = despacho.despachoId || despacho.despachos?.id;
+                                      
+                                      if (!despachoIdToDelete) {
+                                        throw new Error("No se pudo determinar el ID del despacho a eliminar");
+                                      }
+
+                                      // Llamar al servicio para eliminar la asignación
+                                      await userService.unassignDespachoFromUser(
+                                        user.id,
+                                        despachoIdToDelete
+                                      );
+                                      
+                                      // Actualizar el estado local eliminando el despacho de la lista
+                                      setUserDespachos(prevDespachos => 
+                                        prevDespachos.filter(d => 
+                                          d.despachoId !== despachoIdToDelete && 
+                                          d.despachos?.id !== despachoIdToDelete
+                                        )
+                                      );
+                                      
+                                      // Mostrar mensaje de éxito
+                                      setMessage({
+                                        type: "success",
+                                        text: "Has sido eliminado correctamente del despacho"
+                                      });
+                                      
+                                      // Recargar los despachos para asegurar que todo esté en sincronía
+                                      try {
+                                        const updatedDespachos = await userService.getUserDespachos(user.id);
+                                        setUserDespachos(updatedDespachos.filter((d) => d.activo));
+                                      } catch (refreshError) {
+                                        console.error("Error al actualizar la lista de despachos:", refreshError);
+                                        // No mostramos error al usuario si falla la actualización, ya que la operación principal fue exitosa
+                                      }
+                                      
+                                    } catch (error) {
+                                      console.error("Error eliminando propiedad:", error);
+                                      setMessage({
+                                        type: "error",
+                                        text: error instanceof Error ? error.message : "Error al eliminar la propiedad",
+                                      });
+                                    } finally {
+                                      setLoading(false);
+                                      setTimeout(() => setMessage(null), 5000);
                                     }
-                                  >
-                                    Cancelar
-                                  </button>
-                                )}
-                              </td>
+                                  }
+                                }}
+                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2"
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                                Eliminar Propiedad
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Solicitudes Pendientes */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-white">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <ClockIcon className="h-6 w-6 text-yellow-600" />
+                      Solicitudes Pendientes
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Solicitudes que están esperando aprobación del administrador
+                    </p>
+                  </div>
+                  <div className="p-6">
+                    {userSolicitudes.filter((s) => s.estado === "pendiente").length === 0 ? (
+                      <div className="text-center py-8">
+                        <ClockIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-500">No tienes solicitudes pendientes.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Provincia</th>
+                              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Acción</th>
                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {userSolicitudes
+                              .filter((s) => s.estado === "pendiente")
+                              .map((s) => (
+                                <tr key={s.despacho_id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 font-semibold text-gray-900">
+                                    {decodeHtml(
+                                      despachosInfo[String(s.despacho_id)]?.nombre ||
+                                        String(s.despacho_id)
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {despachosInfo[String(s.despacho_id)]?.localidad || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {despachosInfo[String(s.despacho_id)]?.provincia || "-"}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {formatFecha(s.fecha_solicitud)}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button
+                                      className="bg-red-500 text-white px-3 py-1.5 rounded-md shadow hover:bg-red-600 transition text-sm font-medium"
+                                      onClick={() =>
+                                        handleCancelarSolicitud(String(s.despacho_id))
+                                      }
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Solicitudes Rechazadas */}
+                {userSolicitudes.filter((s) => s.estado === "rechazado" || s.estado === "denegada").length > 0 && (
+                  <div className="bg-white rounded-lg border border-red-200">
+                    <div className="px-6 py-4 border-b border-red-200 bg-gradient-to-r from-red-50 to-white">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <XCircleIcon className="h-6 w-6 text-red-600" />
+                        Solicitudes Rechazadas
+                      </h3>
+                    </div>
+                    <div className="p-6">
+                      <div className="space-y-3">
+                        {userSolicitudes
+                          .filter((s) => s.estado === "rechazado" || s.estado === "denegada")
+                          .map((s) => (
+                            <div
+                              key={s.despacho_id}
+                              className="border border-red-200 rounded-lg p-4 bg-red-50"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">
+                                    {decodeHtml(
+                                      despachosInfo[String(s.despacho_id)]?.nombre ||
+                                        String(s.despacho_id)
+                                    )}
+                                  </h4>
+                                  <p className="text-sm text-gray-600">
+                                    {despachosInfo[String(s.despacho_id)]?.localidad},{" "}
+                                    {despachosInfo[String(s.despacho_id)]?.provincia}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Rechazada el {formatFecha(s.fecha_solicitud)}
+                                  </p>
+                                </div>
+                                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                                  Rechazada
+                                </span>
+                              </div>
+                            </div>
                           ))}
-                        </tbody>
-                      </table>
-                      <button
-                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={() =>
-                          (window.location.href =
-                            "/dashboard/solicitar-despacho")
-                        }
-                      >
-                        Solicitar despacho
-                      </button>
-                    </>
-                  )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botón para solicitar nuevo despacho */}
+                <div className="flex justify-center">
+                  <button
+                    className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+                    onClick={() =>
+                      (window.location.href = "/dashboard/solicitar-despacho")
+                    }
+                  >
+                    <BuildingOfficeIcon className="h-5 w-5" />
+                    Solicitar Nuevo Despacho
+                  </button>
                 </div>
               </div>
             )}
@@ -1382,6 +1573,54 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de confirmación para eliminar */}
+      {showDeleteModal && (
+        <ModalConfirmarEliminar
+          show={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setDespachoToDelete(null);
+          }}
+          onConfirm={async () => {
+            if (!despachoToDelete || !user) return;
+
+            try {
+              setLoading(true);
+              console.log("🗑️ Eliminando despacho:", {
+                userId: user.id,
+                despachoId: despachoToDelete.id,
+                despachoNombre: despachoToDelete.nombre
+              });
+              await userService.unassignDespachoFromUser(
+                user.id,
+                despachoToDelete.id
+              );
+              setMessage({
+                type: "success",
+                text: "Propiedad eliminada correctamente",
+              });
+              // Recargar despachos
+              const despachos = await userService.getUserDespachos(user.id);
+              setUserDespachos(despachos.filter((d) => d.activo));
+              setTimeout(() => setMessage(null), 5000);
+            } catch (error) {
+              console.error("Error eliminando propiedad:", error);
+              setMessage({
+                type: "error",
+                text: "Error al eliminar la propiedad",
+              });
+              setTimeout(() => setMessage(null), 5000);
+            } finally {
+              setLoading(false);
+              setDespachoToDelete(null);
+            }
+          }}
+          title="Eliminar Propiedad"
+          message="Vas a eliminar tu propiedad de este despacho. Perderás todos los permisos de gestión."
+          despachoNombre={despachoToDelete?.nombre}
+        />
+      )}
     </>
   );
 };
