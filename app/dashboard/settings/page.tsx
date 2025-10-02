@@ -1,4 +1,7 @@
 "use client";
+
+import { useState, useEffect } from "react";
+
 // Función segura para obtener el JWT
 function getJWT() {
   if (typeof window !== "undefined") {
@@ -6,8 +9,6 @@ function getJWT() {
   }
   return "";
 }
-
-import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
 import { UserService } from "@/lib/userService";
 import { AuthService } from "@/lib/authService";

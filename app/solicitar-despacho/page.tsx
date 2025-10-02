@@ -1,4 +1,7 @@
 "use client";
+
+import React, { useState } from "react";
+
 // Función segura para obtener el JWT
 function getJWT() {
   if (typeof window !== "undefined") {
@@ -6,7 +9,6 @@ function getJWT() {
   }
   return "";
 }
-import React, { useState } from "react";
 
 interface Despacho {
   id: number;
