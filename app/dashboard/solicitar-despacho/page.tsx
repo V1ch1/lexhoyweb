@@ -1,4 +1,8 @@
 "use client";
+
+import React, { useState, useCallback, useEffect } from "react";
+import { useAuth } from "@/lib/authContext";
+
 // Función segura para obtener el JWT
 function getJWT() {
   if (typeof window !== "undefined") {
@@ -6,6 +10,7 @@ function getJWT() {
   }
   return "";
 }
+
 // Utilidad para decodificar entidades HTML
 function decodeHtml(html: string) {
   if (!html) return "";
@@ -13,9 +18,6 @@ function decodeHtml(html: string) {
   txt.innerHTML = html;
   return txt.value;
 }
-"use client";
-import React, { useState, useCallback, useEffect } from "react";
-import { useAuth } from "@/lib/authContext";
 
 interface Despacho {
   id: number;
