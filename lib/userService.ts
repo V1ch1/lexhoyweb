@@ -6,6 +6,8 @@ import {
   UserRole,
   UserStatus,
   PlanType,
+  UserProfile,
+  UpdateUserProfileData
 } from "./types";
 
 // Interfaz para los datos raw de la base de datos
@@ -29,6 +31,44 @@ interface UserRaw {
 }
 
 export class UserService {
+  /**
+   * Obtiene el perfil de un usuario por su ID
+   */
+  /**
+   * Actualiza el perfil de un usuario
+   */
+  async updateUserProfile(userId: string, profileData: UpdateUserProfileData): Promise<UserProfile> {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        nombre: profileData.nombre,
+        apellidos: profileData.apellidos,
+        telefono: profileData.telefono,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error al actualizar el perfil del usuario:', error);
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name || `${data.nombre} ${data.apellidos}`.trim(),
+      role: data.rol,
+      nombre: data.nombre,
+      apellidos: data.apellidos,
+      telefono: data.telefono || '',
+      fecha_registro: data.fecha_registro || new Date().toISOString(),
+      ultimo_acceso: data.ultimo_acceso || new Date().toISOString(),
+      despacho_nombre: data.despacho_nombre
+    };
+  }
+
   /**
    * Obtiene el perfil de un usuario por su ID
    */

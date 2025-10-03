@@ -1,5 +1,24 @@
 // Tipos TypeScript para el proyecto Lexhoy Portal - Estructura compatible con Algolia
 
+export interface UpdateUserProfileData {
+  nombre: string;
+  apellidos: string;
+  telefono: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: 'super_admin' | 'despacho_admin' | 'usuario';
+  nombre: string;
+  apellidos: string;
+  telefono: string;
+  fecha_registro: string;
+  ultimo_acceso: string;
+  despacho_nombre?: string;
+}
+
 export interface User {
   id: string;
   email: string;

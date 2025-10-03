@@ -12,11 +12,7 @@ import {
   ShieldCheckIcon,
   ComputerDesktopIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-  ClockIcon,
-  EyeIcon,
-  EyeSlashIcon
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import ProfileTab from '@/components/settings/ProfileTab';
 import PasswordTab from '@/components/settings/PasswordTab';
@@ -27,6 +23,20 @@ import SessionsTab from '@/components/settings/SessionsTab';
 
 // Types
 type SettingsTab = 'profile' | 'password' | 'notifications' | 'mis-despachos' | 'privacy' | 'sessions';
+
+interface Despacho {
+  id: string;
+  nombre: string;
+  localidad?: string;
+  provincia?: string;
+  telefono?: string;
+  email?: string;
+  web?: string;
+  descripcion?: string;
+  num_sedes?: number;
+  estado?: string;
+  created_at: string;
+}
 
 interface UserProfile {
   id: string;
@@ -48,26 +58,12 @@ interface Tab {
   visible: boolean;
 }
 
-// Service instances
+// Service instance
 const userService = new UserService();
-const authService = new AuthService();
-
-// Helper function to safely access user data
-const safeUser = (user: any): UserProfile => ({
-  id: user?.id || "",
-  email: user?.email || "",
-  name: user?.name || "",
-  role: (user?.role as 'super_admin' | 'despacho_admin' | 'usuario') || "usuario",
-  nombre: user?.nombre || "",
-  apellidos: user?.apellidos || "",
-  telefono: user?.telefono || "",
-  fecha_registro: user?.fecha_registro || new Date().toISOString(),
-  ultimo_acceso: user?.ultimo_acceso || new Date().toISOString(),
-  despacho_nombre: user?.despacho_nombre || ""
-});
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -221,26 +217,34 @@ export default function SettingsPage() {
     }
   }, [user, activeTab]);
 
-  // Handle despacho deletion
-  const handleDeleteDespacho = async (despachoId: string) => {
+  // Handle profile update
+  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
+    if (!user) return;
+    
     try {
-      setLoading(true);
-      // Aquí deberías implementar la lógica para eliminar el despacho
-      // Por ejemplo:
-      // await userService.removeDespacho(user.id, despachoId);
-      setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
+      setIsLoading(true);
+      // Actualizar el perfil en la base de datos
+      const updatedProfile = await userService.updateUserProfile(user.id, {
+        nombre: data.nombre || '',
+        apellidos: data.apellidos || '',
+        telefono: data.telefono || ''
+      });
+      
+      // Actualizar el estado local
+      setProfile(updatedProfile);
+      
       setMessage({
         type: 'success',
-        text: 'Despacho eliminado correctamente'
+        text: 'Perfil actualizado correctamente'
       });
     } catch (error) {
-      console.error('Error al eliminar el despacho:', error);
+      console.error('Error al actualizar el perfil:', error);
       setMessage({
         type: 'error',
-        text: 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
+        text: 'Error al actualizar el perfil. Por favor, inténtalo de nuevo.'
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -262,8 +266,29 @@ export default function SettingsPage() {
   // Handle password form submission
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Add your password update logic here
+    // Add password update logic here
     console.log('Updating password:', passwordData);
+  };
+
+  // Handle despacho deletion
+  const handleDeleteDespacho = async (despachoId: string) => {
+    try {
+      setLoading(true);
+      // Add despacho deletion logic here
+      setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
+      setMessage({
+        type: 'success',
+        text: 'Despacho eliminado correctamente'
+      });
+    } catch (error) {
+      console.error('Error al eliminar el despacho:', error);
+      setMessage({
+        type: 'error',
+        text: 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Render tab content
@@ -278,7 +303,13 @@ export default function SettingsPage() {
 
     switch (activeTab) {
       case 'profile':
-        return <ProfileTab profileData={profile} onUpdate={setProfile} loading={loading} />;
+        return (
+          <ProfileTab 
+            profileData={profile} 
+            onUpdate={handleUpdateProfile} 
+            loading={isLoading} 
+          />
+        );
       case 'password':
         return (
           <PasswordTab
@@ -302,15 +333,15 @@ export default function SettingsPage() {
           />
         );
       case 'privacy':
-        return <PrivacyTab loading={loading} privacySettings={{}} onUpdate={() => {}} onSubmit={() => {}} />;
+        return <PrivacyTab loading={loading} />;
       case 'sessions':
-        return <SessionsTab loading={loading} sessions={[]} onRevokeSession={() => Promise.resolve()} />;
+        return <SessionsTab loading={loading} />;
       default:
         return null;
     }
   };
 
-  if (authLoading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
