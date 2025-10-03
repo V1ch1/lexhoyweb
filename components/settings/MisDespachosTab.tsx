@@ -3,12 +3,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 export interface Despacho {
   id: string;
   nombre: string;
   localidad?: string;
   provincia?: string;
+  telefono?: string;
+  email?: string;
+  web?: string;
+  descripcion?: string;
+  num_sedes?: number;
   estado?: string;
   created_at: string;
 }
@@ -19,6 +25,7 @@ interface MisDespachosTabProps {
 }
 
 export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: MisDespachosTabProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -105,54 +112,110 @@ export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: Mis
           <li key={despacho.id}>
             <div className="px-4 py-4 sm:px-6">
               <div className="flex items-center justify-between">
-                <p className="truncate text-sm font-medium text-blue-600">{despacho.nombre}</p>
-                <div className="ml-2 flex items-center space-x-2">
-                  <p className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                    despacho.estado === 'activo' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {despacho.estado || 'Sin estado'}
-                  </p>
-                  {onDeleteDespacho && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(despacho.id)}
-                      className="text-red-600 hover:text-red-900 text-sm font-medium"
-                      disabled={loading}
-                    >
-                      Eliminar
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="mt-2 sm:flex sm:justify-between">
-                <div className="sm:flex">
-                  {despacho.localidad && (
-                    <p className="flex items-center text-sm text-gray-500">
-                      <svg className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                      {despacho.localidad}
-                      {despacho.provincia && `, ${despacho.provincia}`}
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-900">{despacho.nombre}</h3>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {despacho.localidad && (
+                      <p className="flex items-center text-sm text-gray-900">
+                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        {despacho.localidad}{despacho.provincia && `, ${despacho.provincia}`}
+                      </p>
+                    )}
+                    {despacho.telefono && (
+                      <p className="flex items-center text-sm text-gray-900">
+                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        {despacho.telefono}
+                      </p>
+                    )}
+                    {despacho.email && (
+                      <p className="flex items-center text-sm text-gray-900">
+                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                        </svg>
+                        {despacho.email}
+                      </p>
+                    )}
+                    {despacho.web && (
+                      <p className="flex items-center text-sm text-gray-900">
+                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z" clipRule="evenodd" />
+                        </svg>
+                        <a href={despacho.web} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          Sitio web
+                        </a>
+                      </p>
+                    )}
+                    {despacho.num_sedes !== undefined && despacho.num_sedes > 0 && (
+                      <p className="flex items-center text-sm text-gray-900">
+                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                        </svg>
+                        {despacho.num_sedes} {despacho.num_sedes === 1 ? 'sede' : 'sedes'}
+                      </p>
+                    )}
+                  </div>
+                  {despacho.descripcion && (
+                    <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                      {despacho.descripcion}
                     </p>
                   )}
                 </div>
-                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                  <svg className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                  </svg>
-                  <p>
-                    Creado el{' '}
-                    <time dateTime={despacho.created_at}>
-                      {new Date(despacho.created_at).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </time>
+                <div className="ml-4 flex flex-col items-end space-y-2">
+                  <p className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                    despacho.estado === 'verificado' 
+                      ? 'bg-green-100 text-green-800' 
+                      : despacho.estado === 'pendiente'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {despacho.estado === 'verificado' ? '✓ Verificado' : 
+                     despacho.estado === 'pendiente' ? '⏳ Pendiente' : 
+                     despacho.estado || 'Sin estado'}
                   </p>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/dashboard/despachos/${despacho.id}/edit`)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <svg className="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                      Editar
+                    </button>
+                    {onDeleteDespacho && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClick(despacho.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        disabled={loading}
+                      >
+                        <svg className="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        Eliminar
+                      </button>
+                    )}
+                  </div>
                 </div>
+              </div>
+              <div className="mt-3 flex items-center text-xs text-gray-500">
+                <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+                Asignado el{' '}
+                <time dateTime={despacho.created_at} className="ml-1">
+                  {new Date(despacho.created_at).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </time>
               </div>
             </div>
           </li>

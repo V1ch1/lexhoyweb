@@ -461,7 +461,7 @@ export class UserService {
         (assignedDespachos || []).map(async (ud) => {
           const { data: despacho } = await supabase
             .from("despachos")
-            .select("id, nombre, object_id, slug")
+            .select("*")
             .eq("id", ud.despacho_id)
             .single();
           
@@ -477,7 +477,7 @@ export class UserService {
       // 3. Obtener despachos donde el usuario es propietario (owner_email)
       const { data: ownedDespachos, error: ownedError } = await supabase
         .from("despachos")
-        .select("id, nombre, object_id, slug")
+        .select("*")
         .eq("owner_email", userData.email);
 
       if (ownedError) throw ownedError;
@@ -491,11 +491,7 @@ export class UserService {
         activo: true,
         permisos: { leer: true, escribir: true, eliminar: true }, // Propietario tiene todos los permisos
         asignadoPor: "owner", // Indicador de que es propietario
-        despachos: {
-          nombre: d.nombre,
-          object_id: d.object_id,
-          slug: d.slug,
-        },
+        despachos: d, // Todos los datos del despacho
       }));
 
       // 5. Combinar ambas listas (evitando duplicados)
@@ -1184,30 +1180,10 @@ export class UserService {
     
     console.log("📋 Solicitud obtenida:", solicitud);
 
-    // Sincronizar despacho desde WordPress a Supabase antes de aprobar
+    // NOTA: El despacho ya debería estar importado cuando se solicita la propiedad
+    // Por lo tanto, no necesitamos sincronizar de nuevo desde WordPress
     const objectId = solicitud.despacho_id;
-    console.log("🔄 Sincronizando despacho con object_id:", objectId);
-    
-    try {
-      const syncRes = await fetch("/api/sync-despacho", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectId }),
-      });
-      const syncData = await syncRes.json();
-      
-      if (!syncRes.ok) {
-        console.error("❌ Error en sync-despacho:", syncData);
-        throw new Error(
-          syncData.error || "Error sincronizando despacho desde WordPress"
-        );
-      }
-      
-      console.log("✅ Despacho sincronizado:", syncData);
-    } catch (err) {
-      console.error("💥 Error sincronizando despacho:", err);
-      throw err;
-    }
+    console.log("📋 Despacho solicitado - object_id:", objectId);
 
     // Obtener el ID numérico del despacho en Supabase usando el object_id
     console.log("🔍 Buscando despacho en Supabase con object_id:", objectId);

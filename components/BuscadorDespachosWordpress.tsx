@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { DespachoService } from "@/lib/despachoService";
 
 // Tipos de datos
 interface DespachoWP {
@@ -59,25 +58,41 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setImportResult(null);
 
     try {
-      // Usamos el servicio para buscar el despacho por ID
-      const { success, data, error } = await DespachoService.buscarDespacho(query);
+      console.log('🔍 Buscando despacho:', query);
       
-      if (!success) {
-        throw new Error(error || 'Error al buscar el despacho');
+      // Usar el endpoint de búsqueda mejorado
+      const res = await fetch(`/api/search-despachos?query=${encodeURIComponent(query)}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al buscar despachos');
       }
 
-      // Mapear el resultado al formato esperado por el componente
-      const resultadoWP: DespachoWP = {
-        object_id: data.id?.toString() || "",
-        nombre: data.title?.rendered || 'Sin título',
-        localidad: data.meta?.localidad || '',
-        provincia: data.meta?.provincia || '',
-        ...data
-      };
+      const data = await res.json();
+      console.log('📊 Resultados:', data);
 
-      setResultados([resultadoWP]);
+      if (!data || data.length === 0) {
+        setError('No se encontraron despachos con ese nombre');
+        return;
+      }
+
+      // Mapear resultados al formato esperado
+      const resultadosFormateados = data.map((d: {
+        id: string | number;
+        title?: { rendered?: string };
+        meta?: { localidad?: string; provincia?: string; [key: string]: unknown };
+        [key: string]: unknown;
+      }) => ({
+        object_id: d.id?.toString() || "",
+        nombre: d.title?.rendered || 'Sin título',
+        localidad: d.meta?.localidad || '',
+        provincia: d.meta?.provincia || '',
+        ...d
+      }));
+
+      setResultados(resultadosFormateados);
     } catch (err) {
-      console.error('Error en buscarDespachos:', err);
+      console.error('❌ Error en buscarDespachos:', err);
       setError(err instanceof Error ? err.message : 'Error al buscar el despacho');
     } finally {
       setLoading(false);
@@ -90,29 +105,51 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setImportSummary(null);
     
     try {
-      // 1. Primero buscamos el despacho en WordPress
-      const { success: existeEnWP, data: wpDespacho } = await DespachoService.buscarDespacho(objectId);
+      console.log('📥 Importando despacho:', objectId);
       
-      if (!existeEnWP || !wpDespacho) {
+      // 1. Buscar el despacho completo por ID
+      const res = await fetch(`/api/search-despachos?id=${encodeURIComponent(objectId)}`);
+      
+      if (!res.ok) {
         throw new Error('No se encontró el despacho en WordPress');
       }
 
-      // 2. Importamos el despacho a Supabase
-      const { success, data: despachoImportado, error } = await DespachoService.importarDeWordPress(wpDespacho);
+      const data = await res.json();
       
-      if (success && despachoImportado) {
+      if (!data || data.length === 0) {
+        throw new Error('No se encontró el despacho en WordPress');
+      }
+
+      const wpDespacho = data[0];
+      console.log('📄 Despacho de WordPress:', wpDespacho);
+
+      // 2. Importar usando el endpoint API
+      const importRes = await fetch('/api/importar-despacho', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ despachoWP: wpDespacho }),
+      });
+
+      if (!importRes.ok) {
+        const errorData = await importRes.json();
+        console.error('❌ Error del servidor:', errorData);
+        throw new Error(errorData.details || errorData.error || 'Error al importar despacho');
+      }
+
+      const { success, despachoId, objectId: wpObjectId, error } = await importRes.json();
+      
+      if (success && despachoId) {
         setImportResult("✅ Despacho importado correctamente");
         setImportSummary({
           success: true,
-          despacho: despachoImportado,
-          message: 'El despacho se ha importado correctamente a la base de datos'
+          message: `El despacho se ha importado correctamente. ID: ${despachoId}, Object ID: ${wpObjectId}`
         });
         if (onImport) onImport(objectId);
       } else {
         throw new Error(error || 'Error al importar el despacho');
       }
     } catch (error) {
-      console.error('Error en importarDespacho:', error);
+      console.error('❌ Error en importarDespacho:', error);
       setImportResult(`❌ ${error instanceof Error ? error.message : 'Error al importar el despacho'}`);
       setImportSummary({
         success: false,
@@ -131,52 +168,66 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       >
         <input
           type="text"
-          className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
-          placeholder="Buscar despacho por ID"
+          className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80 text-gray-900 placeholder-gray-500"
+          placeholder="Buscar despacho por nombre"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           required
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors font-medium"
           disabled={loading || !query}
         >
           {loading ? "Buscando..." : "Buscar"}
         </button>
       </form>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
+      {error && <div className="text-red-600 font-medium mb-2">{error}</div>}
       {resultados.length > 0 && (
-        <div className="bg-gray-50 rounded p-4 overflow-x-auto">
-          <h4 className="font-semibold mb-2">Resultados:</h4>
-          <table className="min-w-full text-sm">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 overflow-x-auto">
+          <h4 className="font-semibold text-gray-900 mb-3 text-base">
+            Resultados ({resultados.length}):
+          </h4>
+          <table className="min-w-full">
             <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Nombre</th>
-                <th className="text-left p-2">Localidad</th>
-                <th className="text-left p-2">Provincia</th>
-                <th className="text-left p-2">Acción</th>
+              <tr className="border-b-2 border-gray-300 bg-gray-50">
+                <th className="text-left p-3 font-semibold text-gray-900">Nombre</th>
+                <th className="text-left p-3 font-semibold text-gray-900">Localidad</th>
+                <th className="text-left p-3 font-semibold text-gray-900">Provincia</th>
+                <th className="text-left p-3 font-semibold text-gray-900">Acción</th>
               </tr>
             </thead>
             <tbody>
-              {resultados.map((d) => (
-                <tr key={d.object_id} className="border-b last:border-b-0">
-                  <td className="p-2 font-medium">{d.nombre}</td>
-                  <td className="p-2">{d.localidad || ""}</td>
-                  <td className="p-2">{d.provincia || ""}</td>
-                  <td className="p-2">
-                    <button
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm disabled:opacity-50"
-                      onClick={() => importarDespacho(d.object_id)}
-                      disabled={importando === d.object_id}
-                    >
-                      {importando === d.object_id
-                        ? "Importando..."
-                        : "Importar"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {resultados.map((d) => {
+                // Extraer localidad y provincia de meta o de _despacho_sedes
+                const localidad = d.meta?.localidad || 
+                  (d.meta?._despacho_sedes && Array.isArray(d.meta._despacho_sedes) && d.meta._despacho_sedes[0]?.localidad) || 
+                  d.localidad || 
+                  '-';
+                const provincia = d.meta?.provincia || 
+                  (d.meta?._despacho_sedes && Array.isArray(d.meta._despacho_sedes) && d.meta._despacho_sedes[0]?.provincia) || 
+                  d.provincia || 
+                  '-';
+                
+                return (
+                  <tr key={d.object_id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                    <td className="p-3 font-medium text-gray-900">{d.nombre}</td>
+                    <td className="p-3 text-gray-700">{localidad}</td>
+                    <td className="p-3 text-gray-700">{provincia}</td>
+                    <td className="p-3">
+                      <button
+                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        onClick={() => importarDespacho(d.object_id)}
+                        disabled={importando === d.object_id}
+                      >
+                        {importando === d.object_id
+                          ? "Importando..."
+                          : "Importar"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {importResult && (

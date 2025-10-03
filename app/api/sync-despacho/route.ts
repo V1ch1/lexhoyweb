@@ -1,39 +1,64 @@
 import { NextResponse } from "next/server";
+import { SyncService } from "@/lib/syncService";
 
-// Endpoint temporal para depuración de webhooks
-// TODO: Implementar sincronización completa según DESPACHOS_WORKFLOW.md
+/**
+ * Endpoint para recibir webhooks de WordPress
+ * Sincroniza despachos y sedes automáticamente
+ */
 export async function POST(request: Request) {
   try {
-    // 1. Obtener información básica
-    const url = new URL(request.url);
-    console.log('\n===== NUEVA SOLICITUD =====');
-    console.log(`URL: ${url}`);
-    console.log(`Método: ${request.method}`);
+    console.log('\n===== WEBHOOK DE WORDPRESS =====');
+    console.log(`Timestamp: ${new Date().toISOString()}`);
     
-    // 2. Mostrar headers
-    console.log('\nHEADERS:');
-    request.headers.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
-    });
+    // Obtener el payload del webhook
+    const payload = await request.json();
+    console.log('Payload recibido:', JSON.stringify(payload, null, 2));
     
-    // 3. Obtener el cuerpo
-    const body = await request.text();
-    console.log('\nCUERPO DE LA SOLICITUD:');
-    console.log(body || '(vacío)');
+    // Validar que tenemos los datos mínimos necesarios
+    if (!payload || !payload.id) {
+      console.error('❌ Payload inválido: falta ID');
+      return NextResponse.json(
+        { 
+          status: 'error',
+          error: 'Payload inválido: se requiere ID del despacho',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Sincronizar el despacho usando SyncService
+    console.log(`🔄 Sincronizando despacho ID: ${payload.id}`);
+    const result = await SyncService.sincronizarDesdeWebhook(payload);
+
+    if (!result.success) {
+      console.error('❌ Error en sincronización:', result.error);
+      return NextResponse.json(
+        { 
+          status: 'error',
+          error: result.error,
+          details: result.details,
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Sincronización exitosa');
+    console.log(`Despacho ID: ${result.despachoId}`);
+    console.log(`Object ID: ${result.objectId}`);
     
-    // 4. Devolver una respuesta simple
     return NextResponse.json(
       { 
         status: 'success',
-        message: 'Solicitud recibida',
-        body: body || null,
-        headers: Object.fromEntries(request.headers.entries())
+        message: result.message,
+        despachoId: result.despachoId,
+        objectId: result.objectId,
+        timestamp: new Date().toISOString(),
       },
       { status: 200 }
     );
     
   } catch (error) {
-    console.error('Error en el servidor:', error);
+    console.error('❌ Error en el servidor:', error);
     return NextResponse.json(
       { 
         status: 'error',

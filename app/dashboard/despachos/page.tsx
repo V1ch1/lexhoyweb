@@ -51,6 +51,13 @@ const DespachosPage = () => {
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  
+  // Estado para modal de solicitar propiedad
+  const [showSolicitarModal, setShowSolicitarModal] = useState(false);
+  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
+  const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
+  const [mensajePropiedad, setMensajePropiedad] = useState<{tipo: 'success' | 'error', texto: string} | null>(null);
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Set<string>>(new Set());
 
   // Buscar usuarios en tiempo real por email o nombre de despacho
   useEffect(() => {
@@ -95,6 +102,52 @@ const DespachosPage = () => {
     fetchDespachos();
     setUserLoading(false);
   };
+
+  // Solicitar propiedad del despacho
+  const handleSolicitarPropiedad = async () => {
+    if (!despachoSolicitar || !user?.email || !user?.id) return;
+    setSolicitandoPropiedad(true);
+    setMensajePropiedad(null);
+    
+    // Obtener datos completos del usuario
+    const { data: userData } = await supabase
+      .from("users")
+      .select("nombre, apellidos")
+      .eq("id", user.id)
+      .single();
+    
+    // Crear solicitud pendiente de aprobación
+    const { data: solicitudCreada, error } = await supabase
+      .from("solicitudes_despacho")
+      .insert({
+        user_id: user.id,
+        user_email: user.email,
+        user_name: userData ? `${userData.nombre || ''} ${userData.apellidos || ''}`.trim() : user.email,
+        despacho_id: despachoSolicitar.object_id || despachoSolicitar.id, // Usar object_id (WordPress ID)
+        despacho_nombre: despachoSolicitar.nombre,
+        despacho_localidad: despachoSolicitar.localidad,
+        despacho_provincia: despachoSolicitar.provincia,
+        estado: 'pendiente',
+      })
+      .select()
+      .single();
+    
+    console.log('✅ Solicitud creada:', solicitudCreada);
+    
+    if (error) {
+      setMensajePropiedad({ tipo: 'error', texto: 'Error al enviar solicitud: ' + error.message });
+    } else {
+      setMensajePropiedad({ tipo: 'success', texto: '✅ Solicitud enviada. Un administrador la revisará pronto.' });
+      // Agregar a la lista de solicitudes pendientes
+      setSolicitudesPendientes(prev => new Set(prev).add(despachoSolicitar.id));
+      setTimeout(() => {
+        setShowSolicitarModal(false);
+        setDespachoSolicitar(null);
+        setMensajePropiedad(null);
+      }, 3000);
+    }
+    setSolicitandoPropiedad(false);
+  };
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [despachos, setDespachos] = useState<DespachoSummary[]>([]);
@@ -133,13 +186,18 @@ const DespachosPage = () => {
         let sedePrincipal = null;
         let ownerEmail = null;
         if (d.id) {
-          // Sede principal
-          const { data: sedes } = await supabase
+          // Sede principal - con manejo de errores
+          const { data: sedes, error: sedeError } = await supabase
             .from("sedes")
             .select("*")
             .eq("despacho_id", d.id)
             .eq("es_principal", true)
-            .single();
+            .maybeSingle();
+          
+          if (sedeError) {
+            console.warn(`⚠️ No se pudo obtener sede para despacho ${d.id}:`, sedeError.message);
+          }
+          
           sedePrincipal = sedes || null;
           // Obtener owner_email directamente del despacho
           ownerEmail = d.owner_email || null;
@@ -182,6 +240,73 @@ const DespachosPage = () => {
         onClose={() => setShowAsignarModal(false)}
         onAsignar={fetchDespachos}
       />
+      
+      {/* Modal para solicitar propiedad */}
+      {showSolicitarModal && despachoSolicitar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative">
+            <button
+              onClick={() => {
+                setShowSolicitarModal(false);
+                setDespachoSolicitar(null);
+                setMensajePropiedad(null);
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Solicitar Propiedad</h3>
+            <p className="text-gray-700 mb-4">
+              ¿Deseas solicitar la propiedad del despacho <strong>&quot;{despachoSolicitar.nombre}&quot;</strong>?
+            </p>
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>📋 Proceso de aprobación:</strong><br/>
+                Tu solicitud será revisada por un administrador. Recibirás una notificación cuando sea aprobada o rechazada.
+              </p>
+            </div>
+            
+            {mensajePropiedad && (
+              <div className={`mb-4 p-3 rounded ${mensajePropiedad.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {mensajePropiedad.texto}
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowSolicitarModal(false);
+                  setDespachoSolicitar(null);
+                  setMensajePropiedad(null);
+                }}
+                disabled={solicitandoPropiedad}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSolicitarPropiedad}
+                disabled={solicitandoPropiedad}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {solicitandoPropiedad ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Procesando...
+                  </>
+                ) : (
+                  'Confirmar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Despachos</h1>
           <p className="text-gray-600 mt-2">Gestiona la información de los despachos jurídicos</p>
@@ -258,10 +383,10 @@ const DespachosPage = () => {
                     {despachos.map((d) => (
                       <tr key={d.id}>
                         <td className="px-4 py-2 text-sm font-semibold text-gray-900">{d.nombre}</td>
-                        <td className="px-4 py-2 text-sm">{d.localidad || "-"}</td>
-                        <td className="px-4 py-2 text-sm">{d.provincia || "-"}</td>
-                        <td className="px-4 py-2 text-sm">{d.telefono || "-"}</td>
-                        <td className="px-4 py-2 text-sm">{d.email || "-"}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{d.localidad || "-"}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{d.provincia || "-"}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{d.telefono || "-"}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{d.email || "-"}</td>
                         <td className="px-4 py-2 text-sm text-center">{d.num_sedes}</td>
                         <td className="px-4 py-2 text-sm">
                           {d.owner_email ? (
@@ -302,6 +427,24 @@ const DespachosPage = () => {
                             >
                               Editar
                             </button>
+                          ) : !d.owner_email ? (
+                            solicitudesPendientes.has(d.id) ? (
+                              <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Pendiente
+                              </span>
+                            ) : (
+                              <button 
+                                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1" 
+                                onClick={() => {
+                                  setDespachoSolicitar(d);
+                                  setShowSolicitarModal(true);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Solicitar Propiedad
+                              </button>
+                            )
                           ) : (
                             <span className="text-gray-400 text-xs italic">Sin permisos</span>
                           )}

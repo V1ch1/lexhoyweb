@@ -75,6 +75,7 @@ export class DespachoService {
 
   /**
    * Importa un despacho desde WordPress a Supabase
+   * Ahora usa SyncService para importación completa con sedes
    */
   static async importarDeWordPress(despachoWP: {
     id: number | string;
@@ -82,24 +83,43 @@ export class DespachoService {
     content?: { rendered?: string };
     status?: string;
     date?: string;
-    meta?: Record<string, unknown>;
+    slug?: string;
+    meta?: {
+      localidad?: string;
+      provincia?: string;
+      telefono?: string;
+      email_contacto?: string;
+      object_id?: string;
+      _despacho_sedes?: Array<{
+        nombre?: string;
+        localidad?: string;
+        provincia?: string;
+        direccion?: string;
+        telefono?: string;
+        email?: string;
+        web?: string;
+        es_principal?: boolean;
+      }>;
+      [key: string]: unknown;
+    };
     [key: string]: unknown;
   }) {
     try {
       console.log('Importando despacho desde WordPress:', despachoWP.id);
       
+      // Usar SyncService para importación completa
+      const { SyncService } = await import('./syncService');
+      const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      // Obtener el despacho importado
       const { data, error } = await supabase
         .from('despachos')
-        .upsert({
-          wp_id: despachoWP.id,
-          titulo: despachoWP.title?.rendered || 'Sin título',
-          contenido: despachoWP.content?.rendered || '',
-          estado: despachoWP.status || 'draft',
-          fecha_publicacion: despachoWP.date || new Date().toISOString(),
-          datos_originales: despachoWP, // Guardamos los datos completos
-          actualizado_en: new Date().toISOString()
-        })
-        .select()
+        .select('*')
+        .eq('id', result.despachoId)
         .single();
 
       if (error) throw error;
@@ -107,7 +127,9 @@ export class DespachoService {
       console.log('✅ Despacho importado correctamente:', data.id);
       return { 
         success: true, 
-        data 
+        data,
+        despachoId: result.despachoId,
+        objectId: result.objectId,
       };
       
     } catch (error) {

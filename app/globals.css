@@ -26,3 +26,38 @@ body {
   background: var(--background);
   font-family: var(--font-big-shoulders-text), Arial, Helvetica, sans-serif;
 }
+
+/* FORZAR TODO EL TEXTO A NEGRO - NUNCA GRIS */
+* {
+  color: #111827 !important; /* text-gray-900 - Negro */
+}
+
+/* Asegurar que los inputs, textareas y selects tengan texto negro */
+input,
+textarea,
+select {
+  color: #111827 !important; /* text-gray-900 */
+}
+
+/* Placeholder en gris más claro */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important; /* text-gray-400 */
+}
+
+/* Texto en inputs deshabilitados */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  color: #6b7280 !important; /* text-gray-500 */
+}
+
+/* Títulos, headings, párrafos - TODO EN NEGRO */
+h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+  color: #111827 !important;
+}
+
+/* Botones mantienen su color */
+button {
+  color: inherit !important;
+}

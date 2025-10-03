@@ -54,6 +54,19 @@ export default function SolicitarDespacho() {
     fecha_solicitud?: string;
     despachos?: { nombre?: string };
   }>>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newDespacho, setNewDespacho] = useState({
+    nombre: '',
+    descripcion: '',
+    areas_practica: [] as string[],
+    localidad: '',
+    provincia: '',
+    direccion: '',
+    telefono: '',
+    email: '',
+    web: '',
+  });
+  const [creatingDespacho, setCreatingDespacho] = useState(false);
 
   const { user } = useAuth();
   
@@ -191,6 +204,7 @@ export default function SolicitarDespacho() {
     setError(null);
     setResults([]);
     setSuccess(null);
+    setShowCreateForm(false);
     
     try {
       const res = await fetch(
@@ -204,11 +218,73 @@ export default function SolicitarDespacho() {
       
       const data = await res.json();
       setResults(data);
+      
+      // Si no hay resultados, mostrar opción de crear
+      if (data.length === 0) {
+        setShowCreateForm(true);
+      }
     } catch (err) {
       console.error("Error en búsqueda de despachos:", err);
       setError(err instanceof Error ? err.message : "Error al buscar despachos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateDespacho = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingDespacho(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      if (!user?.id) throw new Error("Usuario no autenticado");
+
+      const token = getJWT();
+      if (!token) throw new Error("No se pudo obtener el token de sesión");
+
+      const res = await fetch("/api/crear-despacho", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newDespacho),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al crear despacho");
+      }
+
+      const data = await res.json();
+      setSuccess(`Despacho creado correctamente. ${data.sincronizadoWP ? 'Sincronizado con WordPress.' : 'Se sincronizará con WordPress más tarde.'}`);
+      
+      // Limpiar formulario
+      setNewDespacho({
+        nombre: '',
+        descripcion: '',
+        areas_practica: [],
+        localidad: '',
+        provincia: '',
+        direccion: '',
+        telefono: '',
+        email: '',
+        web: '',
+      });
+      setShowCreateForm(false);
+      setNombre('');
+
+      // Esperar un momento y recargar
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+
+    } catch (err) {
+      console.error("Error al crear despacho:", err);
+      setError(err instanceof Error ? err.message : "Error al crear despacho");
+    } finally {
+      setCreatingDespacho(false);
     }
   };
   // ...existing code...
@@ -449,10 +525,157 @@ export default function SolicitarDespacho() {
           </tbody>
         </table>
       )}
-      {!loading && results.length === 0 && nombre && (
+      {!loading && results.length === 0 && nombre && !showCreateForm && (
         <p className="text-gray-500 mt-4">
           No se encontraron despachos con ese nombre.
         </p>
+      )}
+
+      {/* Botón para mostrar formulario de creación de despacho */}
+      {!showCreateForm && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(true)}
+            className="px-6 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 transition"
+          >
+            Crear despacho
+          </button>
+        </div>
+      )}
+
+      {/* Formulario de creación de despacho */}
+      {showCreateForm && (
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            No encontramos tu despacho - Créalo aquí
+          </h3>
+          <form onSubmit={handleCreateDespacho} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre del despacho *
+                </label>
+                <input
+                  type="text"
+                  value={newDespacho.nombre}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, nombre: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Localidad *
+                </label>
+                <input
+                  type="text"
+                  value={newDespacho.localidad}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, localidad: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Provincia *
+                </label>
+                <input
+                  type="text"
+                  value={newDespacho.provincia}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, provincia: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Dirección
+                </label>
+                <input
+                  type="text"
+                  value={newDespacho.direccion}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, direccion: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Descripción *
+              </label>
+              <textarea
+                value={newDespacho.descripcion}
+                onChange={(e) => setNewDespacho({ ...newDespacho, descripcion: e.target.value })}
+                className="border rounded px-3 py-2 w-full"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={newDespacho.telefono}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, telefono: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newDespacho.email}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, email: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sitio web
+                </label>
+                <input
+                  type="url"
+                  value={newDespacho.web}
+                  onChange={(e) => setNewDespacho({ ...newDespacho, web: e.target.value })}
+                  className="border rounded px-3 py-2 w-full"
+                  placeholder="https://"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="submit"
+                disabled={creatingDespacho}
+                className={`flex-1 px-6 py-2 rounded shadow transition ${
+                  creatingDespacho
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {creatingDespacho ? 'Creando...' : 'Crear Despacho'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded shadow hover:bg-gray-400 transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );

@@ -31,11 +31,12 @@ export async function POST(request: Request) {
     // Obtener el rol del usuario
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("role")
+      .select("rol")
       .eq("id", user.id)
       .single();
 
-    if (userError || !userData || userData.role !== "super_admin") {
+    if (userError || !userData || userData.rol !== "super_admin") {
+      console.error("❌ Error de permisos:", { userError, userData });
       return NextResponse.json(
         { error: "No tienes permisos para realizar esta acción" },
         { status: 403 }
