@@ -329,10 +329,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Configuración</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
+        <p className="mt-1 text-sm text-gray-500">
           Gestiona tu perfil, seguridad y preferencias de la cuenta.
         </p>
       </div>
@@ -354,7 +354,7 @@ export default function SettingsPage() {
       )}
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow mb-6">
+      <div className="bg-white shadow rounded-lg">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
             {tabs.map((tab) => (
