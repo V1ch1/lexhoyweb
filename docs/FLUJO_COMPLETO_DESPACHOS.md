@@ -649,42 +649,76 @@ class SyncService {
 
 ### 2. Endpoints API (app/api/)
 
-#### /api/sync-despacho (PENDIENTE IMPLEMENTACIÓN COMPLETA)
-- Recibe webhooks de WordPress
-- Sincroniza despachos y sedes
-- Maneja errores y logs
+#### /api/sync-despacho (⏳ PENDIENTE WEBHOOK AUTOMÁTICO)
+- ✅ Recibe datos de WordPress
+- ✅ Sincroniza despachos y sedes
+- ✅ Maneja errores y logs
+- ⏳ Configurar webhook automático en WordPress
+
+#### /api/importar-despacho (✅ COMPLETADO)
+- ✅ Importa despachos desde WordPress por ID
+- ✅ Importa sedes múltiples
+- ✅ Elimina sedes antiguas
+- ✅ Actualiza num_sedes
 
 #### /api/aprobar-solicitud (✅ COMPLETADO)
-- Aprueba solicitudes de despacho
-- Crea relación user_despachos
-- Envía notificaciones
+- ✅ Aprueba solicitudes de despacho
+- ✅ Crea relación user_despachos
+- ✅ Envía notificaciones al usuario
+- ✅ Envía email al usuario
 
 #### /api/rechazar-solicitud (✅ COMPLETADO)
-- Rechaza solicitudes de despacho
-- Envía notificaciones con motivo
+- ✅ Rechaza solicitudes de despacho
+- ✅ Envía notificaciones con motivo
+- ✅ Envía email al usuario
 
-#### /api/crear-despacho (PENDIENTE)
-- Crea despacho en Next.js
-- Envía a WordPress
-- Retorna object_id
+#### /api/notificar-solicitud (✅ COMPLETADO)
+- ✅ Notifica al super_admin cuando hay nueva solicitud
+- ✅ Crea notificación en campana
+- ✅ Envía email al super_admin
+
+#### /api/users/[userId]/despachos (✅ COMPLETADO)
+- ✅ Obtiene despachos asignados al usuario
+- ✅ Transforma datos para UI
+- ✅ Incluye información completa
+
+#### /api/crear-despacho (⏳ PENDIENTE)
+- ⏳ Crea despacho desde cero en Next.js
+- ⏳ Envía a WordPress
+- ⏳ Retorna object_id
 
 ### 3. Páginas (app/)
 
-#### /dashboard/solicitar-despacho (✅ COMPLETADO)
-- Búsqueda de despachos
-- Importación desde WordPress
-- Creación de nuevos despachos
-- Solicitud de propiedad
-
 #### /dashboard/despachos (✅ COMPLETADO)
-- Lista de despachos del usuario
-- Edición de información
-- Gestión de sedes
+- ✅ Búsqueda de despachos en WordPress
+- ✅ Importación desde WordPress con botón
+- ✅ Solicitud de propiedad con modal
+- ✅ Indicador de despachos con propietario
+- ✅ Estado "Pendiente" para solicitudes en proceso
+
+#### /dashboard/settings?tab=mis-despachos (✅ COMPLETADO)
+- ✅ Lista de despachos asignados al usuario
+- ✅ Información completa visible
+- ✅ Botón "Editar" funcional
+- ✅ Botón "Eliminar" para quitar asignación
+- ✅ Badge de estado (Verificado/Pendiente)
+
+#### /dashboard/despachos/[id]/edit (✅ COMPLETADO)
+- ✅ Redirección automática a página de edición
+- ✅ Conversión de UUID a object_id de WordPress
+- ✅ Manejo de errores
+
+#### /dashboard/despachos/[id]/editar (✅ EXISTENTE)
+- ✅ Formulario completo de edición
+- ✅ Gestión de sedes
+- ✅ Actualización en WordPress
 
 #### /admin/users?tab=solicitudes (✅ COMPLETADO)
-- Lista de solicitudes pendientes
-- Aprobación/rechazo
-- Historial de solicitudes
+- ✅ Lista de solicitudes pendientes
+- ✅ Información completa del usuario y despacho
+- ✅ Botones Aprobar/Rechazar
+- ✅ Actualización automática de lista
+- ✅ Verificación de permisos (solo super_admin)
 
 ---
 
@@ -698,48 +732,79 @@ class SyncService {
    - ✅ Aprobación de usuarios
 
 2. **Solicitudes de Despacho**
-   - ✅ Búsqueda de despachos
-   - ✅ Importación desde WordPress
-   - ✅ Solicitud de propiedad
+   - ✅ Búsqueda de despachos en WordPress y Supabase
+   - ✅ Importación desde WordPress con sedes múltiples
+   - ✅ Solicitud de propiedad con modal profesional
    - ✅ Aprobación/rechazo por super_admin
-   - ✅ Notificaciones en campana
-   - ✅ Emails de notificación
+   - ✅ Notificaciones en campana al super_admin
+   - ✅ Emails automáticos al super_admin (nueva solicitud)
+   - ✅ Emails automáticos al usuario (aprobación/rechazo)
+   - ✅ Eliminación de sedes antiguas antes de importar (evita duplicados)
+   - ✅ Actualización automática de num_sedes
 
 3. **Gestión de Despachos**
-   - ✅ Listado de despachos del usuario
+   - ✅ Listado de despachos del usuario en "Mis Despachos"
+   - ✅ Información completa visible (nombre, localidad, teléfono, email, web, sedes)
+   - ✅ Botón "Editar" funcional con redirección correcta
+   - ✅ Botón "Eliminar" para quitar asignación
+   - ✅ Badge de estado (Verificado/Pendiente)
    - ✅ Edición de información básica
    - ✅ Asignación manual por super_admin
 
 4. **Servicios Base**
    - ✅ despachoService.ts (búsqueda e importación)
-   - ✅ userService.ts (gestión de usuarios)
-   - ✅ notificationService.ts (notificaciones)
-   - ✅ emailService.ts (envío de emails)
+   - ✅ userService.ts (gestión de usuarios y aprobaciones)
+   - ✅ notificationService.ts (notificaciones con tipo solicitud_despacho)
+   - ✅ emailService.ts (envío de emails con templates)
+   - ✅ syncService.ts (importación de despachos y sedes desde WordPress)
+
+5. **Políticas RLS**
+   - ✅ solicitudes_despacho: usuarios pueden crear, super_admin puede leer/actualizar
+   - ✅ user_despachos: RLS desactivado temporalmente
+   - ⚠️ TODO: Activar RLS en user_despachos con políticas específicas
+
+6. **UI/UX**
+   - ✅ Texto de inputs en negro (legible)
+   - ✅ Colores del dashboard y menús preservados
+   - ✅ Templates de email profesionales
+   - ✅ Modales de confirmación
 
 ### Pendiente ⏳
 
 1. **Sincronización Completa**
-   - ⏳ Implementar endpoint /api/sync-despacho completo
-   - ⏳ Crear syncService.ts
-   - ⏳ Webhook de WordPress configurado
-   - ⏳ Sincronización de sedes
+   - ⏳ Webhook de WordPress configurado (recibir actualizaciones automáticas)
+   - ⏳ Sincronización bidireccional Next.js → WordPress
    - ⏳ Manejo de errores y reintentos
+   - ⏳ Cola de sincronización para reintentos
 
-2. **Creación de Despachos**
-   - ⏳ Formulario de creación completo
+2. **Creación de Despachos desde Cero**
+   - ⏳ Formulario de creación completo en UI
    - ⏳ Endpoint /api/crear-despacho
-   - ⏳ Envío a WordPress
+   - ⏳ Envío automático a WordPress
    - ⏳ Sincronización de object_id
 
-3. **Gestión de Sedes**
-   - ⏳ CRUD de sedes
-   - ⏳ Sincronización con WordPress
-   - ⏳ Validación de datos
+3. **Gestión Avanzada de Sedes**
+   - ⏳ CRUD completo de sedes desde UI
+   - ⏳ Sincronización de cambios con WordPress
+   - ⏳ Validación de datos de ubicación
+   - ⏳ Gestión de horarios y redes sociales
 
-4. **Monitoreo y Logs**
+4. **Funcionalidades de Super Admin**
+   - ⏳ Botón para quitar propiedad desde /dashboard/despachos
+   - ⏳ Historial de cambios de propiedad
+   - ⏳ Estadísticas de solicitudes (aprobadas/rechazadas)
+
+5. **Monitoreo y Logs**
    - ⏳ Dashboard de sincronización
    - ⏳ Historial de cambios
    - ⏳ Alertas de errores
+   - ⏳ Logs de sincronización
+
+6. **Optimizaciones**
+   - ⏳ Cache de despachos del usuario
+   - ⏳ Paginación en lista de solicitudes
+   - ⏳ Búsqueda y filtros en "Mis Despachos"
+   - ⏳ Límite de despachos por usuario
 
 ---
 
@@ -749,17 +814,19 @@ class SyncService {
 
 #### Tarea 1: Implementar Sincronización WordPress → Next.js
 **Archivo**: `app/api/sync-despacho/route.ts`
-**Estimación**: 3-4 horas
+**Estado**: ✅ PARCIALMENTE COMPLETADO
 
-- [ ] Crear syncService.ts con métodos de sincronización
-- [ ] Implementar lógica de upsert de despachos
-- [ ] Implementar sincronización de sedes
-- [ ] Manejar errores y validaciones
-- [ ] Registrar logs de sincronización
-- [ ] Probar con datos de WordPress
+- ✅ Crear syncService.ts con métodos de sincronización
+- ✅ Implementar lógica de importación de despachos
+- ✅ Implementar sincronización de sedes
+- ✅ Manejar errores y validaciones
+- ✅ Registrar logs de sincronización
+- ✅ Probar con datos de WordPress
+- ⏳ Configurar webhook automático en WordPress
+- ⏳ Sincronización bidireccional (Next.js → WordPress)
 
 **Dependencias**: Ninguna
-**Bloqueante para**: Creación de despachos, Gestión de sedes
+**Bloqueante para**: Creación de despachos desde cero
 
 ---
 
@@ -857,46 +924,48 @@ class SyncService {
 
 ### Pruebas de Sincronización WordPress → Next.js
 
-1. **Crear despacho en WordPress**
-   - ✅ Se dispara webhook
-   - ✅ Se crea en Next.js con object_id correcto
+1. **Importar despacho desde WordPress**
+   - ✅ Búsqueda por ID funciona correctamente
+   - ✅ Se importa con object_id correcto
    - ✅ Se marcan campos de sincronización
+   - ✅ Metadata completa importada
 
-2. **Actualizar despacho en WordPress**
-   - ✅ Se dispara webhook
-   - ✅ Se actualiza en Next.js
-   - ✅ Se actualiza ultima_sincronizacion
-
-3. **Sincronizar sedes**
+2. **Sincronizar sedes**
    - ✅ Se crean sedes en Next.js
-   - ✅ Se asignan wp_sede_id correctos
+   - ✅ Se eliminan sedes antiguas antes de importar
+   - ✅ Se asignan todas las sedes correctamente
+   - ✅ Se actualiza num_sedes automáticamente
    - ✅ Se marca sede principal
+
+3. **Webhook automático**
+   - ⏳ Pendiente configurar en WordPress
+   - ⏳ Endpoint listo para recibir webhooks
 
 ### Pruebas de Creación de Despachos
 
 1. **Usuario crea despacho**
-   - ✅ Se crea en Next.js
-   - ✅ Se envía a WordPress
-   - ✅ Se guarda object_id
-   - ✅ Se marca como sincronizado
-   - ✅ Usuario puede solicitar propiedad
+   - ⏳ Formulario de creación pendiente
+   - ⏳ Envío a WordPress pendiente
+   - ⏳ Sincronización de object_id pendiente
 
 2. **Manejo de errores**
-   - ✅ Si falla WordPress, se marca no sincronizado
-   - ✅ Se registra error
-   - ✅ Se permite reintento
+   - ⏳ Pendiente implementar
 
 ### Pruebas de Flujo Completo
 
 1. **Usuario nuevo → Despacho → Propiedad**
    - ✅ Usuario se registra
-   - ✅ Busca despacho (no existe)
-   - ✅ Crea despacho
+   - ✅ Busca despacho en WordPress
+   - ✅ Importa despacho con sedes
    - ✅ Solicita propiedad
-   - ✅ Admin aprueba
-   - ✅ Aparece en "Mis Despachos"
-   - ✅ Puede editar información
-   - ✅ Cambios se sincronizan con WordPress
+   - ✅ Super_admin recibe notificación en campana
+   - ✅ Super_admin recibe email
+   - ✅ Admin aprueba desde /admin/users?tab=solicitudes
+   - ✅ Usuario recibe notificación
+   - ✅ Usuario recibe email
+   - ✅ Aparece en "Mis Despachos" con toda la información
+   - ✅ Puede editar información (redirige a /dashboard/despachos/{object_id}/editar)
+   - ⏳ Cambios se sincronizan con WordPress (pendiente)
 
 ---
 
