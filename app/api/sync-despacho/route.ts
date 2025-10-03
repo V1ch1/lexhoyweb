@@ -1,30 +1,150 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-// Endpoint para sincronizar datos completos de un despacho desde WordPress a Supabase
+// Endpoint de prueba simplificado
 export async function POST(request: Request) {
   try {
-    // Recibe todos los datos posibles del despacho
-    const body = await request.json();
-    const {
+    // 1. Obtener información básica
+    const url = new URL(request.url);
+    console.log('\n===== NUEVA SOLICITUD =====');
+    console.log(`URL: ${url}`);
+    console.log(`Método: ${request.method}`);
+    
+    // 2. Mostrar headers
+    console.log('\nHEADERS:');
+    request.headers.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
+    
+    // 3. Obtener el cuerpo
+    const body = await request.text();
+    console.log('\nCUERPO DE LA SOLICITUD:');
+    console.log(body || '(vacío)');
+    
+    // 4. Devolver una respuesta simple
+    return NextResponse.json(
+      { 
+        status: 'success',
+        message: 'Solicitud recibida',
+        body: body || null,
+        headers: Object.fromEntries(request.headers.entries())
+      },
+      { status: 200 }
+    );
+    
+  } catch (error) {
+    console.error('Error en el servidor:', error);
+    return NextResponse.json(
+      { 
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    );
+  }
+}
+      postMeta = body.post_meta || {};
+      console.log('ℹ️ Formato detectado: WP Webhooks');
+    } else if (body.meta) {
+      // Formato directo con meta
+      postData = body;
+      postMeta = body.meta || {};
+      console.log('ℹ️ Formato detectado: JSON con meta');
+    } else {
+      // Formato plano
+      postData = body;
+      postMeta = {};
+      console.log('ℹ️ Formato detectado: JSON plano');
+    }
+    
+    console.log('📝 Datos extraídos:', {
+      postData: Object.keys(postData),
+      postMeta: Object.keys(postMeta)
+    });
+
+    // Validar datos requeridos
+    console.log('🔍 Validando datos requeridos...');
+    
+    const objectId = postData.ID || postData.id || postData.objectId;
+    if (!objectId) {
+      console.error('❌ Falta el ID del post en el payload');
+      console.error('📋 Payload recibido:', JSON.stringify(body, null, 2));
+      return NextResponse.json(
+        { 
+          error: "No se pudo identificar el post",
+          details: "Falta el campo ID, id u objectId en el payload",
+          receivedPayload: body
+        }, 
+        { status: 400 }
+      );
+    }
+    
+    console.log('✅ Datos válidos, ID del post:', objectId);
+
+    // Mapear campos de WordPress a nuestro formato
+    console.log('🔄 Mapeando campos...');
+    
+    const nombre = postData.post_title || postData.nombre || postData.title?.rendered || '';
+    const descripcion = postData.post_excerpt || postData.descripcion || postData.excerpt?.rendered || '';
+    const slug = postData.post_name || postData.slug || '';
+    
+    // Manejar diferentes formatos de meta
+    let localidad = '';
+    let provincia = '';
+    let areas_practica = [];
+    
+    // Intentar extraer de diferentes formatos
+    if (postMeta.localidad) {
+      localidad = Array.isArray(postMeta.localidad) ? postMeta.localidad[0] : postMeta.localidad;
+    } else if (postMeta.meta?.localidad) {
+      localidad = postMeta.meta.localidad;
+    }
+    
+    if (postMeta.provincia) {
+      provincia = Array.isArray(postMeta.provincia) ? postMeta.provincia[0] : postMeta.provincia;
+    } else if (postMeta.meta?.provincia) {
+      provincia = postMeta.meta.provincia;
+    }
+    
+    if (postMeta.areas_practica) {
+      areas_practica = Array.isArray(postMeta.areas_practica) 
+        ? postMeta.areas_practica 
+        : [postMeta.areas_practica];
+    } else if (postMeta.meta?.areas_practica) {
+      areas_practica = Array.isArray(postMeta.meta.areas_practica)
+        ? postMeta.meta.areas_practica
+        : [postMeta.meta.areas_practica];
+    }
+    
+    const num_sedes = postMeta.num_sedes?.[0] || postMeta.num_sedes || 1;
+    
+    console.log('📋 Campos mapeados:', {
       objectId,
       nombre,
       descripcion,
+      slug,
       localidad,
       provincia,
-      slug,
-      num_sedes,
       areas_practica,
-    } = body;
-    if (!objectId) {
-      return NextResponse.json({ error: "Falta objectId" }, { status: 400 });
-    }
+      num_sedes
+    });
 
-    // 1. Consultar WordPress para obtener los datos completos del despacho
+    // 3. Consultar WordPress para obtener los datos completos del despacho
+    console.log('🔍 Consultando WordPress...');
     const username = process.env.NEXT_PUBLIC_WP_USER;
     const appPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD;
+    
+    if (!username || !appPassword) {
+      console.error('❌ Falta configuración de autenticación de WordPress');
+      return NextResponse.json(
+        { error: "Error de configuración del servidor" }, 
+        { status: 500 }
+      );
+    }
+
     const auth = Buffer.from(`${username}:${appPassword}`).toString("base64");
     let despachoWP = null;
+
     // Si el objectId es numérico, usar el endpoint directo por ID
     if (/^\d+$/.test(objectId)) {
       const wpRes = await fetch(
@@ -53,17 +173,16 @@ export async function POST(request: Request) {
       if (wpRes.ok) {
         const wpData = await wpRes.json();
         if (wpData && wpData.length) {
-          despachoWP =
-            wpData.find(
-              (d: any) =>
-                d.id?.toString() === objectId || d.meta?.object_id === objectId
-            ) || wpData[0];
+          despachoWP = wpData.find(
+            (d: any) => d.id?.toString() === objectId || d.meta?.object_id === objectId
+          ) || wpData[0];
         }
       }
     }
 
     // Si no se encuentra en WordPress, usar los datos del body
     if (!despachoWP) {
+      console.log('ℹ️ No se encontró el despacho en WordPress, usando datos del payload');
       despachoWP = {
         meta: {
           object_id: objectId,
@@ -81,7 +200,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Transformar los datos al esquema de Supabase
+    // 4. Transformar los datos al esquema de Supabase
     const despachoSupabase = {
       object_id: despachoWP.meta?.object_id || objectId,
       nombre: despachoWP.title?.rendered || "",
@@ -102,114 +221,101 @@ export async function POST(request: Request) {
       activo: despachoWP.meta?.activo ?? true,
     };
 
-    // 3. Guardar o actualizar el despacho en Supabase
+    // 5. Guardar o actualizar el despacho en Supabase
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // Si ya existe, actualiza; si no, inserta
+
+    // Buscar si ya existe un despacho con este object_id
     const { data: existing } = await supabase
       .from("despachos")
       .select("id")
       .eq("object_id", despachoSupabase.object_id)
       .single();
+
     let despachoId: string;
-    let result;
+    
     if (existing) {
-      despachoId = existing.id;
-      result = await supabase
+      // Actualizar despacho existente
+      const { error: updateError } = await supabase
         .from("despachos")
         .update(despachoSupabase)
         .eq("object_id", despachoSupabase.object_id);
+
+      if (updateError) {
+        throw new Error(`Error al actualizar en Supabase: ${updateError.message}`);
+      }
+      despachoId = existing.id;
+      console.log(`✅ Despacho ${despachoId} actualizado en Supabase`);
     } else {
-      const insertResult = await supabase
+      // Crear nuevo despacho
+      const { data: insertData, error: insertError } = await supabase
         .from("despachos")
         .insert(despachoSupabase)
-        .select("id");
-      if (insertResult.error) {
-        console.error("Supabase error:", insertResult.error);
-        return NextResponse.json(
-          { error: "Error guardando en Supabase", details: insertResult.error },
-          { status: 500 }
-        );
+        .select("id")
+        .single();
+
+      if (insertError) {
+        throw new Error(`Error al insertar en Supabase: ${insertError.message}`);
       }
-      despachoId = insertResult.data[0].id;
-      result = insertResult;
-    }
-    if (result.error) {
-      console.error("Supabase error:", result.error);
-      return NextResponse.json(
-        { error: "Error guardando en Supabase", details: result.error },
-        { status: 500 }
-      );
+      despachoId = insertData.id;
+      console.log(`✅ Nuevo despacho ${despachoId} creado en Supabase`);
     }
 
-    // 4. Sincronizar sedes (borrar las antiguas y crear las nuevas)
+    // 6. Sincronizar sedes
     if (Array.isArray(despachoWP.meta?._despacho_sedes)) {
       // Eliminar sedes antiguas
       await supabase.from("sedes").delete().eq("despacho_id", despachoId);
-      // Mostrar datos de cada sede para depuración
-      // Solo dejar el log de sedes para depuración (elimina otros console.log si existen)
-      despachoWP.meta._despacho_sedes.forEach((sede: any, idx: number) => {
-        console.log(`Sede[${idx}]`, sede);
-      });
+      
       // Insertar nuevas sedes
-      const sedesToInsert = despachoWP.meta._despacho_sedes.map(
-        (sede: any, idx: number) => ({
-          despacho_id: despachoId,
-          nombre: sede.nombre || `Sede ${idx + 1}`,
-          descripcion: sede.descripcion || "",
-          web: sede.web || "",
-          ano_fundacion: sede.ano_fundacion || "",
-          tamano_despacho: sede.tamano_despacho || "",
-          persona_contacto: sede.persona_contacto || sede.contacto || "",
-          email_contacto: sede.email_contacto || sede.email || "",
-          telefono: sede.telefono || sede.telefono_contacto || "",
-          numero_colegiado: sede.numero_colegiado || "",
-          colegio: sede.colegio || "",
-          experiencia: sede.experiencia || "",
-          calle: sede.calle || "",
-          numero: sede.numero || "",
-          piso: sede.piso || "",
-          localidad: sede.localidad || "",
-          provincia: sede.provincia || "",
-          codigo_postal: sede.codigo_postal || "",
-          pais: sede.pais || "España",
-          especialidades: sede.especialidades || "",
-          servicios_especificos: sede.servicios_especificos || "",
-          areas_practica: Array.isArray(sede.areas_practica)
-            ? sede.areas_practica
-            : [],
-          estado_verificacion: sede.estado_verificacion || "pendiente",
-          estado_registro: sede.estado_registro || "activo",
-          is_verified: sede.is_verified ?? false,
-          es_principal: idx === 0,
-          activa: true,
-          foto_perfil: sede.foto_perfil || "",
-          horarios: sede.horarios || {},
-          redes_sociales: sede.redes_sociales || {},
-          observaciones: sede.observaciones || "",
-        })
-      );
+      const sedesToInsert = despachoWP.meta._despacho_sedes.map((sede: any, idx: number) => ({
+        despacho_id: despachoId,
+        nombre: sede.nombre || `Sede ${idx + 1}`,
+        descripcion: sede.descripcion || "",
+        web: sede.web || "",
+        localidad: sede.localidad || "",
+        provincia: sede.provincia || "",
+        codigo_postal: sede.codigo_postal || "",
+        pais: sede.pais || "España",
+        telefono: sede.telefono || "",
+        email_contacto: sede.email_contacto || "",
+        es_principal: idx === 0,
+        activa: true,
+        fecha_creacion: new Date().toISOString(),
+        fecha_actualizacion: new Date().toISOString(),
+      }));
+
       if (sedesToInsert.length > 0) {
-        const sedesResult = await supabase.from("sedes").insert(sedesToInsert);
-        if (sedesResult.error) {
-          console.error("Supabase error (sedes):", sedesResult.error);
-          return NextResponse.json(
-            {
-              error: "Error guardando sedes en Supabase",
-              details: sedesResult.error,
-            },
-            { status: 500 }
-          );
+        const { error: sedesError } = await supabase
+          .from("sedes")
+          .insert(sedesToInsert);
+
+        if (sedesError) {
+          throw new Error(`Error al guardar sedes: ${sedesError.message}`);
         }
+        console.log(`✅ ${sedesToInsert.length} sedes sincronizadas`);
       }
     }
 
-    return NextResponse.json({ success: true, despacho: despachoSupabase });
-  } catch (err) {
+    return NextResponse.json({
+      success: true,
+      message: 'Despacho sincronizado correctamente',
+      despachoId: despachoId
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error en el webhook:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return NextResponse.json(
-      { error: "Error inesperado", details: String(err) },
+      { 
+        error: "Error al procesar la solicitud",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }, 
       { status: 500 }
     );
+  } finally {
+    console.log('🔍 ===== FIN DE SOLICITUD DE WEBHOOK =====\n');
   }
 }
