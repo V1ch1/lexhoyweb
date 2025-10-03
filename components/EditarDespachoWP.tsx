@@ -187,7 +187,7 @@ const EditarDespachoWP: React.FC<Props> = ({
 
   return (
     <div className="bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Editar Despacho</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Editar Despacho</h2>
       {success && (
         <div className="text-green-600 mb-2">¡Guardado correctamente!</div>
       )}
@@ -263,7 +263,7 @@ const EditarDespachoWP: React.FC<Props> = ({
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Nombre de la Sede
                     </label>
                     <input
@@ -280,7 +280,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Descripción
                     </label>
                     <textarea
@@ -298,7 +298,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Sitio Web
                     </label>
                     <input
@@ -315,7 +315,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Persona de Contacto
                     </label>
                     <input
@@ -332,7 +332,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Año Fundación
                     </label>
                     <input
@@ -349,7 +349,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Tamaño Despacho
                     </label>
                     <input
@@ -366,7 +366,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Teléfono
                     </label>
                     <input
@@ -383,7 +383,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Email de Contacto
                     </label>
                     <input
@@ -400,7 +400,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Nº Colegiado
                     </label>
                     <input
@@ -417,7 +417,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Colegio</label>
+                    <label className="block text-sm font-medium text-gray-900">Colegio</label>
                     <input
                       className="border rounded px-3 py-2 w-full"
                       value={sede.colegio || ""}
@@ -432,7 +432,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Experiencia
                     </label>
                     <textarea
@@ -449,7 +449,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Calle</label>
+                    <label className="block text-sm font-medium text-gray-900">Calle</label>
                     <input
                       className="border rounded px-3 py-2 w-full"
                       value={sede.calle || ""}
@@ -464,7 +464,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Número</label>
+                    <label className="block text-sm font-medium text-gray-900">Número</label>
                     <input
                       className="border rounded px-3 py-2 w-full"
                       value={sede.numero || ""}
@@ -479,7 +479,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">Piso</label>
+                    <label className="block text-sm font-medium text-gray-900">Piso</label>
                     <input
                       className="border rounded px-3 py-2 w-full"
                       value={sede.piso || ""}
@@ -494,7 +494,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Código Postal
                     </label>
                     <input
@@ -511,7 +511,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Localidad
                     </label>
                     <input
@@ -528,7 +528,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Provincia
                     </label>
                     <input
@@ -545,7 +545,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">País</label>
+                    <label className="block text-sm font-medium text-gray-900">País</label>
                     <input
                       className="border rounded px-3 py-2 w-full"
                       value={sede.pais || ""}
@@ -560,7 +560,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Especialidades
                     </label>
                     <input
@@ -577,7 +577,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Servicios Específicos
                     </label>
                     <input
@@ -594,7 +594,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       Áreas de Práctica
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -617,13 +617,13 @@ const EditarDespachoWP: React.FC<Props> = ({
                               handleChange("meta._despacho_sedes", sedes);
                             }}
                           />
-                          <span className="text-sm">{area}</span>
+                          <span className="text-sm text-gray-900">{area}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Observaciones
                     </label>
                     <textarea
@@ -640,7 +640,7 @@ const EditarDespachoWP: React.FC<Props> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium text-gray-900">
                       Foto de Perfil (URL)
                     </label>
                     <input
@@ -662,7 +662,7 @@ const EditarDespachoWP: React.FC<Props> = ({
             })()}
           </div>
         ) : (
-          <div className="text-gray-500">No hay sedes registradas.</div>
+          <div className="text-gray-900">No hay sedes registradas.</div>
         )}
       </div>
       <button
