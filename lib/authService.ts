@@ -225,7 +225,6 @@ export class AuthService {
         error: null,
       };
     } catch {
-      return { user: null, error: "Error de conexión" };
     }
   }
 
@@ -234,16 +233,27 @@ export class AuthService {
    */
   static async signOut(): Promise<{ error: string | null }> {
     try {
-      const { error: signOutError } = await supabase.auth.signOut();
-      return { error: signOutError?.message || null };
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error al cerrar sesión:', error);
+        return { error: error.message };
+      }
+      
+      // Limpiar JWT al cerrar sesión
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('supabase_jwt');
+      }
+      
+      return { error: null };
     } catch (error) {
-      console.error("Sign out error:", error);
-      return { error: "Error al cerrar sesión" };
+      console.error('Error al cerrar sesión:', error);
+      return { error: 'Error al cerrar sesión' };
     }
   }
 
   /**
    * Obtener usuario actual
+{{ ... }}
    */
   static async getCurrentUser(): Promise<{
     user: AuthUser | null;

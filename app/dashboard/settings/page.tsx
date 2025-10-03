@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
 import { AuthService } from '@/lib/authService';
+import { supabase } from '@/lib/supabase';
 import {
   UserIcon,
   KeyIcon,
@@ -172,15 +173,45 @@ export default function SettingsPage() {
     setActiveTab(tabId);
   };
 
-  // State for password tab
-  const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Handle password change
+  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Verificar la contraseña actual intentando iniciar sesión
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || '',
+        password: currentPassword
+      });
+
+      if (signInError) {
+        throw new Error('La contraseña actual es incorrecta');
+      }
+
+      // Si la contraseña actual es correcta, actualizar a la nueva contraseña
+      const { error: updateError } = await AuthService.updatePassword(newPassword);
+      
+      if (updateError) {
+        throw new Error(updateError);
+      }
+      
+      setMessage({
+        type: 'success',
+        text: 'Contraseña actualizada correctamente'
+      });
+    } catch (error) {
+      console.error('Error al cambiar la contraseña:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Error al cambiar la contraseña. Por favor, verifica tu contraseña actual e inténtalo de nuevo.'
+      });
+      throw error; // Para que el componente PasswordTab pueda manejarlo
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // State for Mis Despachos tab
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
@@ -248,27 +279,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Toggle password visibility
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    switch (field) {
-      case 'current':
-        setShowCurrentPassword(!showCurrentPassword);
-        break;
-      case 'new':
-        setShowNewPassword(!showNewPassword);
-        break;
-      case 'confirm':
-        setShowConfirmPassword(!showConfirmPassword);
-        break;
-    }
-  };
 
-  // Handle password form submission
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Add password update logic here
-    console.log('Updating password:', passwordData);
-  };
 
   // Handle despacho deletion
   const handleDeleteDespacho = async (despachoId: string) => {
@@ -313,14 +324,8 @@ export default function SettingsPage() {
       case 'password':
         return (
           <PasswordTab
-            passwordData={passwordData}
-            onUpdate={(data) => setPasswordData(prev => ({ ...prev, ...data }))}
-            onSubmit={handlePasswordSubmit}
-            loading={loading}
-            showCurrentPassword={showCurrentPassword}
-            showNewPassword={showNewPassword}
-            showConfirmPassword={showConfirmPassword}
-            onTogglePasswordVisibility={togglePasswordVisibility}
+            loading={isLoading}
+            onChangePassword={handleChangePassword}
           />
         );
       case 'notifications':
