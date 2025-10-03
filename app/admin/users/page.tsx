@@ -196,23 +196,44 @@ export default function AdminUsersPage() {
     setEditingUser(false);
   };
 
-  const handleApproveSolicitud = async (solicitudId: string) => {
+  const handleApproveSolicitud = async (solicitudId: string, notas?: string) => {
     try {
-      const currentUser = await userService.getCurrentUserWithDespachos();
-      if (!currentUser) {
+      // Obtener el token de autenticación desde Supabase
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
         setToast({
           type: "error",
-          message: "No hay sesión activa o permisos insuficientes.",
+          message: "No hay sesión activa.",
         });
-        console.error(
-          "No hay sesión activa o permisos insuficientes para aprobar."
-        );
         return;
       }
-      await userService.approveSolicitudDespacho(
-        solicitudId,
-        currentUser.user.id
-      );
+
+      // Llamar al endpoint API
+      const response = await fetch("/api/aprobar-solicitud", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          solicitudId,
+          notas: notas || "Solicitud aprobada",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al aprobar solicitud");
+      }
+
       await loadSolicitudes();
       await loadUsers();
       setToast({
@@ -223,36 +244,56 @@ export default function AdminUsersPage() {
       console.error("Error approving solicitud de despacho:", error);
       setToast({
         type: "error",
-        message: "Error al aprobar la solicitud de despacho.",
+        message: error instanceof Error ? error.message : "Error al aprobar la solicitud de despacho.",
       });
     }
   };
 
   const handleRejectSolicitud = async (solicitudId: string, notas: string) => {
     try {
-      const currentUser = await userService.getCurrentUserWithDespachos();
-      if (!currentUser) {
+      // Obtener el token de autenticación desde Supabase
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
         setToast({
           type: "error",
-          message: "No hay sesión activa o permisos insuficientes.",
+          message: "No hay sesión activa.",
         });
-        console.error(
-          "No hay sesión activa o permisos insuficientes para rechazar."
-        );
         return;
       }
-      await userService.rejectSolicitudDespacho(
-        solicitudId,
-        currentUser.user.id,
-        notas
-      );
+
+      // Llamar al endpoint API
+      const response = await fetch("/api/rechazar-solicitud", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          solicitudId,
+          notas,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al rechazar solicitud");
+      }
+
       await loadSolicitudes();
       setToast({ type: "info", message: "Solicitud rechazada correctamente." });
     } catch (error) {
       console.error("Error rejecting solicitud de despacho:", error);
       setToast({
         type: "error",
-        message: "Error al rechazar la solicitud de despacho.",
+        message: error instanceof Error ? error.message : "Error al rechazar la solicitud de despacho.",
       });
     }
   };
