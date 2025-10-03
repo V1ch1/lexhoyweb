@@ -23,6 +23,7 @@ export type NotificationType =
   | "solicitud_recibida"
   | "solicitud_aprobada"
   | "solicitud_rechazada"
+  | "solicitud_despacho"
   | "despacho_asignado"
   | "despacho_desasignado"
   | "usuario_nuevo"

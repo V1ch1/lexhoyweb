@@ -137,6 +137,24 @@ const DespachosPage = () => {
     if (error) {
       setMensajePropiedad({ tipo: 'error', texto: 'Error al enviar solicitud: ' + error.message });
     } else {
+      // Enviar notificación y email al super_admin
+      try {
+        await fetch('/api/notificar-solicitud', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            solicitudId: solicitudCreada.id,
+            userName: solicitudCreada.user_name,
+            userEmail: solicitudCreada.user_email,
+            despachoNombre: solicitudCreada.despacho_nombre,
+            despachoLocalidad: solicitudCreada.despacho_localidad,
+            despachoProvincia: solicitudCreada.despacho_provincia,
+          }),
+        });
+      } catch (err) {
+        console.error('Error enviando notificación:', err);
+      }
+      
       setMensajePropiedad({ tipo: 'success', texto: '✅ Solicitud enviada. Un administrador la revisará pronto.' });
       // Agregar a la lista de solicitudes pendientes
       setSolicitudesPendientes(prev => new Set(prev).add(despachoSolicitar.id));
