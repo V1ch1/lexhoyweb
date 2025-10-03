@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Endpoint temporal para depuración de webhooks
-// TODO: Implementar sincronización completa según DESPACHOS_WORKFLOW.md
 export async function POST(request: Request) {
   try {
     // 1. Obtener información básica
