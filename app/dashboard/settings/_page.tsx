@@ -13,10 +13,6 @@ import {
   ComputerDesktopIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  XCircleIcon,
-  ClockIcon,
-  EyeIcon,
-  EyeSlashIcon
 } from '@heroicons/react/24/outline';
 import ProfileTab from '@/components/settings/ProfileTab';
 import PasswordTab from '@/components/settings/PasswordTab';
@@ -90,35 +86,12 @@ export default function SettingsPage() {
       
       try {
         setLoading(true);
-        // Usar los datos básicos del usuario del auth context
-        const userData = {
-          id: user.id,
-          email: user.email,
-          name: user.name || '',
-          role: user.role,
-          // Inicializar otros campos requeridos
-          nombre: user.name?.split(' ')[0] || '',
-          apellidos: user.name?.split(' ').slice(1).join(' ') || '',
-          telefono: '',
-          fecha_registro: new Date().toISOString(),
-          ultimo_acceso: new Date().toISOString()
-        };
-        
-        setProfile(userData);
-        
-        // Opcional: Cargar datos adicionales del perfil si es necesario
-        try {
-          const profileData = await userService.getUserProfile(user.id);
-          setProfile(prev => ({
-            ...prev,
-            ...profileData
-          }));
-        } catch (profileError) {
-          console.error('Error al cargar datos adicionales del perfil:', profileError);
-          // Continuar con los datos básicos si falla la carga del perfil
-        }
+        const userData = await userService.getUserProfile(user.id);
+        setProfile({
+          ...safeUser(userData),
+          ...userData
+        });
       } catch (error) {
-        console.error('Error en loadUserData:', error);
         setMessage({
           type: 'error',
           text: 'Error al cargar los datos del usuario'
@@ -176,96 +149,6 @@ export default function SettingsPage() {
     setActiveTab(tabId);
   };
 
-  // State for password tab
-  const [passwordData, setPasswordData] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // State for Mis Despachos tab
-  const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
-  
-  // Load user's despachos
-  useEffect(() => {
-    const loadUserDespachos = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        // Aquí deberías cargar los despachos del usuario desde tu API o base de datos
-        // Esto es un ejemplo, ajusta según tu implementación
-        const response = await fetch(`/api/users/${user.id}/despachos`);
-        const data = await response.json();
-        if (response.ok) {
-          setUserDespachos(data);
-        } else {
-          throw new Error(data.message || 'Error al cargar los despachos');
-        }
-      } catch (error) {
-        console.error('Error al cargar los despachos:', error);
-        setMessage({
-          type: 'error',
-          text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (activeTab === 'mis-despachos') {
-      loadUserDespachos();
-    }
-  }, [user, activeTab]);
-
-  // Handle despacho deletion
-  const handleDeleteDespacho = async (despachoId: string) => {
-    try {
-      setLoading(true);
-      // Aquí deberías implementar la lógica para eliminar el despacho
-      // Por ejemplo:
-      // await userService.removeDespacho(user.id, despachoId);
-      setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
-      setMessage({
-        type: 'success',
-        text: 'Despacho eliminado correctamente'
-      });
-    } catch (error) {
-      console.error('Error al eliminar el despacho:', error);
-      setMessage({
-        type: 'error',
-        text: 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Toggle password visibility
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    switch (field) {
-      case 'current':
-        setShowCurrentPassword(!showCurrentPassword);
-        break;
-      case 'new':
-        setShowNewPassword(!showNewPassword);
-        break;
-      case 'confirm':
-        setShowConfirmPassword(!showConfirmPassword);
-        break;
-    }
-  };
-
-  // Handle password form submission
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Add your password update logic here
-    console.log('Updating password:', passwordData);
-  };
-
   // Render tab content
   const renderTabContent = () => {
     if (loading) {
@@ -278,33 +161,17 @@ export default function SettingsPage() {
 
     switch (activeTab) {
       case 'profile':
-        return <ProfileTab profileData={profile} onUpdate={setProfile} loading={loading} />;
+        return <ProfileTab profile={profile} onUpdate={setProfile} loading={loading} />;
       case 'password':
-        return (
-          <PasswordTab
-            passwordData={passwordData}
-            onUpdate={(data) => setPasswordData(prev => ({ ...prev, ...data }))}
-            onSubmit={handlePasswordSubmit}
-            loading={loading}
-            showCurrentPassword={showCurrentPassword}
-            showNewPassword={showNewPassword}
-            showConfirmPassword={showConfirmPassword}
-            onTogglePasswordVisibility={togglePasswordVisibility}
-          />
-        );
+        return <PasswordTab loading={loading} />;
       case 'notifications':
-        return <NotificationsTab loading={loading} notifications={{}} onUpdate={() => {}} onSubmit={() => {}} />;
+        return <NotificationsTab loading={loading} />;
       case 'mis-despachos':
-        return (
-          <MisDespachosTab 
-            userDespachos={userDespachos} 
-            onDeleteDespacho={handleDeleteDespacho} 
-          />
-        );
+        return <MisDespachosTab loading={loading} />;
       case 'privacy':
-        return <PrivacyTab loading={loading} privacySettings={{}} onUpdate={() => {}} onSubmit={() => {}} />;
+        return <PrivacyTab loading={loading} />;
       case 'sessions':
-        return <SessionsTab loading={loading} sessions={[]} onRevokeSession={() => Promise.resolve()} />;
+        return <SessionsTab loading={loading} />;
       default:
         return null;
     }

@@ -1,51 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { DespachoService } from "@/lib/despachoService";
 
-// Utilidad para decodificar entidades HTML
-function decodeHtml(html: string): string {
-  if (typeof window !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    return txt.value;
-  } else {
-    // SSR fallback
-    return html
-      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&apos;/g, "'")
-      .replace(/&#8211;/g, "–");
-  }
-}
-
-interface SedeWP {
-  localidad?: string;
-  provincia?: string;
-  web?: string;
-  telefono?: string;
-  email?: string;
-}
-interface MetaWP {
-  localidad?: string;
-  provincia?: string;
-  email_contacto?: string;
-  telefono?: string;
-  _despacho_sedes?: SedeWP[];
-  _despacho_email?: string[];
-  _despacho_telefono?: string[];
-}
-
+// Tipos de datos
 interface DespachoWP {
   object_id: string;
+  id?: string | number;
+  title?: { rendered?: string };
+  content?: { rendered?: string };
+  meta?: {
+    localidad?: string;
+    provincia?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
   nombre: string;
   localidad?: string;
   provincia?: string;
   email_contacto?: string;
   telefono?: string;
 }
+
 
 interface Props {
   onImport?: (objectId: string) => void;
@@ -58,7 +34,21 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<string | null>(null);
-  const [importSummary, setImportSummary] = useState<any | null>(null);
+  const [importSummary, setImportSummary] = useState<{
+    success: boolean;
+    despacho?: {
+      id: string | number;
+      wp_id: string | number;
+      titulo: string;
+      contenido: string;
+      estado: string;
+      fecha_publicacion: string;
+      actualizado_en: string;
+      [key: string]: unknown;
+    };
+    message?: string;
+    error?: string;
+  } | null>(null);
 
   // Buscar despachos en WordPress usando la API real
   const buscarDespachos = async (e: React.FormEvent) => {
@@ -67,91 +57,28 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setError(null);
     setResultados([]);
     setImportResult(null);
+
     try {
-      const res = await fetch(
-        `/api/search-despachos?query=${encodeURIComponent(query)}`
-      );
-      if (!res.ok) throw new Error("Error al buscar despachos");
-      const data = await res.json();
-      console.log("API WordPress data:", data);
-      // Mapear resultados a la interfaz DespachoWP
-      const resultadosWP: DespachoWP[] = (data || []).map(
-        (d: unknown, i: number) => {
-          if (typeof d === "object" && d !== null) {
-            const obj = d as Record<string, unknown>;
-            console.log(`Despacho[${i}]`, obj);
-            // Localidad principal
-            const localidadPrincipal =
-              obj.meta &&
-              typeof obj.meta === "object" &&
-              obj.meta !== null &&
-              "localidad" in obj.meta
-                ? (obj.meta as MetaWP).localidad
-                : obj.meta &&
-                  typeof obj.meta === "object" &&
-                  obj.meta !== null &&
-                  Array.isArray((obj.meta as MetaWP)._despacho_sedes) &&
-                  (obj.meta as MetaWP)._despacho_sedes?.[0]?.localidad
-                ? (obj.meta as MetaWP)._despacho_sedes?.[0]?.localidad
-                : "";
-
-            // Buscar sede que coincida con la localidad principal
-            let sedeCoincidente: SedeWP | undefined;
-            if (
-              obj.meta &&
-              typeof obj.meta === "object" &&
-              obj.meta !== null &&
-              Array.isArray((obj.meta as MetaWP)._despacho_sedes)
-            ) {
-              sedeCoincidente = (obj.meta as MetaWP)._despacho_sedes?.find(
-                (sede) =>
-                  sede.localidad &&
-                  sede.localidad.toLowerCase() ===
-                    localidadPrincipal?.toLowerCase()
-              );
-            }
-
-            return {
-              object_id: obj.id?.toString() || obj.object_id || "",
-              nombre:
-                obj.title &&
-                typeof obj.title === "object" &&
-                obj.title !== null &&
-                "rendered" in obj.title
-                  ? decodeHtml(
-                      (obj.title as { rendered?: string }).rendered || ""
-                    )
-                  : decodeHtml(
-                      typeof obj.nombre === "string" ? obj.nombre : ""
-                    ),
-              localidad: localidadPrincipal,
-              provincia:
-                obj.meta &&
-                typeof obj.meta === "object" &&
-                obj.meta !== null &&
-                "provincia" in obj.meta
-                  ? (obj.meta as MetaWP).provincia
-                  : obj.meta &&
-                    typeof obj.meta === "object" &&
-                    obj.meta !== null &&
-                    Array.isArray((obj.meta as MetaWP)._despacho_sedes) &&
-                    (obj.meta as MetaWP)._despacho_sedes?.[0]?.provincia
-                  ? (obj.meta as MetaWP)._despacho_sedes?.[0]?.provincia
-                  : "",
-              // ...no mostrar email ni teléfono
-              ...obj,
-            };
-          }
-          return { object_id: "", nombre: "" };
-        }
-      );
-      setResultados(resultadosWP);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || "Error buscando despachos en WordPress");
-      } else {
-        setError("Error buscando despachos en WordPress");
+      // Usamos el servicio para buscar el despacho por ID
+      const { success, data, error } = await DespachoService.buscarDespacho(query);
+      
+      if (!success) {
+        throw new Error(error || 'Error al buscar el despacho');
       }
+
+      // Mapear el resultado al formato esperado por el componente
+      const resultadoWP: DespachoWP = {
+        object_id: data.id?.toString() || "",
+        nombre: data.title?.rendered || 'Sin título',
+        localidad: data.meta?.localidad || '',
+        provincia: data.meta?.provincia || '',
+        ...data
+      };
+
+      setResultados([resultadoWP]);
+    } catch (err) {
+      console.error('Error en buscarDespachos:', err);
+      setError(err instanceof Error ? err.message : 'Error al buscar el despacho');
     } finally {
       setLoading(false);
     }
@@ -161,24 +88,36 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setImportando(objectId);
     setImportResult(null);
     setImportSummary(null);
+    
     try {
-      const res = await fetch("/api/sync-despacho", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objectId }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      // 1. Primero buscamos el despacho en WordPress
+      const { success: existeEnWP, data: wpDespacho } = await DespachoService.buscarDespacho(objectId);
+      
+      if (!existeEnWP || !wpDespacho) {
+        throw new Error('No se encontró el despacho en WordPress');
+      }
+
+      // 2. Importamos el despacho a Supabase
+      const { success, data: despachoImportado, error } = await DespachoService.importarDeWordPress(wpDespacho);
+      
+      if (success && despachoImportado) {
         setImportResult("✅ Despacho importado correctamente");
-        setImportSummary(data);
+        setImportSummary({
+          success: true,
+          despacho: despachoImportado,
+          message: 'El despacho se ha importado correctamente a la base de datos'
+        });
         if (onImport) onImport(objectId);
       } else {
-        setImportResult(data.error || "❌ Error al importar el despacho");
-        setImportSummary(null);
+        throw new Error(error || 'Error al importar el despacho');
       }
-    } catch {
-      setImportResult("❌ Error de red o del servidor");
-      setImportSummary(null);
+    } catch (error) {
+      console.error('Error en importarDespacho:', error);
+      setImportResult(`❌ ${error instanceof Error ? error.message : 'Error al importar el despacho'}`);
+      setImportSummary({
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      });
     } finally {
       setImportando(null);
     }
@@ -193,7 +132,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         <input
           type="text"
           className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
-          placeholder="Buscar despacho por nombre"
+          placeholder="Buscar despacho por ID"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           required

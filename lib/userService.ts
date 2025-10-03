@@ -30,6 +30,40 @@ interface UserRaw {
 
 export class UserService {
   /**
+   * Obtiene el perfil de un usuario por su ID
+   */
+  async getUserProfile(userId: string): Promise<any> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error al obtener el perfil del usuario:', error);
+      throw error;
+    }
+
+    // Si el usuario tiene un despacho, obtener la información del mismo
+    if (data.despacho_id) {
+      const { data: despachoData } = await supabase
+        .from('despachos')
+        .select('nombre')
+        .eq('id', data.despacho_id)
+        .single();
+
+      if (despachoData) {
+        return {
+          ...data,
+          despacho_nombre: despachoData.nombre
+        };
+      }
+    }
+
+    return data;
+  }
+
+  /**
    * Cancelar solicitud de despacho: actualiza el estado a cancelada
    */
   async cancelarSolicitudDespacho(
