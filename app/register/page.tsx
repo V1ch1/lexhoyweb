@@ -24,28 +24,36 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  const [error, setError] = useState<string>(""); // Tipado explícito para el error
-  const [success, setSuccess] = useState<boolean>(false); // Tipado explícito para success
-  const [isLoading, setIsLoading] = useState<boolean>(false); // Estado de carga
-  const [showPassword, setShowPassword] = useState<boolean>(false); // Tipado para el estado de la contraseña
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false); // Tipado para el estado de confirmación de la contraseña
+  const [error, setError] = useState<{message: string; type?: 'error' | 'warning' | 'info'} | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [emailExists, setEmailExists] = useState<boolean>(false);
 
   // Tipamos 'e' como React.FormEvent<HTMLFormElement>
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     setSuccess(false);
+    setEmailExists(false);
     setIsLoading(true);
 
+    // Validaciones del formulario
     if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      setError({
+        message: "Las contraseñas no coinciden",
+        type: 'error'
+      });
       setIsLoading(false);
       return;
     }
 
     if (!form.acceptTerms) {
-      setError("Debes aceptar la política de privacidad");
+      setError({
+        message: "Debes aceptar la política de privacidad",
+        type: 'error'
+      });
       setIsLoading(false);
       return;
     }
@@ -63,7 +71,14 @@ export default function RegisterPage() {
       });
 
       if (authResult.error) {
-        setError(authResult.error);
+        const isEmailExists = authResult.error.toLowerCase().includes('ya existe');
+        setError({
+          message: isEmailExists 
+            ? 'Ya existe una cuenta con este correo electrónico.'
+            : authResult.error,
+          type: isEmailExists ? 'warning' : 'error'
+        });
+        setEmailExists(isEmailExists);
         setIsLoading(false);
         return;
       }
@@ -79,21 +94,27 @@ export default function RegisterPage() {
         confirmPassword: "",
         acceptTerms: false,
       });
-
       // No redirigir automáticamente, mostrar mensaje de confirmación por email
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error en registro:", error);
 
       if (error instanceof Error) {
         if (error.message.includes("Timeout")) {
-          setError(
-            "El registro está tardando demasiado. Por favor, verifica tu conexión y vuelve a intentarlo."
-          );
+          setError({
+            message: "El registro está tardando demasiado. Por favor, verifica tu conexión y vuelve a intentarlo.",
+            type: 'error'
+          });
         } else {
-          setError(`Error de conexión: ${error.message}`);
+          setError({
+            message: `Error de conexión: ${error.message}`,
+            type: 'error'
+          });
         }
       } else {
-        setError("Error de conexión con el servidor");
+        setError({
+          message: "Error desconocido al procesar la solicitud",
+          type: 'error'
+        });
       }
     } finally {
       setIsLoading(false);
@@ -103,7 +124,10 @@ export default function RegisterPage() {
   // Tipar el evento 'e' correctamente en handleChange
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    setForm(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
+    }));
   };
 
   return (
@@ -113,24 +137,74 @@ export default function RegisterPage() {
           Crear Cuenta
         </h2>
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-          <input
-            type="text"
-            name="fullName"
-            placeholder="Nombre Completo"
-            value={form.fullName}
-            onChange={handleChange}
-            required
-            className="border p-3 rounded-md w-full"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Correo Electrónico"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="border p-3 rounded-md w-full"
-          />
+          {error && (
+            <div 
+              className={`p-3 rounded-md ${
+                error?.type === 'warning' 
+                  ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' 
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}
+            >
+              <p className="font-medium">
+                {error?.type === 'warning' ? 'Atención' : 'Error'}
+              </p>
+              <p>{error?.message || 'Ocurrió un error inesperado'}</p>
+              {emailExists && (
+                <div className="mt-2">
+                  <Link 
+                    href="/login"
+                    className="text-primary hover:underline font-medium"
+                  >
+                    ¿Ya tienes una cuenta? Inicia sesión aquí
+                  </Link>
+                  <p className="text-sm mt-1">
+                    ¿Olvidaste tu contraseña?{' '}
+                    <Link 
+                      href="/forgot-password" 
+                      className="text-primary hover:underline"
+                    >
+                      Restablecer contraseña
+                    </Link>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <div>
+            <input
+              type="text"
+              name="fullName"
+              placeholder="Nombre Completo"
+              value={form.fullName}
+              onChange={handleChange}
+              required
+              className={`border p-3 rounded-md w-full ${
+                error?.type === 'error' ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
+          </div>
+          
+          <div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Correo Electrónico"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className={`border p-3 rounded-md w-full ${
+                emailExists || (error?.type === 'error' && error?.message?.includes('email')) 
+                  ? 'border-yellow-500 bg-yellow-50' 
+                  : 'border-gray-300'
+              }`}
+            />
+            {emailExists && (
+              <p className="mt-1 text-sm text-yellow-600">
+                Este correo ya está registrado. ¿Quieres <Link href="/login" className="text-primary hover:underline">iniciar sesión</Link>?
+              </p>
+            )}
+          </div>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -195,7 +269,9 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className={`mt-2 bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
+              isLoading ? 'opacity-75' : ''
+            }`}
           >
             {isLoading ? (
               <>

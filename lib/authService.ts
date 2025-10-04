@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { User } from "./types";
+import { EmailService } from "./emailService";
 
 export interface AuthUser {
   id: string;
@@ -21,21 +21,17 @@ export class AuthService {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("supabase_jwt");
       }
+      
       // Intentar autenticación con Supabase
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       // Obtener el JWT después de login
       const jwt = authData.session?.access_token;
-      if (jwt) {
-        console.log("JWT después de login:", jwt);
-        // Guardar el JWT en localStorage para usarlo en peticiones protegidas
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("supabase_jwt", jwt);
-        }
+      if (jwt && typeof window !== "undefined") {
+        window.localStorage.setItem("supabase_jwt", jwt);
       }
 
       if (authError) {
@@ -108,10 +104,11 @@ export class AuthService {
       apellidos: string;
       telefono?: string;
     }
-  ): Promise<{ user: AuthUser | null; error: string | null }> {
+  ): Promise<{ user: AuthUser | null; error: string | null; exists?: boolean }> {
+    console.log('Iniciando registro para:', email);
     try {
-      // Crear cuenta en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Primero, intentar registrar al usuario directamente
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -120,86 +117,66 @@ export class AuthService {
             apellidos: userData.apellidos,
             telefono: userData.telefono,
           },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/confirm`,
         },
       });
 
-      // Obtener el JWT después de registro
-      const jwt = authData.session?.access_token;
-      if (jwt) {
-        console.log("JWT después de registro:", jwt);
-        // Guardar el JWT en localStorage para usarlo en peticiones protegidas
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("supabase_jwt", jwt);
-        }
-      }
+      // Si hay un error en el registro
+      if (signUpError) {
+        // Si el usuario ya existe
+        if (signUpError.message.includes('already registered') || signUpError.message.includes('User already registered')) {
+          // Verificar el estado del usuario
+          const { data: { user }, error: userError } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/confirm`,
+            },
+          });
 
-      if (authError) {
-        // Manejar errores específicos de Supabase
-        if (authError.message.includes("User already registered")) {
+          if (userError) {
+            console.error('Error al verificar estado del usuario:', userError);
+            return {
+              user: null,
+              error: 'Este correo ya está registrado. Por favor, inicia sesión o usa la opción de recuperación de contraseña si no la recuerdas.',
+              exists: true
+            };
+          }
+
+          // Si llegamos aquí, el usuario existe pero no está verificado
           return {
             user: null,
-            error:
-              "Este email ya está registrado. Por favor, usa el formulario de login o prueba con un email diferente.",
+            error: 'Ya existe una cuenta con este correo pero no está verificada. Te hemos enviado un nuevo correo de verificación.',
+            exists: true
           };
         }
 
-        if (authError.message.includes("email rate limit exceeded")) {
+        // Manejar otros errores
+        if (signUpError.message.includes('email rate limit exceeded')) {
           return {
             user: null,
-            error:
-              "Se ha alcanzado el límite de emails por hora. Por favor, espera 60 minutos antes de intentar registrarte nuevamente, o intenta con un email diferente.",
+            error: 'Se ha alcanzado el límite de emails por hora. Por favor, espera 60 minutos antes de intentar registrarte nuevamente.'
           };
         }
 
-        if (
-          authError.message.includes(
-            "For security purposes, you can only request this after"
-          )
-        ) {
-          const match = authError.message.match(/after (\d+) seconds/);
-          const seconds = match ? match[1] : "60";
-          return {
-            user: null,
-            error: `Por seguridad, debes esperar ${seconds} segundos antes de intentar registrarte nuevamente. Por favor, espera un momento.`,
-          };
-        }
-
-        if (authError.message.includes("Invalid email")) {
-          return { user: null, error: "El formato del email no es válido." };
-        }
-
-        if (authError.message.includes("Password should be at least")) {
-          return {
-            user: null,
-            error: "La contraseña debe tener al menos 6 caracteres.",
-          };
-        }
-
-        return { user: null, error: `Error de registro: ${authError.message}` };
-      }
-
-      if (!authData.user) {
-        return { user: null, error: "Error al crear la cuenta" };
-      }
-
-      // Si el usuario fue creado pero necesita confirmación por email
-      if (authData.user && !authData.user.email_confirmed_at) {
-        // Usuario creado exitosamente en Supabase Auth, pendiente de confirmación
-        // No creamos el registro en nuestra tabla hasta que confirme el email
+        // Error genérico
+        console.error('Error en el registro:', signUpError);
         return {
-          user: {
-            id: authData.user.id,
-            email: email,
-            name: `${userData.nombre} ${userData.apellidos}`,
-            role: "usuario",
-          },
-          error: null,
+          user: null,
+          error: `Error al registrar el usuario: ${signUpError.message}`
         };
       }
 
-      // Crear registro en nuestra tabla users inmediatamente
-      const newUser = await this.createUserRecord(
+      // Si el registro fue exitoso pero no hay usuario (no debería pasar)
+      if (!authData.user) {
+        console.error('No se pudo obtener el usuario después del registro');
+        return {
+          user: null,
+          error: 'Error al completar el registro. Por favor, inténtalo de nuevo.'
+        };
+      }
+
+      // Crear el registro en la tabla users
+      const { user: dbUser, error: createUserError } = await this.createUserRecord(
         authData.user.id,
         email,
         userData.nombre,
@@ -207,12 +184,235 @@ export class AuthService {
         userData.telefono
       );
 
-      if (!newUser) {
+      if (createUserError) {
+        console.error('Error al crear registro de usuario:', createUserError);
+        // No fallar el registro si hay un error al crear el registro en la tabla users
+        // ya que el usuario ya está registrado en auth.users
+      }
+
+      // Enviar notificación de nuevo usuario a los administradores
+      try {
+        const subject = '👤 ¡Nuevo usuario registrado en LexHoy!';
+        const fechaRegistro = new Date().toLocaleString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <!-- Encabezado -->
+            <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">¡Nuevo usuario registrado!</h1>
+            </div>
+            
+            <!-- Contenido -->
+            <div style="padding: 24px; background-color: #ffffff;">
+              <p style="margin-top: 0; color: #4b5563;">Se ha registrado un nuevo usuario en la plataforma LexHoy con los siguientes datos:</p>
+              
+              <div style="background-color: #f9fafb; border-left: 4px solid #4f46e5; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
+                <h3 style="margin-top: 0; color: #1f2937;">📋 Información del usuario</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; width: 120px;"><strong>Nombre completo:</strong></td>
+                    <td style="padding: 8px 0;">${userData.nombre} ${userData.apellidos}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Correo electrónico:</strong></td>
+                    <td style="padding: 8px 0;">${email}</td>
+                  </tr>
+                  ${userData.telefono ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Teléfono:</strong></td>
+                    <td style="padding: 8px 0;">${userData.telefono}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Rol asignado:</strong></td>
+                    <td style="padding: 8px 0;">
+                      <span style="background-color: #e0e7ff; color: #4f46e5; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                        Usuario
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Fecha de registro:</strong></td>
+                    <td style="padding: 8px 0;">${fechaRegistro}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="margin-top: 24px; text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin/usuarios" 
+                   style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; 
+                          text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 16px;">
+                  Ver en el panel de administración
+                </a>
+              </div>
+            </div>
+            
+            <!-- Pie de página -->
+            <div style="background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+              <p style="margin: 0;">Este es un correo automático. Por favor, no respondas a este mensaje.</p>
+              <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} LexHoy. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `;
+
+        // Enviar notificación a los super administradores
+        await EmailService.sendToSuperAdmins({
+          subject,
+          html
+        });
+
+        console.log('Notificación de nuevo usuario enviada a los administradores');
+      } catch (emailError) {
+        console.error('Error al enviar notificación de nuevo usuario:', emailError);
+        // No fallar el registro si hay un error en la notificación
+      }
+
+      // Si todo salió bien, retornar el usuario
+      return {
+        user: {
+          id: authData.user.id,
+          email: authData.user.email!,
+          name: `${userData.nombre} ${userData.apellidos}`,
+          role: 'usuario' as const,
+        },
+        error: null,
+      };
+    } catch (error) {
+      console.error('Error en AuthService.signUp:', error);
+      return {
+        user: null,
+        error: 'Ocurrió un error inesperado al registrar el usuario. Por favor, inténtalo de nuevo más tarde.'
+      };
+    }
+        }
+
+        if (signUpError?.message?.includes("Invalid email")) {
+          return { user: null, error: "El formato del email no es válido." };
+        }
+
+        if (signUpError?.message?.includes("Password should be at least")) {
+          return {
+            user: null,
+            error: "La contraseña debe tener al menos 6 caracteres.",
+          };
+        }
+
+        return { 
+          user: null, 
+          error: `Error al registrar el usuario: ${signUpError?.message || 'Error desconocido'}` 
+        };
+      }
+
+      if (!authData.user) {
+        return { 
+          user: null,
+          error: "No se pudo crear el usuario. Por favor, inténtalo de nuevo más tarde.",
+          exists: false
+        };
+      }
+
+      // Crear registro en la base de datos
+      const { user: newUser, error: createUserError } = await this.createUserRecord(
+        authData.user.id,
+        email,
+        userData.nombre,
+        userData.apellidos,
+        userData.telefono
+      );
+
+      if (createUserError || !newUser) {
         return {
           user: null,
-          error:
-            "Error al crear el perfil de usuario. El usuario fue creado en el sistema de autenticación pero no se pudo completar el perfil.",
+          error: createUserError || "Se creó la cuenta pero hubo un error al guardar la información adicional. Por favor, contacta con soporte.",
+          exists: createUserError?.includes('ya existe') ? true : false
         };
+      }
+
+      // Enviar notificación de nuevo usuario a los administradores
+      try {
+        const subject = '👤 ¡Nuevo usuario registrado en LexHoy!';
+        const fechaRegistro = new Date().toLocaleString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <!-- Encabezado -->
+            <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px;">¡Nuevo usuario registrado!</h1>
+            </div>
+            
+            <!-- Contenido -->
+            <div style="padding: 24px; background-color: #ffffff;">
+              <p style="margin-top: 0; color: #4b5563;">Se ha registrado un nuevo usuario en la plataforma LexHoy con los siguientes datos:</p>
+              
+              <div style="background-color: #f9fafb; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 4px solid #4f46e5;">
+                <h3 style="margin-top: 0; color: #1f2937;">📋 Información del usuario</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280; width: 120px;"><strong>Nombre completo:</strong></td>
+                    <td style="padding: 8px 0;">${newUser.nombre} ${newUser.apellidos}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Correo electrónico:</strong></td>
+                    <td style="padding: 8px 0;">${newUser.email}</td>
+                  </tr>
+                  ${newUser.telefono ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Teléfono:</strong></td>
+                    <td style="padding: 8px 0;">${newUser.telefono}</td>
+                  </tr>` : ''}
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Rol asignado:</strong></td>
+                    <td style="padding: 8px 0;">
+                      <span style="background-color: #e0e7ff; color: #4f46e5; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                        ${newUser.rol}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #6b7280;"><strong>Fecha de registro:</strong></td>
+                    <td style="padding: 8px 0;">${fechaRegistro}</td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="margin-top: 24px; text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin/usuarios" 
+                   style="display: inline-block; background-color: #4f46e5; color: white; padding: 12px 24px; 
+                          text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 16px;">
+                  Ver en el panel de administración
+                </a>
+              </div>
+            </div>
+            
+            <!-- Pie de página -->
+            <div style="background-color: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+              <p style="margin: 0;">Este es un correo automático. Por favor, no respondas a este mensaje.</p>
+              <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} LexHoy. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `;
+
+        // Enviar notificación a los super administradores
+        await EmailService.sendToSuperAdmins({
+          subject,
+          html
+        });
+
+        console.log('Notificación de nuevo usuario enviada a los administradores');
+      } catch (error) {
+        console.error('Error al enviar notificación de nuevo usuario:', error);
+        // No fallar el registro si hay un error en la notificación
       }
 
       return {
@@ -220,11 +420,16 @@ export class AuthService {
           id: newUser.id,
           email: newUser.email,
           name: `${newUser.nombre} ${newUser.apellidos}`,
-          role: newUser.rol,
+          role: newUser.rol as AuthUser['role'],
         },
         error: null,
       };
-    } catch {
+    } catch (error) {
+      console.error("Error en AuthService.signUp:", error);
+      return { 
+        user: null, 
+        error: "Ocurrió un error inesperado al registrar el usuario. Por favor, inténtalo de nuevo más tarde." 
+      };
     }
   }
 
@@ -443,52 +648,71 @@ export class AuthService {
   /**
    * Crear registro de usuario en nuestra tabla
    */
-  private static async createUserRecord(
-    authId: string,
+  static async createUserRecord(
+    userId: string,
     email: string,
-    nombre?: string,
-    apellidos?: string,
+    nombre: string,
+    apellidos: string,
     telefono?: string
-  ): Promise<User | null> {
+  ): Promise<{ user: User | null; error: string | null }> {
+    console.log('Creando registro de usuario:', { userId, email });
     try {
-      const { data, error } = await supabase
+      // Primero verificamos si el usuario ya existe
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingUserError) {
+        console.error("Error al verificar si el usuario ya existe:", existingUserError);
+        return { 
+          user: null, 
+          error: 'Ocurrió un error al verificar si el usuario ya existe. Por favor, inténtalo de nuevo.' 
+        };
+      }
+
+      if (existingUser) {
+        console.log("Usuario ya existe en la base de datos");
+        return { 
+          user: null, 
+          error: 'Ya existe una cuenta con este correo electrónico. Por favor, inicia sesión o usa la opción de recuperación de contraseña.' 
+        };
+      }
+
+      // Si no existe, lo creamos
+      const { data: user, error: userError } = await supabase
         .from("users")
         .insert({
-          id: authId, // Usar el mismo ID de Supabase Auth
+          id: userId,
           email,
-          nombre: nombre || email.split("@")[0],
-          apellidos: apellidos || "",
-          telefono: telefono || null,
-          rol: "usuario", // Por defecto, los nuevos usuarios son usuarios básicos
-          estado: "activo", // Cambiado de 'pendiente' a 'activo'
-          activo: true,
-          email_verificado: true, // Cambiado a true ya que auto-confirm está habilitado
+          nombre,
+          apellidos,
+          telefono,
+          rol: "usuario",
+          estado: "pendiente",
           fecha_registro: new Date().toISOString(),
-          plan: "basico",
+          activo: true,
+          email_verificado: false,
         })
         .select()
         .single();
 
-      if (error) {
-        console.error("Database error creating user:", error);
-
-        // Verificar si es error de duplicado
-        if (
-          error.code === "23505" ||
-          error.message.includes("duplicate") ||
-          error.message.includes("already exists")
-        ) {
-          console.log("Usuario ya existe en la base de datos");
-          return null;
-        }
-
-        return null;
+      if (userError) {
+        console.error("Error al crear el usuario en la base de datos:", userError);
+        return { 
+          user: null, 
+          error: 'Error al crear el usuario. Por favor, inténtalo de nuevo.' 
+        };
       }
 
-      return data;
+      return { user, error: null };
     } catch (error) {
       console.error("Create user record error:", error);
-      return null;
+      return { 
+        user: null, 
+        error: 'Ocurrió un error inesperado al crear el usuario.' 
+      };
     }
   }
 
@@ -497,16 +721,40 @@ export class AuthService {
    */
   static onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (
-        session?.user &&
-        (event === "SIGNED_IN" ||
-          event === "TOKEN_REFRESHED" ||
-          event === "INITIAL_SESSION")
-      ) {
-        const { user } = await this.getCurrentUser();
-        callback(user);
-      } else if (event === "SIGNED_OUT" || !session) {
+      console.log('Auth state changed:', { event, hasSession: !!session });
+      
+      if (event === 'SIGNED_OUT' || !session) {
+        // Limpiar el JWT al cerrar sesión
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('supabase_jwt');
+        }
         callback(null);
+        return;
+      }
+
+      // Para los demás eventos, verificar la sesión
+      if (session?.user) {
+        try {
+          const { user, error } = await this.getCurrentUser();
+          if (error) {
+            console.error('Error getting current user:', error);
+            // Si hay un error pero tenemos sesión, intentar forzar un refresh
+            if (session.user) {
+              const { data: { user: refreshedUser } } = await supabase.auth.refreshSession();
+              if (refreshedUser) {
+                const { user: currentUser } = await this.getCurrentUser();
+                callback(currentUser);
+                return;
+              }
+            }
+            callback(null);
+            return;
+          }
+          callback(user);
+        } catch (error) {
+          console.error('Error in auth state change:', error);
+          callback(null);
+        }
       }
     });
   }

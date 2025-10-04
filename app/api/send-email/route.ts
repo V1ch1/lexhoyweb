@@ -1,54 +1,40 @@
 import { NextResponse } from "next/server";
-import { EmailService } from "@/lib/emailService";
+import { Resend } from "resend";
+
+// Inicializar Resend con la API key del lado del servidor
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { to, subject, template, data } = body;
+    const { to, subject, html, from } = body;
 
-    if (!to || !subject || !template) {
+    if (!to || !subject || !html) {
       return NextResponse.json(
-        { error: "Faltan parámetros requeridos" },
+        { error: "Faltan parámetros requeridos (to, subject, html)" },
         { status: 400 }
       );
     }
 
-    let html = "";
+    // Enviar email usando Resend
+    const { data, error } = await resend.emails.send({
+      from: from || `LexHoy <${process.env.RESEND_FROM_EMAIL || 'notificaciones@lexhoy.com'}>`,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    });
 
-    // Seleccionar template
-    switch (template) {
-      case "solicitud-recibida":
-        html = EmailService.templateSolicitudRecibida(data);
-        break;
-      case "solicitud-aprobada":
-        html = EmailService.templateSolicitudAprobada(data);
-        break;
-      case "solicitud-rechazada":
-        html = EmailService.templateSolicitudRechazada(data);
-        break;
-      case "usuario-nuevo":
-        html = EmailService.templateUsuarioNuevo(data);
-        break;
-      default:
-        return NextResponse.json(
-          { error: "Template no válido" },
-          { status: 400 }
-        );
-    }
-
-    // Enviar email
-    const success = await EmailService.send({ to, subject, html });
-
-    if (!success) {
+    if (error) {
+      console.error("❌ Error de Resend:", error);
       return NextResponse.json(
-        { error: "Error enviando email" },
+        { error: "Error al enviar el correo", details: error },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error en /api/send-email:", error);
+    console.error("❌ Error en /api/send-email:", error);
     return NextResponse.json(
       { error: "Error interno", details: String(error) },
       { status: 500 }

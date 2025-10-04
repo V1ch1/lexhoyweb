@@ -1,8 +1,11 @@
-import { Resend } from "resend";
 import { supabase } from "./supabase";
 
-// Inicializar Resend con la API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configuración de emails
+const FROM_EMAIL = process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL || "notificaciones@lexhoy.com";
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@lexhoy.com";
+
+// URL base de la API
+const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export interface EmailData {
   to: string | string[];
@@ -13,16 +16,18 @@ export interface EmailData {
 
 export interface EmailTemplateData {
   userName: string;
-  despachoName?: string;
-  userEmail?: string;
+  userEmail: string;
   fecha?: string;
+  role?: string;
+  telefono?: string;
+  despachoName?: string;
   motivoRechazo?: string;
   url?: string;
 }
 
 export class EmailService {
-  private static FROM_EMAIL =
-    process.env.RESEND_FROM_EMAIL || "notificaciones@lexhoy.com";
+  private static FROM_EMAIL = FROM_EMAIL;
+  private static ADMIN_EMAIL = ADMIN_EMAIL;
 
   /**
    * Enviar email genérico
@@ -31,22 +36,29 @@ export class EmailService {
     try {
       console.log("📧 Enviando email a:", data.to);
 
-      const { error } = await resend.emails.send({
-        from: data.from || this.FROM_EMAIL,
-        to: Array.isArray(data.to) ? data.to : [data.to],
-        subject: data.subject,
-        html: data.html,
+      const response = await fetch(`${API_BASE_URL}/api/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: data.to,
+          subject: data.subject,
+          html: data.html,
+          from: data.from || this.FROM_EMAIL,
+        }),
       });
 
-      if (error) {
-        console.error("❌ Error enviando email:", error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("❌ Error enviando email:", errorData);
         return false;
       }
 
       console.log("✅ Email enviado correctamente");
       return true;
     } catch (error) {
-      console.error("💥 Error en EmailService.send:", error);
+      console.error("❌ Error inesperado al enviar email:", error);
       return false;
     }
   }
@@ -65,20 +77,34 @@ export class EmailService {
       const { data: superAdmins, error } = await supabase
         .from("users")
         .select("email")
-        .eq("rol", "super_admin");
+        .eq("rol", "super_admin")
+        .eq("activo", true);
 
       if (error) {
         console.error("❌ Error obteniendo super admins:", error);
-        return false;
+        // Enviar al correo del admin como respaldo
+        return await this.send({
+          to: this.ADMIN_EMAIL,
+          subject: `[IMPORTANTE] ${data.subject}`,
+          html: `<p>No se pudieron obtener los super administradores activos.</p>${data.html}`,
+        });
       }
 
+      let emails: string[] = [];
+      
       if (!superAdmins || superAdmins.length === 0) {
-        console.warn("⚠️ No hay super admins para enviar email");
+        console.warn("⚠️ No hay super admins activos, enviando al correo del admin");
+        emails = [this.ADMIN_EMAIL];
+      } else {
+        emails = superAdmins.map((admin) => admin.email).filter(Boolean) as string[];
+      }
+
+      if (emails.length === 0) {
+        console.error("❌ No hay correos válidos de super administradores");
         return false;
       }
 
-      const emails = superAdmins.map((admin) => admin.email);
-
+      console.log(`📤 Enviando notificación a ${emails.length} super administradores`);
       return await this.send({
         to: emails,
         subject: data.subject,
@@ -86,6 +112,16 @@ export class EmailService {
       });
     } catch (error) {
       console.error("💥 Error en EmailService.sendToSuperAdmins:", error);
+      // Último intento de enviar al correo del admin
+      try {
+        await this.send({
+          to: this.ADMIN_EMAIL,
+          subject: `[ERROR] Fallo en notificación a super admins`,
+          html: `<p>Error al enviar notificaciones a super administradores:</p><pre>${JSON.stringify(error, null, 2)}</pre>`,
+        });
+      } catch (e) {
+        console.error("💥 Error crítico al notificar al admin:", e);
+      }
       return false;
     }
   }
@@ -247,54 +283,232 @@ export class EmailService {
   }
 
   /**
-   * Template: Usuario Nuevo (Para Super Admin)
+   * Notificar a super admins sobre nuevo usuario registrado
    */
-  static templateUsuarioNuevo(data: EmailTemplateData): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }
-            .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-            .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>👤 Nuevo Usuario Registrado</h1>
-            </div>
-            <div class="content">
-              <p>Hola Administrador,</p>
-              <p>Un nuevo usuario se ha registrado en la plataforma.</p>
-              
-              <div class="info-box">
-                <p><strong>👤 Nombre:</strong> ${data.userName}</p>
-                <p><strong>📧 Email:</strong> ${data.userEmail}</p>
-                <p><strong>📅 Fecha de registro:</strong> ${data.fecha}</p>
-              </div>
+  static async notifyNewUserRegistration(userData: {
+    id: string;
+    email: string;
+    nombre: string;
+    apellidos: string;
+    telefono?: string;
+    rol: string;
+  }): Promise<boolean> {
+    try {
+      console.log(`📨 Notificando registro de nuevo usuario: ${userData.email}`);
+      
+      const userProfileUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/users/${userData.id}`;
+      const adminPanelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/users`;
+      
+      const fecha = new Date().toLocaleString('es-ES', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-              <p>Puedes revisar el perfil del usuario desde el panel de administración.</p>
-              
-              <a href="${data.url || process.env.NEXT_PUBLIC_BASE_URL + "/admin/users"}" class="button">
-                Ver Usuarios
-              </a>
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Nuevo Usuario Registrado</title>
+            <style>
+              body { 
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+                line-height: 1.6; 
+                color: #1f2937;
+                margin: 0;
+                padding: 0;
+                background-color: #f3f4f6;
+              }
+              .container { 
+                max-width: 600px; 
+                margin: 0 auto; 
+                padding: 20px; 
+              }
+              .header { 
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+                color: white; 
+                padding: 30px 20px; 
+                text-align: center; 
+                border-radius: 10px 10px 0 0; 
+              }
+              .content { 
+                background: #ffffff; 
+                padding: 30px; 
+                border-radius: 0 0 10px 10px; 
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+              }
+              .info-box { 
+                background: #f9fafb; 
+                padding: 20px; 
+                border-radius: 8px; 
+                margin: 20px 0; 
+                border-left: 4px solid #4f46e5;
+              }
+              .info-item { 
+                margin-bottom: 10px;
+                display: flex;
+                align-items: flex-start;
+              }
+              .info-label { 
+                font-weight: 600; 
+                min-width: 120px;
+                color: #4b5563;
+              }
+              .info-value {
+                flex: 1;
+              }
+              .button { 
+                display: inline-block; 
+                background: #4f46e5; 
+                color: white !important; 
+                padding: 12px 30px; 
+                text-decoration: none; 
+                border-radius: 6px; 
+                margin: 20px 0; 
+                font-weight: 500;
+                text-align: center;
+              }
+              .button:hover {
+                background: #4338ca;
+                text-decoration: none;
+              }
+              .footer { 
+                text-align: center; 
+                color: #6b7280; 
+                font-size: 13px; 
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+              }
+              @media (max-width: 600px) {
+                .container {
+                  padding: 10px;
+                }
+                .content {
+                  padding: 20px 15px;
+                }
+                .info-item {
+                  flex-direction: column;
+                  margin-bottom: 15px;
+                }
+                .info-label {
+                  margin-bottom: 3px;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-weight: 600; font-size: 24px;">👤 Nuevo Usuario Registrado</h1>
+              </div>
+              <div class="content">
+                <p style="margin-top: 0;">Hola Administrador,</p>
+                <p>Un nuevo usuario se ha registrado en la plataforma de LexHoy.</p>
+                
+                <div class="info-box">
+                  <div class="info-item">
+                    <div class="info-label">👤 Nombre:</div>
+                    <div class="info-value">${userData.nombre} ${userData.apellidos}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">📧 Email:</div>
+                    <div class="info-value">${userData.email}</div>
+                  </div>
+                  ${userData.telefono ? `
+                  <div class="info-item">
+                    <div class="info-label">📞 Teléfono:</div>
+                    <div class="info-value">${userData.telefono}</div>
+                  </div>
+                  ` : ''}
+                  <div class="info-item">
+                    <div class="info-label">👑 Rol:</div>
+                    <div class="info-value">
+                      <span style="display: inline-block; background: #e0e7ff; color: #4f46e5; padding: 2px 8px; border-radius: 12px; font-size: 13px; font-weight: 500;">
+                        ${userData.rol}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">📅 Fecha de registro:</div>
+                    <div class="info-value">${fecha}</div>
+                  </div>
+                </div>
 
-              <div class="footer">
-                <p>---</p>
-                <p>LexHoy - Sistema de Gestión de Despachos</p>
-                <p>Este es un email automático, por favor no respondas.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${userProfileUrl}" class="button" style="margin-right: 10px;">
+                    Ver Perfil
+                  </a>
+                  <a href="${adminPanelUrl}" class="button" style="background: #f3f4f6; color: #4b5563 !important; border: 1px solid #e5e7eb;">
+                    Ver Todos
+                  </a>
+                </div>
+
+                <div class="footer">
+                  <p style="margin: 5px 0;">
+                    <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color: #4f46e5; text-decoration: none;">
+                      <strong>LexHoy</strong> - Sistema de Gestión de Despachos
+                    </a>
+                  </p>
+                  <p style="margin: 5px 0; color: #9ca3af;">
+                    Este es un mensaje automático, por favor no respondas a este correo.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </body>
-      </html>
-    `;
+          </body>
+        </html>
+      `;
+
+      // Enviar notificación a super administradores
+      const result = await this.sendToSuperAdmins({
+        subject: `👤 Nuevo usuario registrado: ${userData.nombre} ${userData.apellidos}`,
+        html: html
+      });
+
+      if (!result) {
+        console.warn("⚠️ No se pudo enviar notificación a super admins, intentando enviar al correo del admin");
+        // Si falla, intentar enviar al correo del admin
+        return await this.send({
+          to: this.ADMIN_EMAIL,
+          subject: `[IMPORTANTE] Nuevo usuario registrado: ${userData.email}`,
+          html: `
+            <p>No se pudo notificar a los super administradores sobre el nuevo usuario.</p>
+            <p>Datos del usuario:</p>
+            <ul>
+              <li>Nombre: ${userData.nombre} ${userData.apellidos}</li>
+              <li>Email: ${userData.email}</li>
+              <li>Rol: ${userData.rol}</li>
+              <li>Fecha: ${fecha}</li>
+            </ul>
+            <p><a href="${userProfileUrl}">Ver perfil del usuario</a></p>
+          `
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error("💥 Error en notifyNewUserRegistration:", error);
+      // Último intento de notificar al admin
+      try {
+        await this.send({
+          to: this.ADMIN_EMAIL,
+          subject: `[ERROR CRÍTICO] Fallo en notificación de nuevo usuario`,
+          html: `
+            <p>Error al notificar sobre nuevo usuario:</p>
+            <pre>${JSON.stringify(error, null, 2)}</pre>
+            <p>Datos del usuario:</p>
+            <pre>${JSON.stringify(userData, null, 2)}</pre>
+          `
+        });
+      } catch (e) {
+        console.error("💥 Error crítico al notificar al admin:", e);
+      }
+      return false;
+    }
   }
 }
