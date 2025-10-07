@@ -126,7 +126,7 @@ export default function DespachoDetailPage() {
   const EstadoIcon = config.icon;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 w-full">
       {/* Header con navegación */}
       <div className="mb-6">
         <button
