@@ -151,6 +151,20 @@ export default function DespachoDetailPage() {
       setError(null);
       setSuccess(false);
 
+      // 1. Obtener el object_id de WordPress desde Supabase
+      const { data: despachoData, error: fetchError } = await supabase
+        .from('despachos')
+        .select('object_id')
+        .eq('id', despachoId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error al obtener object_id:', fetchError);
+      }
+
+      const wpObjectId = despachoData?.object_id;
+
+      // 2. Actualizar en Supabase
       const { error: updateError } = await supabase
         .from('despachos')
         .update({
@@ -170,7 +184,45 @@ export default function DespachoDetailPage() {
         throw updateError;
       }
 
-      // Actualizar el estado local con los nuevos datos
+      // 3. Actualizar en WordPress si existe object_id
+      if (wpObjectId) {
+        try {
+          const wpUser = process.env.NEXT_PUBLIC_WP_USER || '';
+          const wpAppPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD || '';
+          const auth = btoa(`${wpUser}:${wpAppPassword}`);
+
+          const wpResponse = await fetch(`https://lexhoy.com/wp-json/wp/v2/despacho/${wpObjectId}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: formData.nombre,
+              acf: {
+                localidad: formData.localidad,
+                provincia: formData.provincia,
+                telefono: formData.telefono,
+                email: formData.email,
+                web: formData.web,
+                descripcion: formData.descripcion,
+                num_sedes: formData.num_sedes,
+              }
+            })
+          });
+
+          if (!wpResponse.ok) {
+            console.warn('Advertencia: No se pudo actualizar en WordPress, pero Supabase se actualizó correctamente');
+          } else {
+            console.log('✅ Despacho actualizado en WordPress');
+          }
+        } catch (wpError) {
+          console.warn('Error al actualizar WordPress:', wpError);
+          // No lanzamos error porque Supabase ya se actualizó
+        }
+      }
+
+      // 4. Actualizar el estado local con los nuevos datos
       setDespacho(prev => prev ? { ...prev, ...formData } : null);
       setSuccess(true);
       setIsEditing(false);
