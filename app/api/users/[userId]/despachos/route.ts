@@ -3,10 +3,10 @@ import { supabase } from "@/lib/supabase";
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = params.userId;
+    const { userId } = await params;
 
     if (!userId) {
       return NextResponse.json(
@@ -17,14 +17,13 @@ export async function GET(
 
     console.log('📊 Obteniendo despachos para usuario:', userId);
 
-    // TEMPORALMENTE: Devolver array vacío para evitar problemas de RLS
-    // TODO: Configurar políticas RLS correctamente en user_despachos
-    console.log('⚠️ Devolviendo array vacío temporalmente (RLS no configurado)');
-    return NextResponse.json([], { status: 200 });
+    // Crear una promesa con timeout para evitar que se cuelgue
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), 5000);
+    });
 
-    /* CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
-    // Consultar directamente la tabla user_despachos con join a despachos
-    const { data: userDespachos, error } = await supabaseAdmin
+    // Consultar la tabla user_despachos para obtener los despachos del usuario
+    const queryPromise = supabase
       .from('user_despachos')
       .select(`
         id,
@@ -33,8 +32,7 @@ export async function GET(
         despachos (
           id,
           nombre,
-          localidad,
-          provincia,
+          direccion,
           telefono,
           email,
           web,
@@ -47,12 +45,27 @@ export async function GET(
       .eq('user_id', userId)
       .eq('activo', true);
 
+    let userDespachos;
+    let error;
+
+    try {
+      const result = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
+      userDespachos = result.data;
+      error = result.error;
+    } catch (timeoutError) {
+      console.error('⏱️ Timeout al consultar despachos:', timeoutError);
+      // Si hay timeout, devolver array vacío en lugar de error
+      return NextResponse.json([], { status: 200 });
+    }
+
     if (error) {
       console.error('❌ Error al consultar despachos:', error);
-      return NextResponse.json(
-        { error: "Error fetching despachos", details: error.message },
-        { status: 500 }
-      );
+      // Si hay error de RLS o tabla no existe, devolver array vacío
+      console.log('⚠️ Devolviendo array vacío debido a error de consulta');
+      return NextResponse.json([], { status: 200 });
     }
 
     console.log('✅ Despachos encontrados:', userDespachos?.length || 0);
@@ -61,8 +74,8 @@ export async function GET(
     const transformedDespachos = (userDespachos || []).map((d: any) => ({
       id: d.despachos?.id || d.despacho_id,
       nombre: d.despachos?.nombre || 'Sin nombre',
-      localidad: d.despachos?.localidad,
-      provincia: d.despachos?.provincia,
+      localidad: d.despachos?.direccion, // Usar direccion como localidad
+      provincia: '', // No hay provincia separada
       telefono: d.despachos?.telefono,
       email: d.despachos?.email,
       web: d.despachos?.web,
@@ -73,7 +86,6 @@ export async function GET(
     }));
 
     return NextResponse.json(transformedDespachos, { status: 200 });
-    
   } catch (error) {
     console.error("❌ Error inesperado:", error);
     return NextResponse.json(

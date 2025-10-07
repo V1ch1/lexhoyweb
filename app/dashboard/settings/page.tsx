@@ -216,24 +216,18 @@ export default function SettingsPage() {
   // State for Mis Despachos tab
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   
-  // Load user's despachos - TEMPORALMENTE DESHABILITADO
+  // Load user's despachos
   useEffect(() => {
     const loadUserDespachos = async () => {
       if (!user) return;
       
-      console.log('⚠️ Carga de despachos deshabilitada temporalmente');
-      
-      // TEMPORALMENTE: Establecer array vacío directamente
-      setUserDespachos([]);
-      setLoading(false);
-      
-      /* CÓDIGO ORIGINAL COMENTADO
       try {
         setLoading(true);
         const response = await fetch(`/api/users/${user.id}/despachos`);
         const data = await response.json();
         if (response.ok) {
           setUserDespachos(data);
+          console.log('✅ Despachos cargados:', data.length);
         } else {
           throw new Error(data.message || 'Error al cargar los despachos');
         }
@@ -246,7 +240,6 @@ export default function SettingsPage() {
       } finally {
         setLoading(false);
       }
-      */
     };
 
     if (activeTab === 'mis-despachos') {
@@ -379,7 +372,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Message Alert */}
       {message && (
         <div
           className={`mb-6 p-4 rounded-lg flex items-center ${
@@ -395,7 +387,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab Navigation */}
       <div className="bg-white shadow rounded-lg">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
@@ -416,7 +407,6 @@ export default function SettingsPage() {
           </nav>
         </div>
 
-        {/* Tab Content */}
         <div className="p-6">
           {renderTabContent()}
         </div>
@@ -424,4 +414,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 

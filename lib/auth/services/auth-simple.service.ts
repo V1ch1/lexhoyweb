@@ -31,11 +31,36 @@ export class AuthSimpleService {
         window.localStorage.setItem('supabase_jwt', data.session.access_token);
       }
 
+      // Intentar obtener el rol desde la tabla users
+      let userRole: 'super_admin' | 'despacho_admin' | 'usuario' = 'usuario';
+      let userName = data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario';
+      
+      try {
+        console.log('🔍 Consultando tabla users para obtener rol...');
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('rol, nombre, apellidos')
+          .eq('id', data.user.id)
+          .single();
+
+        if (!userError && userData) {
+          console.log('✅ Datos de usuario obtenidos:', userData);
+          userRole = (userData.rol || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario';
+          if (userData.nombre) {
+            userName = `${userData.nombre} ${userData.apellidos || ''}`.trim();
+          }
+        } else {
+          console.warn('⚠️ No se pudo obtener rol desde tabla users:', userError);
+        }
+      } catch (err) {
+        console.warn('⚠️ Error al consultar tabla users:', err);
+      }
+
       const user = {
         id: data.user.id,
         email: data.user.email || '',
-        name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
-        role: (data.user.user_metadata?.role || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
+        name: userName,
+        role: userRole,
       };
 
       console.log('✅ Login exitoso:', user);
