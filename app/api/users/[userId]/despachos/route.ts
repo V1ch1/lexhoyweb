@@ -24,7 +24,7 @@ export async function GET(
 
     /* CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
     // Consultar directamente la tabla user_despachos con join a despachos
-    const { data: userDespachos, error } = await supabase
+    const { data: userDespachos, error } = await supabaseAdmin
       .from('user_despachos')
       .select(`
         id,
@@ -73,7 +73,7 @@ export async function GET(
     }));
 
     return NextResponse.json(transformedDespachos, { status: 200 });
-    */
+    
   } catch (error) {
     console.error("❌ Error inesperado:", error);
     return NextResponse.json(

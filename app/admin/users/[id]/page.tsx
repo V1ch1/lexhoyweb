@@ -9,6 +9,24 @@ import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
 
 const userService = new UserService();
 
+// Utilidad para decodificar entidades HTML
+function decodeHtml(html: string): string {
+  if (!html) return "";
+  const txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
+
+// Utilidad para formatear el rol
+function formatRole(rol: UserRole): string {
+  const roleMap: Record<UserRole, string> = {
+    super_admin: 'Super Admin',
+    despacho_admin: 'Admin Despacho',
+    usuario: 'Usuario'
+  };
+  return roleMap[rol] || rol;
+}
+
 export default function EditUserPage() {
   const router = useRouter();
   const params = useParams();
@@ -250,8 +268,8 @@ export default function EditUserPage() {
                   }`}>
                     {formData.activo ? "Activo" : "Inactivo"}
                   </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
-                    {formData.rol}
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                    {formatRole(formData.rol)}
                   </span>
                   {formData.emailVerificado && (
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
@@ -266,7 +284,7 @@ export default function EditUserPage() {
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Despacho asignado</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {userDespachos[0]?.despachos?.nombre || "Despacho"}
+                    {decodeHtml(userDespachos[0]?.despachos?.nombre || "Despacho")}
                   </p>
                   <button
                     onClick={() => setShowModalAsignar(true)}
@@ -367,7 +385,7 @@ export default function EditUserPage() {
                       Rol
                     </label>
                     <select
-                      value={formData.rol}
+                      value={formatRole(formData.rol)}
                       onChange={(e) => handleInputChange("rol", e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
@@ -496,7 +514,7 @@ export default function EditUserPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">
-                            {despacho.despachos?.nombre || "Despacho"}
+                            {decodeHtml(despacho.despachos?.nombre || "Despacho")}
                           </h4>
                           <p className="text-sm text-gray-600">
                             {despacho.despachos?.slug || ""}
