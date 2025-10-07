@@ -13,6 +13,8 @@ import {
   ArrowLeftIcon,
   CheckCircleIcon,
   ClockIcon,
+  XMarkIcon,
+  ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
 
 interface Despacho {
@@ -27,6 +29,17 @@ interface Despacho {
   num_sedes?: number;
   estado?: string;
   created_at: string;
+}
+
+interface DespachoForm {
+  nombre: string;
+  localidad: string;
+  provincia: string;
+  telefono: string;
+  email: string;
+  web: string;
+  descripcion: string;
+  num_sedes: number;
 }
 
 // Función para decodificar entidades HTML
@@ -45,6 +58,19 @@ export default function DespachoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [despacho, setDespacho] = useState<Despacho | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [formData, setFormData] = useState<DespachoForm>({
+    nombre: '',
+    localidad: '',
+    provincia: '',
+    telefono: '',
+    email: '',
+    web: '',
+    descripcion: '',
+    num_sedes: 1,
+  });
 
   useEffect(() => {
     const fetchDespacho = async () => {
@@ -65,6 +91,18 @@ export default function DespachoDetailPage() {
         }
 
         setDespacho(data);
+        
+        // Inicializar formData con los datos del despacho
+        setFormData({
+          nombre: decodeHtmlEntities(data.nombre || ''),
+          localidad: data.localidad || '',
+          provincia: data.provincia || '',
+          telefono: data.telefono || '',
+          email: data.email || '',
+          web: data.web || '',
+          descripcion: decodeHtmlEntities(data.descripcion || ''),
+          num_sedes: data.num_sedes || 1,
+        });
       } catch (err) {
         console.error("Error:", err);
         setError("Ocurrió un error al cargar el despacho");
@@ -75,6 +113,81 @@ export default function DespachoDetailPage() {
 
     fetchDespacho();
   }, [despachoId]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'num_sedes' ? parseInt(value) || 1 : value
+    }));
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setSuccess(false);
+    setError(null);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setSuccess(false);
+    setError(null);
+    // Restaurar datos originales
+    if (despacho) {
+      setFormData({
+        nombre: decodeHtmlEntities(despacho.nombre || ''),
+        localidad: despacho.localidad || '',
+        provincia: despacho.provincia || '',
+        telefono: despacho.telefono || '',
+        email: despacho.email || '',
+        web: despacho.web || '',
+        descripcion: decodeHtmlEntities(despacho.descripcion || ''),
+        num_sedes: despacho.num_sedes || 1,
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!despachoId) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(false);
+
+      const { error: updateError } = await supabase
+        .from('despachos')
+        .update({
+          nombre: formData.nombre,
+          localidad: formData.localidad,
+          provincia: formData.provincia,
+          telefono: formData.telefono,
+          email: formData.email,
+          web: formData.web,
+          descripcion: formData.descripcion,
+          num_sedes: formData.num_sedes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', despachoId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Actualizar el estado local con los nuevos datos
+      setDespacho(prev => prev ? { ...prev, ...formData } : null);
+      setSuccess(true);
+      setIsEditing(false);
+      
+      // Ocultar mensaje de éxito después de 3 segundos
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error al actualizar:', err);
+      setError('No se pudo actualizar el despacho. Por favor, inténtalo de nuevo.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
