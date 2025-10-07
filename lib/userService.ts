@@ -1242,6 +1242,19 @@ export class UserService {
 
     console.log("✅ Despacho encontrado en Supabase, ID:", despacho.id);
 
+    // Cambiar rol del usuario a despacho_admin
+    console.log("👤 Cambiando rol del usuario a despacho_admin");
+    const { error: roleError } = await supabase
+      .from("users")
+      .update({ rol: "despacho_admin" })
+      .eq("id", solicitud.user_id);
+    
+    if (roleError) {
+      console.error("⚠️ Error cambiando rol:", roleError);
+    } else {
+      console.log("✅ Rol actualizado a despacho_admin");
+    }
+
     // Asignar despacho al usuario usando el ID numérico de Supabase
     console.log("🔗 Asignando despacho al usuario:", solicitud.user_id);
     await this.assignDespachoToUser(
@@ -1293,22 +1306,59 @@ export class UserService {
 
     // Enviar email al usuario
     try {
+      const { EmailService } = await import("./emailService");
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      await fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: solicitud.user_email,
-          subject: "✅ Tu solicitud ha sido aprobada - LexHoy",
-          template: "solicitud-aprobada",
-          data: {
-            userName: solicitud.user_name,
-            despachoName: solicitud.despacho_nombre,
-            url: `${baseUrl}/dashboard/settings?tab=mis-despachos`,
-          },
-        }),
+      
+      await EmailService.send({
+        to: solicitud.user_email,
+        subject: "🎉 ¡Tu solicitud de despacho ha sido aprobada! - LexHoy",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0;">¡Felicitaciones! 🎉</h1>
+            </div>
+            
+            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px; color: #333;">Hola <strong>${solicitud.user_name}</strong>,</p>
+              
+              <p style="font-size: 16px; color: #333; line-height: 1.6;">
+                Tu solicitud para gestionar el despacho <strong style="color: #667eea;">${solicitud.despacho_nombre}</strong> ha sido <strong style="color: #10b981;">aprobada</strong>.
+              </p>
+              
+              <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #065f46; font-weight: 600;">✅ Tu rol ha sido actualizado a Administrador de Despacho</p>
+              </div>
+              
+              <p style="font-size: 16px; color: #333; line-height: 1.6;">
+                Ahora puedes:
+              </p>
+              
+              <ul style="color: #555; line-height: 1.8;">
+                <li>✏️ Modificar la información del despacho</li>
+                <li>📊 Gestionar leads y clientes</li>
+                <li>👥 Administrar usuarios del despacho</li>
+                <li>⚙️ Configurar preferencias y ajustes</li>
+              </ul>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${baseUrl}/dashboard/settings?tab=mis-despachos" 
+                   style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
+                  Ir a Mi Despacho
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                Si tienes alguna pregunta, no dudes en contactarnos.
+              </p>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+              <p>© ${new Date().getFullYear()} LexHoy. Todos los derechos reservados.</p>
+            </div>
+          </div>
+        `,
       });
-      console.log("✅ Email enviado al usuario");
+      console.log("✅ Email de aprobación enviado al usuario");
     } catch (error) {
       console.error("⚠️ Error enviando email:", error);
     }
