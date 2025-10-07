@@ -211,7 +211,10 @@ export default function SolicitarDespacho() {
         }),
       });
       
-      if (!res.ok) throw new Error("Error al solicitar vinculación");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al solicitar vinculación");
+      }
       
       setSolicitados((prev) => [...prev, despachoId]);
       setSuccess("Solicitud enviada correctamente");
@@ -222,8 +225,10 @@ export default function SolicitarDespacho() {
         setResults([]);
         setNombre("");
       }, 2000);
-    } catch {
-      setError("Error al solicitar vinculación");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error al solicitar vinculación";
+      setError(errorMessage);
+      console.error("Error al solicitar despacho:", err);
     } finally {
       setLoadingSolicitud(null);
     }

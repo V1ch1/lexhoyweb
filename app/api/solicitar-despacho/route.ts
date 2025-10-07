@@ -39,13 +39,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    // 1. Intentar sincronizar el despacho en Supabase (si no existe)
-    // NOTA: Si falla la sincronización, continuamos de todas formas
+    // 1. Crear el despacho en Supabase si no existe
+    let despachoIdReal = null;
     try {
-      const syncRes = await fetch(
+      const crearRes = await fetch(
         `${
           process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-        }/api/sync-despacho`,
+        }/api/despachos/crear-desde-wordpress`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -59,15 +59,17 @@ export async function POST(request: Request) {
         }
       );
       
-      if (syncRes.ok) {
-        const syncData = await syncRes.json();
-        console.log("✅ Despacho sincronizado:", syncData);
+      if (crearRes.ok) {
+        const crearData = await crearRes.json();
+        despachoIdReal = crearData.despachoId;
+        console.log("✅ Despacho creado/encontrado:", crearData);
       } else {
-        const errorText = await syncRes.text();
-        console.warn("⚠️ No se pudo sincronizar despacho, pero continuamos:", errorText);
+        const errorData = await crearRes.json();
+        console.warn("⚠️ No se pudo crear despacho:", errorData);
+        // Continuamos con objectId como fallback
       }
-    } catch (syncError) {
-      console.warn("⚠️ Error sincronizando despacho, pero continuamos:", syncError);
+    } catch (crearError) {
+      console.warn("⚠️ Error creando despacho, usando objectId como fallback:", crearError);
     }
 
     // 2. Comprobar si ya existe una solicitud pendiente o aprobada para este usuario y despacho
