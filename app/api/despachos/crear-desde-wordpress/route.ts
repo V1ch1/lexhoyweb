@@ -1,110 +1,63 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 
 /**
- * Endpoint para crear un despacho en Supabase desde datos de WordPress
+ * Endpoint para obtener y sincronizar un despacho desde WordPress
  * Se usa cuando un usuario solicita vinculación a un despacho que no existe en nuestra BD
+ * Obtiene los datos completos desde WordPress (incluyendo sedes) y los importa
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { objectId, nombre, localidad, provincia, slug, telefono, email, web, descripcion } = body;
+    const { objectId } = body;
 
-    console.log('📝 Creando despacho desde WordPress:', { objectId, nombre, localidad, provincia });
+    console.log('📝 Obteniendo despacho desde WordPress:', objectId);
 
-    if (!objectId || !nombre) {
+    if (!objectId) {
       return NextResponse.json(
-        { error: "Faltan datos requeridos: objectId y nombre" },
+        { error: "Falta objectId" },
         { status: 400 }
       );
     }
 
-    // 1. Verificar si el despacho ya existe por object_id
-    const { data: despachoExistente, error: errorBusqueda } = await supabase
-      .from('despachos')
-      .select('id, object_id')
-      .eq('object_id', objectId)
-      .single();
-
-    if (errorBusqueda && errorBusqueda.code !== 'PGRST116') {
-      // PGRST116 = no rows returned (es esperado si no existe)
-      console.error('❌ Error buscando despacho:', errorBusqueda);
+    // 1. Obtener el despacho completo desde WordPress (incluye sedes en meta._despacho_sedes)
+    // El objectId puede ser numérico o con formato lexhoy-XXXXX
+    const wpId = objectId.toString().replace('lexhoy-', '');
+    const wpUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${wpId}`;
+    console.log('🌐 Consultando WordPress:', wpUrl);
+    
+    const wpResponse = await fetch(wpUrl);
+    
+    if (!wpResponse.ok) {
+      console.error('❌ Error obteniendo despacho de WordPress:', wpResponse.status);
       return NextResponse.json(
-        { error: "Error al buscar despacho", details: errorBusqueda.message },
+        { error: "Despacho no encontrado en WordPress" },
+        { status: 404 }
+      );
+    }
+
+    const despachoWP = await wpResponse.json();
+    console.log('✅ Despacho obtenido de WordPress:', despachoWP.id);
+    console.log('📍 Sedes encontradas:', despachoWP.meta?._despacho_sedes?.length || 0);
+
+    // 2. Importar usando SyncService (que maneja despacho + sedes)
+    const { SyncService } = await import('@/lib/syncService');
+    const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
+
+    if (!result.success) {
+      console.error('❌ Error importando despacho:', result.error);
+      return NextResponse.json(
+        { error: result.error, details: result.details },
         { status: 500 }
       );
     }
 
-    // Si ya existe, devolver el ID existente
-    if (despachoExistente) {
-      console.log('✅ Despacho ya existe:', despachoExistente.id);
-      return NextResponse.json({
-        success: true,
-        despachoId: despachoExistente.id,
-        objectId: despachoExistente.object_id,
-        message: 'Despacho ya existente',
-        existed: true
-      });
-    }
-
-    // 2. Crear el despacho
-    const { data: nuevoDespacho, error: errorDespacho } = await supabase
-      .from('despachos')
-      .insert({
-        object_id: objectId,
-        nombre: nombre,
-        slug: slug || nombre.toLowerCase().replace(/\s+/g, '-'),
-        localidad: localidad || null,
-        provincia: provincia || null,
-        telefono: telefono || null,
-        email: email || null,
-        web: web || null,
-        descripcion: descripcion || null,
-        activo: true,
-        num_sedes: localidad ? 1 : 0,
-      })
-      .select()
-      .single();
-
-    if (errorDespacho) {
-      console.error('❌ Error creando despacho:', errorDespacho);
-      return NextResponse.json(
-        { error: "Error al crear despacho", details: errorDespacho.message },
-        { status: 500 }
-      );
-    }
-
-    console.log('✅ Despacho creado:', nuevoDespacho.id);
-
-    // 3. Si hay localidad/provincia, crear la sede principal
-    if (localidad && provincia && nuevoDespacho) {
-      const { error: errorSede } = await supabase
-        .from('sedes')
-        .insert({
-          despacho_id: nuevoDespacho.id,
-          nombre: 'Sede Principal',
-          localidad: localidad,
-          provincia: provincia,
-          direccion: null,
-          telefono: telefono || null,
-          email: email || null,
-          es_principal: true,
-          activo: true,
-        });
-
-      if (errorSede) {
-        console.warn('⚠️ Error creando sede (no crítico):', errorSede);
-      } else {
-        console.log('✅ Sede principal creada');
-      }
-    }
+    console.log('✅ Despacho importado correctamente:', result.despachoId);
 
     return NextResponse.json({
       success: true,
-      despachoId: nuevoDespacho.id,
-      objectId: nuevoDespacho.object_id,
-      message: 'Despacho creado exitosamente',
-      existed: false
+      despachoId: result.despachoId,
+      objectId: result.objectId,
+      message: result.message,
     });
 
   } catch (error) {

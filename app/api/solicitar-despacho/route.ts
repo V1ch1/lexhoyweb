@@ -39,37 +39,34 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    // 1. Crear el despacho en Supabase si no existe
+    // 1. Importar el despacho completo desde WordPress (incluye todas las sedes)
     let despachoIdReal = null;
     try {
-      const crearRes = await fetch(
+      const importarRes = await fetch(
         `${
           process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
         }/api/despachos/crear-desde-wordpress`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            objectId,
-            nombre: despachoNombre,
-            localidad: despachoLocalidad,
-            provincia: despachoProvincia,
-            slug
-          }),
+          body: JSON.stringify({ objectId }),
         }
       );
-      
-      if (crearRes.ok) {
-        const crearData = await crearRes.json();
-        despachoIdReal = crearData.despachoId;
-        console.log("✅ Despacho creado/encontrado:", crearData);
+
+      if (importarRes.ok) {
+        const importarData = await importarRes.json();
+        despachoIdReal = importarData.despachoId;
+        console.log("✅ Despacho importado desde WordPress:", importarData);
       } else {
-        const errorData = await crearRes.json();
-        console.warn("⚠️ No se pudo crear despacho:", errorData);
+        const errorData = await importarRes.json();
+        console.warn("⚠️ No se pudo importar despacho:", errorData);
         // Continuamos con objectId como fallback
       }
-    } catch (crearError) {
-      console.warn("⚠️ Error creando despacho, usando objectId como fallback:", crearError);
+    } catch (importarError) {
+      console.warn(
+        "⚠️ Error importando despacho, usando objectId como fallback:",
+        importarError
+      );
     }
 
     // 2. Comprobar si ya existe una solicitud pendiente o aprobada para este usuario y despacho
@@ -170,8 +167,9 @@ export async function POST(request: Request) {
     // Enviar email a super admins
     try {
       const { EmailService } = await import("@/lib/emailService");
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-      
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
       await EmailService.sendToSuperAdmins({
         subject: `Nueva solicitud de despacho - ${userName}`,
         html: EmailService.templateSolicitudRecibida({
