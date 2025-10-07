@@ -1,0 +1,235 @@
+import { supabase } from '@/lib/supabase';
+
+/**
+ * Servicio de autenticación simplificado que usa SOLO Supabase Auth
+ * No depende de la tabla 'users' personalizada
+ */
+export class AuthSimpleService {
+  /**
+   * Iniciar sesión con email y contraseña
+   */
+  static async login(email: string, password: string) {
+    try {
+      console.log('🔐 AuthSimpleService.login - Iniciando para:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('❌ Error de autenticación:', error);
+        return { user: null, error: error.message };
+      }
+
+      if (!data.user) {
+        return { user: null, error: 'No se pudo obtener la información del usuario' };
+      }
+
+      // Guardar JWT
+      if (data.session?.access_token && typeof window !== 'undefined') {
+        window.localStorage.setItem('supabase_jwt', data.session.access_token);
+      }
+
+      const user = {
+        id: data.user.id,
+        email: data.user.email || '',
+        name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
+        role: (data.user.user_metadata?.role || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
+      };
+
+      console.log('✅ Login exitoso:', user);
+      return { user, error: null };
+    } catch (error: any) {
+      console.error('❌ Error en login:', error);
+      return { user: null, error: error.message || 'Error de conexión' };
+    }
+  }
+
+  /**
+   * Cerrar sesión
+   */
+  static async logout() {
+    try {
+      console.log('🚪 AuthSimpleService.logout - Cerrando sesión');
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('❌ Error al cerrar sesión:', error);
+        return { error: error.message };
+      }
+
+      // Limpiar localStorage
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('supabase_jwt');
+        window.localStorage.removeItem('lexhoy_user');
+        window.localStorage.removeItem('isAuthenticated');
+      }
+
+      console.log('✅ Sesión cerrada exitosamente');
+      return { error: null };
+    } catch (error: any) {
+      console.error('❌ Error en logout:', error);
+      return { error: error.message || 'Error al cerrar sesión' };
+    }
+  }
+
+  /**
+   * Obtener sesión actual
+   */
+  static async getSession() {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Error al obtener sesión:', error);
+        return { session: null, error: error.message };
+      }
+
+      return { session: data.session, error: null };
+    } catch (error: any) {
+      console.error('❌ Error en getSession:', error);
+      return { session: null, error: error.message };
+    }
+  }
+
+  /**
+   * Obtener usuario actual (con rol desde la tabla users)
+   */
+  static async getCurrentUser() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        return { user: null, error: null };
+      }
+
+      // Intentar obtener el rol desde la tabla users
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('rol, nombre, apellidos')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!userError && userData) {
+          const user = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: userData.nombre ? `${userData.nombre} ${userData.apellidos || ''}`.trim() : session.user.email?.split('@')[0] || 'Usuario',
+            role: (userData.rol || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
+          };
+          return { user, error: null };
+        }
+      } catch (err) {
+        console.warn('⚠️ No se pudo obtener rol desde tabla users, usando datos básicos');
+      }
+
+      // Fallback: usar datos de auth
+      const user = {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
+        role: (session.user.user_metadata?.role || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
+      };
+
+      return { user, error: null };
+    } catch (error: any) {
+      console.error('❌ Error en getCurrentUser:', error);
+      return { user: null, error: error.message };
+    }
+  }
+
+  /**
+   * Escuchar cambios de autenticación
+   */
+  static onAuthStateChange(callback: (event: string, session: any) => void) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        callback(event, session);
+      }
+    );
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }
+
+  /**
+   * Registrar nuevo usuario
+   */
+  static async register(email: string, password: string, metadata?: { name?: string; role?: string }) {
+    try {
+      console.log('📝 AuthSimpleService.register - Registrando:', email);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata || {},
+        },
+      });
+
+      if (error) {
+        console.error('❌ Error en registro:', error);
+        return { user: null, error: error.message };
+      }
+
+      if (!data.user) {
+        return { user: null, error: 'No se pudo crear el usuario' };
+      }
+
+      const user = {
+        id: data.user.id,
+        email: data.user.email || '',
+        name: metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
+        role: (metadata?.role || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
+      };
+
+      console.log('✅ Registro exitoso:', user);
+      return { user, error: null };
+    } catch (error: any) {
+      console.error('❌ Error en register:', error);
+      return { user: null, error: error.message || 'Error al registrar' };
+    }
+  }
+
+  /**
+   * Resetear contraseña
+   */
+  static async resetPassword(email: string) {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'Error al enviar email' };
+    }
+  }
+
+  /**
+   * Actualizar contraseña
+   */
+  static async updatePassword(newPassword: string) {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'Error al actualizar contraseña' };
+    }
+  }
+}

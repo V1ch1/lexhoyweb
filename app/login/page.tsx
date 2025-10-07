@@ -4,8 +4,9 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
-import { AuthService } from "@/lib/authService";
+import { AuthSimpleService } from "@/lib/auth/services/auth-simple.service";
 import { useAuth } from "@/lib/authContext";
+import { toast } from 'react-hot-toast';
 
 // Tipado de la variable "form" y "error"
 interface FormState {
@@ -20,6 +21,9 @@ function LoginPageContent() {
   const { login } = useAuth();
 
   const isConfirmed = searchParams.get("confirmed") === "true";
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState<FormState>({
     email: "",
@@ -27,76 +31,78 @@ function LoginPageContent() {
     rememberMe: false,
   });
 
-  // Tipo de error como string
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [showPassword, setShowPassword] = useState(false);
-
   // Tipado del evento de cambio
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    setForm((prevForm) => ({ ...prevForm, [name]: type === "checkbox" ? checked : value }));
   };
 
   // Tipado del evento de submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(""); // Limpiar error antes de hacer la petición
+    setError("");
     setIsLoading(true);
 
+    console.log("🚀 Iniciando handleSubmit...");
+
     try {
-      console.log("Intentando login con email:", form.email);
+      console.log("📤 Llamando a AuthSimpleService.login...");
+      const { user, error } = await AuthSimpleService.login(
+        form.email.trim(),
+        form.password
+      );
 
-      // Usar AuthService para autenticación real con Supabase
-      const authResult = await AuthService.signIn(form.email, form.password);
+      console.log("📥 Respuesta recibida:", { user, error });
 
-      if (authResult.error) {
-        console.log("Error de autenticación:", authResult.error);
+      if (error) {
+        console.error("❌ Error en login:", error);
+        setError(error);
+        toast.error(error);
+        setIsLoading(false);
+        return;
+      }
 
-        // Mensaje más claro para email no confirmado
-        if (authResult.error.includes("Email not confirmed")) {
-          setError(
-            "Tu cuenta aún no ha sido confirmada. Por favor, revisa tu email y haz clic en el enlace de confirmación. Si no has recibido el email, revisa la carpeta de spam."
-          );
-        } else {
-          setError(authResult.error);
+      if (user) {
+        console.log("🔍 Datos del usuario recibidos:", user);
+        
+        // Actualizar el estado de autenticación
+        const loginSuccess = login({
+          id: user.id,
+          email: user.email || '',
+          name: user.name || user.email?.split('@')[0] || 'Usuario',
+          role: (user.role as "super_admin" | "despacho_admin" | "usuario") || 'usuario'
+        });
+
+        console.log("✅ Login success:", loginSuccess);
+        
+        if (!loginSuccess) {
+          console.error("❌ Error: login() retornó false");
+          setError("Error al procesar la autenticación");
+          toast.error("Error al procesar la autenticación");
+          setIsLoading(false);
+          return;
         }
-        return;
-      }
 
-      if (!authResult.user) {
-        console.log("Usuario no encontrado");
-        setError("Error de autenticación");
-        return;
-      }
-
-      console.log("Login exitoso con Supabase Auth");
-
-      // Usar el contexto de autenticación
-      const userData = {
-        id: authResult.user.id,
-        email: authResult.user.email,
-        name: authResult.user.name,
-        role: authResult.user.role as
-          | "super_admin"
-          | "despacho_admin"
-          | "usuario",
-      };
-
-      login(userData);
-
-      // Redirigir siempre a dashboard
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Error en login:", error);
-
-      if (error instanceof Error) {
-        setError(`Error: ${error.message}`);
+        toast.success('¡Bienvenido!');
+        
+        // Redirigir al dashboard o a la página de origen
+        const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+        console.log("🔀 Preparando redirección a:", redirectTo);
+        
+        // Usar window.location.href para asegurar la recarga completa de la página
+        // Sin setTimeout para redirección inmediata
+        window.location.href = redirectTo;
       } else {
-        setError("Error de conexión con el servidor");
+        console.error("❌ No se recibió usuario del servicio de login");
+        setError("No se pudo completar el inicio de sesión");
+        toast.error("No se pudo completar el inicio de sesión");
+        setIsLoading(false);
       }
-    } finally {
+    } catch (err: any) {
+      const errorMessage = err.message || "Ocurrió un error al iniciar sesión";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('Error en inicio de sesión:', err);
       setIsLoading(false);
     }
   };
@@ -129,8 +135,7 @@ function LoginPageContent() {
               </h3>
             </div>
             <p className="text-green-700 text-sm mt-2">
-              Tu email ha sido verificado exitosamente. Ahora puedes iniciar
-              sesión con tu cuenta.
+              Tu email ha sido verificado exitosamente. Ahora puedes iniciar sesión.
             </p>
           </div>
         )}
@@ -138,21 +143,25 @@ function LoginPageContent() {
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="email"
+            id="email"
             name="email"
-            placeholder="Correo Electrónico"
             value={form.email}
             onChange={handleChange}
+            placeholder="Correo electrónico"
             required
+            autoComplete="username"
             className="border p-3 rounded-md w-full"
           />
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
+              id="password"
               name="password"
-              placeholder="Contraseña"
               value={form.password}
               onChange={handleChange}
+              placeholder="Contraseña"
               required
+              autoComplete="current-password"
               className="border p-3 rounded-md w-full pr-10"
             />
             <span
@@ -218,19 +227,18 @@ function LoginPageContent() {
   );
 }
 
-export default function LoginPage() {
+const LoginPage = () => {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando...</p>
-          </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       }
     >
       <LoginPageContent />
     </Suspense>
   );
-}
+};
+
+export default LoginPage;

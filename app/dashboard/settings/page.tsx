@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
-import { AuthService } from '@/lib/authService';
+import { AuthSimpleService } from '@/lib/auth/services/auth-simple.service';
 import { supabase } from '@/lib/supabase';
 import {
   UserIcon,
@@ -191,7 +191,7 @@ export default function SettingsPage() {
       }
 
       // Si la contraseña actual es correcta, actualizar a la nueva contraseña
-      const { error: updateError } = await AuthService.updatePassword(newPassword);
+      const { error: updateError } = await AuthSimpleService.updatePassword(newPassword);
       
       if (updateError) {
         throw new Error(updateError);
@@ -216,15 +216,20 @@ export default function SettingsPage() {
   // State for Mis Despachos tab
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   
-  // Load user's despachos
+  // Load user's despachos - TEMPORALMENTE DESHABILITADO
   useEffect(() => {
     const loadUserDespachos = async () => {
       if (!user) return;
       
+      console.log('⚠️ Carga de despachos deshabilitada temporalmente');
+      
+      // TEMPORALMENTE: Establecer array vacío directamente
+      setUserDespachos([]);
+      setLoading(false);
+      
+      /* CÓDIGO ORIGINAL COMENTADO
       try {
         setLoading(true);
-        // Aquí deberías cargar los despachos del usuario desde tu API o base de datos
-        // Esto es un ejemplo, ajusta según tu implementación
         const response = await fetch(`/api/users/${user.id}/despachos`);
         const data = await response.json();
         if (response.ok) {
@@ -241,6 +246,7 @@ export default function SettingsPage() {
       } finally {
         setLoading(false);
       }
+      */
     };
 
     if (activeTab === 'mis-despachos') {

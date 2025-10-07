@@ -99,18 +99,39 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
   };
 
   // Formatear tiempo relativo
-  const getTimeAgo = (date: string) => {
+  const getTimeAgo = (dateString: string) => {
+    // Asegurarse de que la fecha del servidor se interprete correctamente
+    // Añadimos 'Z' para indicar que está en UTC
+    const date = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+    
+    // Crear fechas en la zona horaria local
     const now = new Date();
     const notifDate = new Date(date);
+    
+    // Calcular diferencia en milisegundos
     const diffMs = now.getTime() - notifDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    
+    // Calcular diferencias
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return "Ahora";
-    if (diffMins < 60) return `Hace ${diffMins}m`;
-    if (diffHours < 24) return `Hace ${diffHours}h`;
-    return `Hace ${diffDays}d`;
+    // Determinar el formato más adecuado
+    if (diffSecs < 5) return 'Ahora mismo';
+    if (diffSecs < 60) return `Hace ${diffSecs} segundos`;
+    if (diffMins < 60) return `Hace ${diffMins} minuto${diffMins > 1 ? 's' : ''}`;
+    if (diffHours < 24) return `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    if (diffDays < 7) return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+    
+    // Para fechas más antiguas, mostrar la fecha completa
+    return notifDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (

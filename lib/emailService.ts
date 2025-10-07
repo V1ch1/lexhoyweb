@@ -162,7 +162,7 @@ export class EmailService {
 
               <p>Puedes revisar y aprobar esta solicitud desde el panel de administración.</p>
               
-              <a href="${data.url || process.env.NEXT_PUBLIC_BASE_URL + "/admin/users?tab=solicitudes"}" class="button">
+              <a href="${data.url || (process.env.NEXT_PUBLIC_BASE_URL || 'https://despachos.lexhoy.com') + "/admin/users?tab=solicitudes"}" class="button">
                 Ver Solicitud
               </a>
 

@@ -46,7 +46,15 @@ const DashboardPage = () => {
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
 
+  // TEMPORALMENTE DESHABILITADO: Cargar solicitudes para super_admin
   useEffect(() => {
+    if (user?.role === "super_admin") {
+      console.log("⚠️ Carga de solicitudes deshabilitada temporalmente");
+      setSolicitudes([]);
+      setSolicitudesLoading(false);
+    }
+    
+    /* CÓDIGO ORIGINAL COMENTADO
     if (user?.role === "super_admin") {
       setSolicitudesLoading(true);
       const userService = new UserService();
@@ -87,6 +95,7 @@ const DashboardPage = () => {
         .catch(() => setSolicitudes([]))
         .finally(() => setSolicitudesLoading(false));
     }
+    */
   }, [user?.role]);
   // Función segura para obtener el JWT
   function getJWT() {
@@ -118,9 +127,36 @@ const DashboardPage = () => {
     // ...existing code...
   }, [user]);
 
-  // Cargar estadísticas según el rol del usuario
+  // TEMPORALMENTE DESHABILITADO: Cargar estadísticas según el rol del usuario
+  // La consulta a la tabla 'users' se está colgando
   useEffect(() => {
     if (!user?.id || !user?.role) return;
+    
+    console.log("⚠️ Carga de estadísticas deshabilitada temporalmente");
+    
+    // Simular datos vacíos para que el dashboard se muestre
+    setStatsLoading(false);
+    
+    if (user.role === "super_admin") {
+      setSystemStats({
+        totalUsers: 0,
+        activeDespachos: 0,
+        totalLeads: 0,
+        usersByRole: {
+          super_admin: 0,
+          despacho_admin: 0,
+          usuario: 0
+        }
+      });
+    } else if (user.role === "despacho_admin") {
+      setDespachoStats({
+        leadsThisMonth: 0,
+        totalLeads: 0,
+        conversions: 0
+      });
+    }
+    
+    /* CÓDIGO ORIGINAL COMENTADO
     const loadStats = async () => {
       setStatsLoading(true);
       try {
@@ -139,6 +175,7 @@ const DashboardPage = () => {
       }
     };
     loadStats();
+    */
   }, [user?.id, user?.role]);
 
   // Mostrar loading hasta que user y stats estén listos

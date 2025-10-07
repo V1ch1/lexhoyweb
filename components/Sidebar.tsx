@@ -19,6 +19,9 @@ const Sidebar = () => {
     router.push(href);
   };
 
+  // Debug: Ver el rol del usuario
+  console.log("🎭 Sidebar - Usuario:", { email: user?.email, role: user?.role });
+
   // Si no hay usuario, no mostrar el sidebar
   if (!user) {
     return null;

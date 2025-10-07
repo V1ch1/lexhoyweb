@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
-import { AuthService } from "@/lib/authService";
+import { AuthRegisterService } from "@/lib/auth/services/auth-register.service";
+import { AuthLoginService } from "@/lib/auth/services/auth-login.service";
 
 // Definir la interfaz para el estado del formulario
 interface FormState {
@@ -24,12 +26,14 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  const [error, setError] = useState<{message: string; type?: 'error' | 'warning' | 'info'} | null>(null);
+  const [error, setError] = useState<{message: string; type?: 'error' | 'warning' | 'info'; code?: string} | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [emailExists, setEmailExists] = useState<boolean>(false);
+
+  const router = useRouter();
 
   // Tipamos 'e' como React.FormEvent<HTMLFormElement>
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,54 +43,67 @@ export default function RegisterPage() {
     setEmailExists(false);
     setIsLoading(true);
 
-    // Validaciones del formulario
-    if (form.password !== form.confirmPassword) {
-      setError({
-        message: "Las contraseñas no coinciden",
-        type: 'error'
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    if (!form.acceptTerms) {
-      setError({
-        message: "Debes aceptar la política de privacidad",
-        type: 'error'
-      });
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      // Validaciones del formulario
+      if (form.password !== form.confirmPassword) {
+        setError({
+          message: "Las contraseñas no coinciden",
+          type: 'error'
+        });
+        return;
+      }
+
+      if (!form.acceptTerms) {
+        setError({
+          message: "Debes aceptar los términos y condiciones para continuar",
+          type: 'error'
+        });
+        return;
+      }
+
       // Separar nombre y apellidos del fullName
       const nameParts = form.fullName.trim().split(" ");
       const nombre = nameParts[0] || "";
       const apellidos = nameParts.slice(1).join(" ") || "";
-
-      // Usar AuthService para registro real con Supabase
-      const authResult = await AuthService.signUp(form.email, form.password, {
+      
+      // Llamar al servicio de registro
+      const result = await AuthRegisterService.register({
+        email: form.email,
+        password: form.password,
         nombre,
         apellidos,
       });
 
-      if (authResult.error) {
-        const isEmailExists = authResult.error.toLowerCase().includes('ya existe');
-        setError({
-          message: isEmailExists 
-            ? 'Ya existe una cuenta con este correo electrónico.'
-            : authResult.error,
-          type: isEmailExists ? 'warning' : 'error'
-        });
-        setEmailExists(isEmailExists);
-        setIsLoading(false);
+      if (result.error) {
+        if (result.exists) {
+          setEmailExists(true);
+          setError({
+            message: "Ya existe una cuenta con este correo electrónico. ¿Quieres iniciar sesión?",
+            type: 'warning'
+          });
+        } else {
+          setError({
+            message: result.error,
+            type: 'error'
+          });
+        }
         return;
       }
 
-      // Si llegamos aquí, el registro fue exitoso
-      setSuccess(true);
+      // Si el registro fue exitoso, intentar iniciar sesión automáticamente
+      const loginResult = await AuthLoginService.login({
+        email: form.email,
+        password: form.password
+      });
 
-      // Limpiar el formulario
+      if (loginResult.user) {
+        // Redirigir al dashboard después del registro exitoso
+        router.push('/dashboard');
+        return;
+      }
+
+      // Si llegamos aquí, el registro fue exitoso pero no se pudo iniciar sesión
+      setSuccess(true);
       setForm({
         fullName: "",
         email: "",
@@ -94,28 +111,12 @@ export default function RegisterPage() {
         confirmPassword: "",
         acceptTerms: false,
       });
-      // No redirigir automáticamente, mostrar mensaje de confirmación por email
-    } catch (error) {
-      console.error("Error en registro:", error);
-
-      if (error instanceof Error) {
-        if (error.message.includes("Timeout")) {
-          setError({
-            message: "El registro está tardando demasiado. Por favor, verifica tu conexión y vuelve a intentarlo.",
-            type: 'error'
-          });
-        } else {
-          setError({
-            message: `Error de conexión: ${error.message}`,
-            type: 'error'
-          });
-        }
-      } else {
-        setError({
-          message: "Error desconocido al procesar la solicitud",
-          type: 'error'
-        });
-      }
+    } catch (err) {
+      console.error('Error en el registro:', err);
+      setError({
+        message: "Ocurrió un error al procesar tu registro. Por favor, inténtalo de nuevo más tarde.",
+        type: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -178,6 +179,7 @@ export default function RegisterPage() {
               placeholder="Nombre Completo"
               value={form.fullName}
               onChange={handleChange}
+              autoComplete="name"
               required
               className={`border p-3 rounded-md w-full ${
                 error?.type === 'error' ? 'border-red-300' : 'border-gray-300'
@@ -192,9 +194,10 @@ export default function RegisterPage() {
               placeholder="Correo Electrónico"
               value={form.email}
               onChange={handleChange}
+              autoComplete="email"
               required
               className={`border p-3 rounded-md w-full ${
-                emailExists || (error?.type === 'error' && error?.message?.includes('email')) 
+                emailExists || (error?.type === 'error' && error.message && error.message.toLowerCase().includes('email')) 
                   ? 'border-yellow-500 bg-yellow-50' 
                   : 'border-gray-300'
               }`}
@@ -304,20 +307,13 @@ export default function RegisterPage() {
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="text-red-800 font-medium">Error de registro</h3>
+                <h3 className="text-red-800 font-medium">
+                  {error?.type === 'warning' ? 'Atención' : 'Error de registro'}
+                </h3>
               </div>
-              <p className="text-red-700 text-sm mt-2">{error}</p>
-              {error.includes("ya está registrado") && (
-                <div className="mt-3">
-                  <Link
-                    href="/login"
-                    className="inline-block bg-primary text-white px-4 py-2 rounded text-sm hover:bg-red-600 transition-colors"
-                  >
-                    Ir al Login
-                  </Link>
-                </div>
-              )}
-              {error.includes("debes esperar") && (
+              <p className="text-red-700 text-sm mt-2">{error?.message}</p>
+              
+              {error?.message?.toLowerCase().includes("debes esperar") && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
                   <p className="text-yellow-800 text-xs">
                     <strong>💡 Consejo:</strong> Mientras esperas, puedes
@@ -326,7 +322,7 @@ export default function RegisterPage() {
                   </p>
                 </div>
               )}
-              {error.includes("límite de emails") && (
+              {error?.message?.toLowerCase().includes("límite de emails") && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                   <p className="text-blue-800 text-xs">
                     <strong>🔒 Protección contra spam:</strong> Supabase limita

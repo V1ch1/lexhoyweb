@@ -8,7 +8,9 @@ import {
   ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { AuthService, AuthUser } from "./authService";
+import { AuthSimpleService } from "./auth/services/auth-simple.service";
+import { AuthUser } from "./auth/types/auth.types";
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -19,9 +21,10 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (userData: User) => void;
+  login: (userData: User) => boolean;
   logout: () => void;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,10 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cargar sesión al iniciar - SOLO UNA VEZ
   useEffect(() => {
     let mounted = true;
+    let unsubscribe: (() => void) | null = null;
     
     const loadSession = async () => {
       try {
-        // Primero intentar cargar desde localStorage (más rápido)
+        console.log("🔄 Cargando sesión...");
+        
+        // Cargar desde localStorage PRIMERO
         const storedUser = localStorage.getItem("lexhoy_user");
         if (storedUser && mounted) {
           try {
@@ -45,45 +51,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(userData);
             console.log("✅ Usuario cargado desde localStorage:", userData.email);
           } catch (e) {
-            console.error("❌ Error parsing stored user:", e);
-            localStorage.removeItem("lexhoy_user");
+            console.error("❌ Error al parsear usuario de localStorage:", e);
           }
         }
-
-        // Luego verificar con Supabase en segundo plano (sin bloquear UI)
-        const currentUserResult = await AuthService.getCurrentUser();
-
-        if (currentUserResult.user && mounted) {
+        
+        // IMPORTANTE: Marcar como completado INMEDIATAMENTE
+        // No esperamos a la verificación del servidor para no bloquear la UI
+        if (mounted) {
+          setIsLoading(false);
+          console.log("✅ loadSession completado, isLoading = false");
+        }
+        
+        // Verificar la sesión con el servidor en segundo plano (opcional)
+        // Esto no bloquea la UI
+        AuthSimpleService.getCurrentUser().then(response => {
+          if (!mounted) return;
+          
+          if (response.error || !response.user) {
+            console.log("❌ No hay sesión activa en el servidor");
+            setUser(null);
+            localStorage.removeItem("lexhoy_user");
+            return;
+          }
+          
+          // Actualizar el usuario con los datos del servidor (incluye rol de la tabla users)
           const userData: User = {
-            id: currentUserResult.user.id,
-            email: currentUserResult.user.email,
-            name: currentUserResult.user.name,
-            role: currentUserResult.user.role as
-              | "super_admin"
-              | "despacho_admin"
-              | "usuario",
+            id: response.user.id,
+            email: response.user.email,
+            name: response.user.name,
+            role: response.user.role
           };
+          
           setUser(userData);
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-          console.log("✅ Usuario verificado con Supabase:", userData.email);
-        } else if (!storedUser && mounted) {
-          // Solo limpiar si no hay usuario en localStorage tampoco
-          setUser(null);
-        }
+          console.log("✅ Sesión verificada desde servidor con rol:", userData.role);
+        }).catch(error => {
+          console.error("⚠️ Error al verificar sesión con servidor (no crítico):", error);
+        });
+        
       } catch (error) {
-        console.error("💥 Error loading session:", error);
+        console.error("💥 Error cargando sesión:", error);
         // En caso de error, mantener el usuario de localStorage si existe
         const storedUser = localStorage.getItem("lexhoy_user");
         if (storedUser && mounted) {
           try {
             const userData = JSON.parse(storedUser);
             setUser(userData);
-            console.log("⚠️ Usando usuario de localStorage por error de red");
+            console.log("⚠️ Usando usuario de localStorage por error");
           } catch (e) {
-            console.error("❌ Error parsing stored user after error:", e);
+            console.error("❌ Error al analizar el usuario guardado:", e);
+            setUser(null);
+            localStorage.removeItem("lexhoy_user");
           }
         }
-      } finally {
+        
         if (mounted) {
           setIsLoading(false);
         }
@@ -93,68 +114,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadSession();
 
     // Escuchar cambios en el estado de autenticación
-    const subscription = AuthService.onAuthStateChange(
-      (authUser: AuthUser | null) => {
-        if (!mounted) return;
-        
-        if (authUser) {
+    unsubscribe = AuthSimpleService.onAuthStateChange((event: string, session: Session | null) => {
+      if (!mounted) return;
+      
+      console.log(`🔄 Evento de autenticación: ${event}`);
+      
+      // Solo actualizar el estado si es un evento de cierre de sesión
+      // Los eventos SIGNED_IN se manejan manualmente en el componente de login
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
           const userData: User = {
-            id: authUser.id,
-            email: authUser.email,
-            name: authUser.name,
-            role: authUser.role as "super_admin" | "despacho_admin" | "usuario",
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || '',
+            role: (session.user.user_metadata?.role as "super_admin" | "despacho_admin" | "usuario") || 'usuario',
           };
           setUser(userData);
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-          console.log("🔄 Usuario actualizado por auth state change:", userData.email);
+          console.log(`✅ Usuario actualizado por evento ${event}:`, userData.email);
         } else {
-          // NO limpiar el usuario inmediatamente, verificar localStorage primero
-          const storedUser = localStorage.getItem("lexhoy_user");
-          if (!storedUser) {
-            setUser(null);
-            console.log("🚪 Usuario desconectado");
-          } else {
-            console.log("⚠️ Auth state null pero manteniendo usuario de localStorage");
-          }
+          console.log("🚪 Sesión cerrada o expirada");
+          setUser(null);
+          localStorage.removeItem("lexhoy_user");
         }
+      } else if (event === 'SIGNED_IN') {
+        console.log("ℹ️ Evento SIGNED_IN detectado, pero será manejado por el componente de login");
       }
-    );
+    });
 
     // Cleanup del listener
     return () => {
       mounted = false;
-      subscription.data.subscription.unsubscribe();
+      // Llamar a la función de desuscripción si existe
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, []); // ⚠️ IMPORTANTE: Array vacío para que solo se ejecute UNA VEZ al montar
 
-  const login = (userData: User) => {
-    // El login real se maneja en AuthService.signIn
-    // Este método solo actualiza el estado local
-    setUser(userData);
-    // Guardar en localStorage como backup
-    localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-    router.push("/dashboard");
+  const login = (userData: User): boolean => {
+    try {
+      console.log("🔑 Iniciando proceso de login para:", userData?.email || 'usuario desconocido');
+      
+      // Validar datos del usuario
+      if (!userData || !userData.id || !userData.email) {
+        console.error("❌ Datos de usuario inválidos:", userData);
+        return false;
+      }
+      
+      // Actualizar el estado local
+      setUser(userData);
+      
+      // Guardar en localStorage como backup
+      localStorage.setItem("lexhoy_user", JSON.stringify(userData));
+      localStorage.setItem("isAuthenticated", "true");
+      
+      console.log("✅ Usuario autenticado exitosamente:", userData.email);
+      console.log("📝 Datos del usuario:", userData);
+      
+      return true;
+    } catch (error) {
+      console.error("❌ Error en la función login:", error);
+      return false;
+    }
   };
 
-  const logout = async () => {
+  const handleLogout = async () => {
     try {
       console.log("🚪 Cerrando sesión...");
-      await AuthService.signOut();
+      const { error } = await AuthSimpleService.logout();
+      
+      if (error) {
+        console.error("Error al cerrar sesión:", error);
+      }
+      
       setUser(null);
-      // Limpiar localStorage
       localStorage.removeItem("lexhoy_user");
       router.push("/login");
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error("Error inesperado al cerrar sesión:", error);
       // Forzar logout local aunque falle el logout remoto
       setUser(null);
       localStorage.removeItem("lexhoy_user");
       router.push("/login");
     }
   };
+  
+  // Alias para mantener compatibilidad
+  const logout = handleLogout;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
