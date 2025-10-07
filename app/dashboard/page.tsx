@@ -46,21 +46,17 @@ const DashboardPage = () => {
   const [solicitudes, setSolicitudes] = useState<SolicitudRegistro[]>([]);
   const [solicitudesLoading, setSolicitudesLoading] = useState(false);
 
-  // TEMPORALMENTE DESHABILITADO: Cargar solicitudes para super_admin
+  // Cargar solicitudes para super_admin
   useEffect(() => {
     if (user?.role === "super_admin") {
-      console.log("⚠️ Carga de solicitudes deshabilitada temporalmente");
-      setSolicitudes([]);
-      setSolicitudesLoading(false);
-    }
-    
-    /* CÓDIGO ORIGINAL COMENTADO
-    if (user?.role === "super_admin") {
       setSolicitudesLoading(true);
-      const userService = new UserService();
-      userService
-        .getAllSolicitudes()
-        .then((data) => {
+      
+      fetch('/api/solicitudes-despacho-pendientes')
+        .then(res => res.json())
+        .then((response) => {
+          // El endpoint devuelve {pendientes: number, solicitudes: Array}
+          const data = response.solicitudes || [];
+          
           const mapped = data.map((s: any) => ({
             id: s.id as string,
             user_id: s.user_id as string | undefined,
@@ -92,10 +88,12 @@ const DashboardPage = () => {
           }));
           setSolicitudes(mapped);
         })
-        .catch(() => setSolicitudes([]))
+        .catch((err) => {
+          console.error('Error cargando solicitudes:', err);
+          setSolicitudes([]);
+        })
         .finally(() => setSolicitudesLoading(false));
     }
-    */
   }, [user?.role]);
   // Función segura para obtener el JWT
   function getJWT() {
@@ -127,46 +125,26 @@ const DashboardPage = () => {
     // ...existing code...
   }, [user]);
 
-  // TEMPORALMENTE DESHABILITADO: Cargar estadísticas según el rol del usuario
-  // La consulta a la tabla 'users' se está colgando
+  // Cargar estadísticas según el rol del usuario
   useEffect(() => {
     if (!user?.id || !user?.role) return;
     
-    console.log("⚠️ Carga de estadísticas deshabilitada temporalmente");
-    
-    // Simular datos vacíos para que el dashboard se muestre
-    setStatsLoading(false);
-    
-    if (user.role === "super_admin") {
-      setSystemStats({
-        totalUsers: 0,
-        activeDespachos: 0,
-        totalLeads: 0,
-        usersByRole: {
-          super_admin: 0,
-          despacho_admin: 0,
-          usuario: 0
-        }
-      });
-    } else if (user.role === "despacho_admin") {
-      setDespachoStats({
-        leadsThisMonth: 0,
-        totalLeads: 0,
-        conversions: 0
-      });
-    }
-    
-    /* CÓDIGO ORIGINAL COMENTADO
     const loadStats = async () => {
       setStatsLoading(true);
       try {
-        const userService = new UserService();
         if (user.role === "super_admin") {
-          const stats = await userService.getSystemStats();
-          setSystemStats(stats);
+          const response = await fetch('/api/admin/stats');
+          if (response.ok) {
+            const stats = await response.json();
+            setSystemStats(stats);
+          }
         } else if (user.role === "despacho_admin") {
-          const stats = await userService.getDespachoStats(user.id);
-          setDespachoStats(stats);
+          // Por ahora, datos vacíos para despacho_admin
+          setDespachoStats({
+            leadsThisMonth: 0,
+            totalLeads: 0,
+            conversions: 0
+          });
         }
       } catch (error) {
         console.error("Error al cargar estadísticas:", error);
@@ -175,7 +153,6 @@ const DashboardPage = () => {
       }
     };
     loadStats();
-    */
   }, [user?.id, user?.role]);
 
   // Mostrar loading hasta que user y stats estén listos

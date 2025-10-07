@@ -146,7 +146,21 @@ function ConfirmPageContent() {
             });
 
             console.log(
-              "Usuario creado en la base de datos después de confirmación"
+              "✅ Usuario creado en la base de datos después de confirmación"
+            );
+          } else {
+            // Si el usuario ya existe, actualizar su estado a activo
+            await supabase
+              .from("users")
+              .update({
+                estado: "activo",
+                activo: true,
+                email_verificado: true,
+              })
+              .eq("id", user.id);
+
+            console.log(
+              "✅ Usuario actualizado a estado activo después de confirmación"
             );
           }
         }
