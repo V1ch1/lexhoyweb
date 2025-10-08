@@ -20,6 +20,7 @@ function decodeHtmlEntities(str: string) {
     .replace(/&#8211;/g, "–");
 }
 import { supabase } from "@/lib/supabase";
+import { slugify } from "@/lib/slugify";
 
 // ...existing code...
 import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
@@ -28,6 +29,7 @@ type DespachoSummary = {
   id: string;
   object_id?: string;
   nombre: string;
+  slug?: string;
   num_sedes: number;
   created_at: string;
   estado?: string;
@@ -441,9 +443,12 @@ const DespachosPage = () => {
                           {user?.role === "super_admin" || d.owner_email === user?.email ? (
                             <button 
                               className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs" 
-                              onClick={() => router.push(`/dashboard/despachos/${d.object_id}/editar`)}
+                              onClick={() => {
+                                const slug = d.slug || slugify(d.nombre);
+                                router.push(`/dashboard/despachos/${slug}`);
+                              }}
                             >
-                              Editar
+                              Ver/Editar
                             </button>
                           ) : !d.owner_email ? (
                             solicitudesPendientes.has(d.id) ? (

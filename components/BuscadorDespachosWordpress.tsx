@@ -76,6 +76,18 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         return;
       }
 
+      // Función para decodificar entidades HTML
+      const decodeHtml = (html: string) => {
+        if (!html) return '';
+        return html
+          .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'");
+      };
+      
       // Mapear resultados al formato esperado
       const resultadosFormateados = data.map((d: {
         id: string | number;
@@ -84,7 +96,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         [key: string]: unknown;
       }) => ({
         object_id: d.id?.toString() || "",
-        nombre: d.title?.rendered || 'Sin título',
+        nombre: decodeHtml(d.title?.rendered || 'Sin título'),
         localidad: d.meta?.localidad || '',
         provincia: d.meta?.provincia || '',
         ...d
@@ -105,25 +117,52 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setImportSummary(null);
     
     try {
-      console.log('📥 Importando despacho:', objectId);
+      console.log('📥 Importando/Actualizando despacho:', objectId);
       
-      // 1. Buscar el despacho completo por ID
-      const res = await fetch(`/api/search-despachos?id=${encodeURIComponent(objectId)}`);
+      // 1. Verificar si el despacho ya existe en Supabase
+      let yaExiste = false;
+      const checkRes = await fetch(`/api/despachos/check?object_id=${encodeURIComponent(objectId)}`);
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        yaExiste = checkData.exists;
+        if (yaExiste) {
+          console.log('ℹ️ El despacho ya existe, se actualizará con datos de WordPress');
+        }
+      }
       
-      if (!res.ok) {
-        throw new Error('No se encontró el despacho en WordPress');
+      // 2. Si ya existe en Supabase, obtener los datos de WordPress directamente
+      let wpDespacho;
+      
+      if (yaExiste) {
+        // Buscar en WordPress por el object_id
+        console.log('🌐 Buscando datos actualizados en WordPress...');
+        const wpRes = await fetch(`https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`);
+        
+        if (!wpRes.ok) {
+          throw new Error('No se encontró el despacho en WordPress. Verifica que el ID sea correcto.');
+        }
+        
+        wpDespacho = await wpRes.json();
+        console.log('📄 Datos de WordPress obtenidos:', wpDespacho);
+      } else {
+        // Buscar usando el endpoint de búsqueda
+        const res = await fetch(`/api/search-despachos?id=${encodeURIComponent(objectId)}`);
+        
+        if (!res.ok) {
+          throw new Error('No se encontró el despacho en WordPress');
+        }
+
+        const data = await res.json();
+        
+        if (!data || data.length === 0) {
+          throw new Error('No se encontró el despacho en WordPress');
+        }
+
+        wpDespacho = data[0];
+        console.log('📄 Despacho de WordPress:', wpDespacho);
       }
 
-      const data = await res.json();
-      
-      if (!data || data.length === 0) {
-        throw new Error('No se encontró el despacho en WordPress');
-      }
-
-      const wpDespacho = data[0];
-      console.log('📄 Despacho de WordPress:', wpDespacho);
-
-      // 2. Importar usando el endpoint API
+      // 3. Importar usando el endpoint API
       const importRes = await fetch('/api/importar-despacho', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,10 +178,13 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       const { success, despachoId, objectId: wpObjectId, error } = await importRes.json();
       
       if (success && despachoId) {
-        setImportResult("✅ Despacho importado correctamente");
+        const mensaje = yaExiste 
+          ? "✅ Despacho actualizado correctamente desde WordPress"
+          : "✅ Despacho importado correctamente desde WordPress";
+        setImportResult(mensaje);
         setImportSummary({
           success: true,
-          message: `El despacho se ha importado correctamente. ID: ${despachoId}, Object ID: ${wpObjectId}`
+          message: `${yaExiste ? 'Actualizado' : 'Importado'} correctamente. ID: ${despachoId}, Object ID: ${wpObjectId}`
         });
         if (onImport) onImport(objectId);
       } else {
@@ -221,8 +263,8 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                         disabled={importando === d.object_id}
                       >
                         {importando === d.object_id
-                          ? "Importando..."
-                          : "Importar"}
+                          ? "Sincronizando..."
+                          : "Importar/Actualizar"}
                       </button>
                     </td>
                   </tr>

@@ -29,6 +29,8 @@ interface DespachoWordPress {
       email?: string;
       web?: string;
       es_principal?: boolean;
+      descripcion?: string;
+      areas_practica?: string[];
     }>;
     [key: string]: unknown;
   };
@@ -44,6 +46,8 @@ interface Sede {
   email?: string;
   web?: string;
   es_principal?: boolean;
+  descripcion?: string;
+  areas_practica?: string[];
 }
 
 export class SyncService {
@@ -181,6 +185,8 @@ export class SyncService {
           telefono: sede.telefono || '',
           email_contacto: sede.email || '',
           web: sede.web || '',
+          descripcion: sede.descripcion || null,
+          areas_practica: sede.areas_practica || [],
           activa: true,
           estado_verificacion: 'pendiente',
         });

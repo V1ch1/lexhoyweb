@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { slugify } from "@/lib/slugify";
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -398,7 +399,7 @@ const DashboardPage = () => {
                 <div
                   key={despacho.id}
                   className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => router.push(`/dashboard/despachos/${despacho.id}`)}
+                  onClick={() => router.push(`/dashboard/despachos/${slugify(despacho.nombre)}`)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />

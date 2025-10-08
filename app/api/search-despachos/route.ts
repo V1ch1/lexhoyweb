@@ -71,12 +71,19 @@ export async function GET(request: Request) {
       const despachosFormateados = despachosLocal.map(d => ({
         id: d.object_id || d.id,
         title: { rendered: d.nombre },
+        content: { rendered: d.descripcion || '' },
+        slug: d.slug,
         meta: {
-          localidad: '',
-          provincia: '',
+          localidad: d.localidad || '',
+          provincia: d.provincia || '',
           object_id: d.object_id,
           slug: d.slug,
-        }
+          // Incluir sedes si existen
+          _despacho_sedes: []
+        },
+        // Marcar que viene de Supabase para que no intente buscar en WordPress
+        _fromSupabase: true,
+        _supabaseId: d.id
       }));
       
       return NextResponse.json(despachosFormateados, { status: 200 });
