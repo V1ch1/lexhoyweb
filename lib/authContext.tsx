@@ -9,8 +9,6 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AuthSimpleService } from "./auth/services/auth-simple.service";
-import { AuthUser } from "./auth/types/auth.types";
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -114,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadSession();
 
     // Escuchar cambios en el estado de autenticación
-    unsubscribe = AuthSimpleService.onAuthStateChange((event: string, session: Session | null) => {
+    unsubscribe = AuthSimpleService.onAuthStateChange((event: string, session: unknown) => {
       if (!mounted) return;
       
       console.log(`🔄 Evento de autenticación: ${event}`);
@@ -122,12 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Solo actualizar el estado si es un evento de cierre de sesión
       // Los eventos SIGNED_IN se manejan manualmente en el componente de login
       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        if (session?.user) {
+        const sessionData = session as { user?: { id: string; email?: string; user_metadata?: Record<string, unknown> } } | null;
+        if (sessionData?.user) {
           const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || '',
-            role: (session.user.user_metadata?.role as "super_admin" | "despacho_admin" | "usuario") || 'usuario',
+            id: sessionData.user.id,
+            email: sessionData.user.email || '',
+            name: (sessionData.user.user_metadata?.name as string) || '',
+            role: (sessionData.user.user_metadata?.role as "super_admin" | "despacho_admin" | "usuario") || 'usuario',
           };
           setUser(userData);
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));

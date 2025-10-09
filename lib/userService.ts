@@ -72,7 +72,7 @@ export class UserService {
   /**
    * Obtiene el perfil de un usuario por su ID
    */
-  async getUserProfile(userId: string): Promise<any> {
+  async getUserProfile(userId: string): Promise<Record<string, unknown>> {
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -1426,7 +1426,6 @@ export class UserService {
 
     // Enviar email al usuario
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

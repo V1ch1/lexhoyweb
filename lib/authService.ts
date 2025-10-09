@@ -10,13 +10,13 @@ export class AuthService {
 
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      console.error('Error signing in:', error.message);
+    } catch (error) {
+      console.error('Error signing in:', error);
       return { data: null, error };
     }
   }
 
-  static async signUpWithEmail(email: string, password: string, userData: any) {
+  static async signUpWithEmail(email: string, password: string, userData: Record<string, unknown>) {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -31,8 +31,8 @@ export class AuthService {
 
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      console.error('Error signing up:', error.message);
+    } catch (error) {
+      console.error('Error signing up:', error);
       return { data: null, error };
     }
   }
@@ -42,8 +42,8 @@ export class AuthService {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       return { error: null };
-    } catch (error: any) {
-      console.error('Error signing out:', error.message);
+    } catch (error) {
+      console.error('Error signing out:', error);
       return { error };
     }
   }
@@ -53,8 +53,8 @@ export class AuthService {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      console.error('Error getting session:', error.message);
+    } catch (error) {
+      console.error('Error getting session:', error);
       return { data: null, error };
     }
   }
@@ -64,26 +64,26 @@ export class AuthService {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      console.error('Error resetting password:', error.message);
+    } catch (error) {
+      console.error('Error resetting password:', error);
       return { data: null, error };
     }
   }
 
-  static async updateUser(userData: any) {
+  static async updateUser(userData: Record<string, unknown>) {
     try {
       const { data, error } = await supabase.auth.updateUser({
         data: userData,
       });
       if (error) throw error;
       return { data, error: null };
-    } catch (error: any) {
-      console.error('Error updating user:', error.message);
+    } catch (error) {
+      console.error('Error updating user:', error);
       return { data: null, error };
     }
   }
 
-  static onAuthStateChange(callback: any) {
+  static onAuthStateChange(callback: (event: string, session: unknown) => void) {
     return supabase.auth.onAuthStateChange(callback);
   }
 }
