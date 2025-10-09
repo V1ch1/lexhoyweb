@@ -13,7 +13,6 @@ import {
   ChartBarIcon,
   ArrowTrendingUpIcon,
   ClockIcon,
-  CheckCircleIcon,
   ExclamationTriangleIcon,
   PlusCircleIcon,
   DocumentTextIcon,
