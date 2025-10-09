@@ -1,0 +1,8 @@
+﻿components/settings/NotificationsTab.tsx(1,10): error TS2614: Module '"@/app/dashboard/settings/page"' has no exported member 'NotificationSettings'. Did you mean to use 'import NotificationSettings from "@/app/dashboard/settings/page"' instead?
+lib/auth/services/auth-register.service.ts(74,11): error TS2322: Type 'unknown' is not assignable to type 'string'.
+lib/auth/services/auth-register.service.ts(75,11): error TS2322: Type 'unknown' is not assignable to type 'string'.
+lib/auth/services/auth-register.service.ts(77,11): error TS2322: Type 'unknown' is not assignable to type '"super_admin" | "despacho_admin" | "usuario"'.
+lib/userService.ts(526,13): error TS2322: Type '{ id: string; userId: string; despachoId: any; fechaAsignacion: string; activo: true; permisos: { leer: true; escribir: true; eliminar: true; }; asignadoPor: string; despachos: any; }[]' is not assignable to type 'UserDespacho[]'.
+  Type '{ id: string; userId: string; despachoId: any; fechaAsignacion: string; activo: true; permisos: { leer: true; escribir: true; eliminar: true; }; asignadoPor: string; despachos: any; }' is not assignable to type 'UserDespacho'.
+    Types of property 'fechaAsignacion' are incompatible.
+      Type 'string' is not assignable to type 'Date'.

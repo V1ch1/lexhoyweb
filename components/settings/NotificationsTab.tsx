@@ -1,4 +1,10 @@
-import { NotificationSettings } from '@/app/dashboard/settings/page';
+interface NotificationSettings {
+  email_nuevos_leads: boolean;
+  email_actualizaciones: boolean;
+  email_sistema: boolean;
+  push_leads: boolean;
+  push_mensajes: boolean;
+}
 
 interface NotificationsTabProps {
   notifications: NotificationSettings;
