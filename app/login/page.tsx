@@ -16,7 +16,7 @@ interface FormState {
 }
 
 function LoginPageContent() {
-  const router = useRouter();
+  const router = useRouter(); // Used for navigation after login
   const searchParams = useSearchParams();
   const { login } = useAuth();
 
@@ -98,8 +98,8 @@ function LoginPageContent() {
         toast.error("No se pudo completar el inicio de sesión");
         setIsLoading(false);
       }
-    } catch (err: any) {
-      const errorMessage = err.message || "Ocurrió un error al iniciar sesión";
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Ocurrió un error al iniciar sesión";
       setError(errorMessage);
       toast.error(errorMessage);
       console.error('Error en inicio de sesión:', err);

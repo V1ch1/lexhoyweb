@@ -89,11 +89,6 @@ export default function SolicitarDespacho() {
 
   const { user } = useAuth();
 
-  // Cargar solicitudes pendientes al cargar el componente
-  useEffect(() => {
-    cargarSolicitudesPendientes();
-  }, [user]);
-
   // Cargar solicitudes pendientes
   const cargarSolicitudesPendientes = useCallback(async () => {
     if (!user?.id) return;
@@ -116,6 +111,11 @@ export default function SolicitarDespacho() {
       console.error("Error en cargarSolicitudesPendientes:", err);
     }
   }, [user]);
+
+  // Cargar solicitudes pendientes al cargar el componente
+  useEffect(() => {
+    cargarSolicitudesPendientes();
+  }, [cargarSolicitudesPendientes]);
 
   // Handler para buscar despachos
   const handleSearch = async (e: React.FormEvent) => {

@@ -68,7 +68,7 @@ const userService = new UserService();
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const router = useRouter();
+  const router = useRouter(); // Used for navigation
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [loading, setLoading] = useState(true);
