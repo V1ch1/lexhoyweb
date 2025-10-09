@@ -64,7 +64,7 @@ export class AuthSessionService {
     }
   }
 
-  static async onAuthStateChange(callback: (event: string, session: any) => void) {
+  static async onAuthStateChange(callback: (event: string, session: unknown) => void) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         callback(event, session);

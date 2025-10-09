@@ -65,9 +65,9 @@ export class AuthSimpleService {
 
       console.log('✅ Login exitoso:', user);
       return { user, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error en login:', error);
-      return { user: null, error: error.message || 'Error de conexión' };
+      return { user: null, error: error instanceof Error ? error.message : 'Error de conexión' };
     }
   }
 
@@ -94,9 +94,9 @@ export class AuthSimpleService {
 
       console.log('✅ Sesión cerrada exitosamente');
       return { error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error en logout:', error);
-      return { error: error.message || 'Error al cerrar sesión' };
+      return { error: error instanceof Error ? error.message : 'Error al cerrar sesión' };
     }
   }
 
@@ -113,9 +113,9 @@ export class AuthSimpleService {
       }
 
       return { session: data.session, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error en getSession:', error);
-      return { session: null, error: error.message };
+      return { session: null, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 
@@ -147,7 +147,7 @@ export class AuthSimpleService {
           };
           return { user, error: null };
         }
-      } catch (err) {
+      } catch {
         console.warn('⚠️ No se pudo obtener rol desde tabla users, usando datos básicos');
       }
 
@@ -160,16 +160,16 @@ export class AuthSimpleService {
       };
 
       return { user, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error en getCurrentUser:', error);
-      return { user: null, error: error.message };
+      return { user: null, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }
 
   /**
    * Escuchar cambios de autenticación
    */
-  static onAuthStateChange(callback: (event: string, session: any) => void) {
+  static onAuthStateChange(callback: (event: string, session: unknown) => void) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         callback(event, session);
@@ -214,9 +214,9 @@ export class AuthSimpleService {
 
       console.log('✅ Registro exitoso:', user);
       return { user, error: null };
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error en register:', error);
-      return { user: null, error: error.message || 'Error al registrar' };
+      return { user: null, error: error instanceof Error ? error.message : 'Error al registrar' };
     }
   }
 
@@ -234,8 +234,8 @@ export class AuthSimpleService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message || 'Error al enviar email' };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Error al enviar email' };
     }
   }
 
@@ -253,8 +253,8 @@ export class AuthSimpleService {
       }
 
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message || 'Error al actualizar contraseña' };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Error al actualizar contraseña' };
     }
   }
 }

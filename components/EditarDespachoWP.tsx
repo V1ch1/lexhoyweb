@@ -123,8 +123,8 @@ const EditarDespachoWP: React.FC<Props> = ({
         if (!res.ok) throw new Error("No se pudo cargar el despacho");
         const data = await res.json();
         setDespacho(data);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Error desconocido');
       } finally {
         setLoading(false);
       }
@@ -133,7 +133,7 @@ const EditarDespachoWP: React.FC<Props> = ({
   }, [despachoId, wpUser, wpAppPassword]);
 
   // Handler para cambios en el formulario
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number | boolean | unknown[]) => {
     if (!despacho) return;
     if (field.startsWith("meta.")) {
       const metaField = field.replace("meta.", "");
@@ -174,8 +174,8 @@ const EditarDespachoWP: React.FC<Props> = ({
       if (!res.ok) throw new Error("Error al guardar en WordPress");
       setSuccess(true);
       if (onSaved) onSaved();
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error desconocido');
     } finally {
       setSaving(false);
     }
