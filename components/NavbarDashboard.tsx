@@ -1,7 +1,7 @@
 // components/NavbarDashboard.tsx
 "use client";
 
-import { UserCircleIcon } from "@heroicons/react/24/solid";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 import { NotificationBell } from "@/components/NotificationBell";
 
