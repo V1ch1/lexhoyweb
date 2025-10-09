@@ -104,7 +104,7 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
           <button
             className="bg-green-600 text-white px-4 py-2 rounded flex-1"
             onClick={handleAsignar}
-            disabled={!selectedUser || userLoading || selectedUser?.despacho_id}
+            disabled={!selectedUser || userLoading || !!selectedUser?.despacho_id}
           >
             Asignar propietario
           </button>
