@@ -1265,6 +1265,19 @@ export class UserService {
     
     console.log("✅ Despacho asignado correctamente");
 
+    // Actualizar owner_email en la tabla despachos
+    console.log("📧 Actualizando owner_email del despacho");
+    const { error: ownerError } = await supabase
+      .from("despachos")
+      .update({ owner_email: solicitud.user_email })
+      .eq("id", despacho.id);
+    
+    if (ownerError) {
+      console.error("⚠️ Error actualizando owner_email:", ownerError);
+    } else {
+      console.log("✅ owner_email actualizado correctamente");
+    }
+
     // Actualizar solicitud
     console.log("📝 Actualizando estado de solicitud a 'aprobado'");
     const { error: updateError } = await supabase
