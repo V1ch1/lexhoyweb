@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     if (isDev) console.log('🔌 Cliente Supabase creado');
 
     // Consultar las solicitudes
-    const { data, error, status, statusText } = await supabase
+    const { data, error, status } = await supabase
       .from("solicitudes_despacho")
       .select("*")
       .eq("user_id", userId)

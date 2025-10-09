@@ -30,7 +30,6 @@ export async function POST(request: Request) {
       despachoNombre,
       despachoLocalidad,
       despachoProvincia,
-      slug,
     } = body;
     if (!userId || !objectId || !userEmail || !userName || !despachoNombre) {
       console.error("Faltan datos en la solicitud:", body);
@@ -40,7 +39,6 @@ export async function POST(request: Request) {
       );
     }
     // 1. Importar el despacho completo desde WordPress (incluye todas las sedes)
-    let despachoIdReal = null;
     try {
       const importarRes = await fetch(
         `${
@@ -55,7 +53,6 @@ export async function POST(request: Request) {
 
       if (importarRes.ok) {
         const importarData = await importarRes.json();
-        despachoIdReal = importarData.despachoId;
         console.log("✅ Despacho importado desde WordPress:", importarData);
       } else {
         const errorData = await importarRes.json();
