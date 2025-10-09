@@ -4,9 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 // PATCH - Marcar notificación como leída
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
@@ -25,7 +26,7 @@ export async function PATCH(
     const { error } = await supabase
       .from("notificaciones")
       .update({ leida })
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       console.error("Error actualizando notificación:", error);
@@ -48,9 +49,10 @@ export async function PATCH(
 // DELETE - Eliminar notificación
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
 
@@ -67,7 +69,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("notificaciones")
       .delete()
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       console.error("Error eliminando notificación:", error);
