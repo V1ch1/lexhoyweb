@@ -87,7 +87,7 @@ export class AuthPasswordService {
    * @param {any} error - Error capturado
    * @returns {string} Mensaje de error amigable para el usuario
    */
-  private static getResetPasswordError(error: any): string {
+  private static getResetPasswordError(error: Error & { message: string }): string {
     if (error.message.includes('user not found')) {
       return 'No existe ninguna cuenta asociada a este correo electrónico.';
     }
@@ -106,7 +106,7 @@ export class AuthPasswordService {
    * @param {any} error - Error capturado
    * @returns {string} Mensaje de error amigable para el usuario
    */
-  private static getUpdatePasswordError(error: any): string {
+  private static getUpdatePasswordError(error: Error & { message: string }): string {
     if (error.message.includes('password should be at least')) {
       return 'La contraseña debe tener al menos 6 caracteres.';
     }

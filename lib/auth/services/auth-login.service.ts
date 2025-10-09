@@ -72,7 +72,7 @@ export class AuthLoginService {
           id: authData.user.id,
           email: authData.user.email || '',
           name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Usuario',
-          role: (authData.user.user_metadata?.role as any) || 'usuario',
+          role: (authData.user.user_metadata?.role as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario',
         },
         error: null,
       };
@@ -262,7 +262,7 @@ export class AuthLoginService {
    * @param {any} error - Error capturado durante el inicio de sesión
    * @returns {AuthResponse} Respuesta con el error correspondiente
    */
-  private static handleLoginError(error: any): AuthResponse {
+  private static handleLoginError(error: Error & { message: string }): AuthResponse {
     console.error('Error en login:', error);
 
     if (error.message.includes('Invalid login credentials')) {

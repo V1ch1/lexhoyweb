@@ -10,7 +10,7 @@ interface NotificationBellProps {
   userRole: string;
 }
 
-export function NotificationBell({ userId, userRole }: NotificationBellProps) {
+export function NotificationBell({ userId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

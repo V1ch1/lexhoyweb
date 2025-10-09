@@ -82,7 +82,7 @@ export default function PrivacyTab({ loading }: PrivacyTabProps) {
                     </p>
                     <div className="mt-2">
                       <label htmlFor="delete-confirm" className="block text-sm font-medium text-gray-700 mb-1">
-                        Escribe "DELETE MY DATA" para confirmar:
+                        Escribe &quot;DELETE MY DATA&quot; para confirmar:
                       </label>
                       <div className="mt-1 flex rounded-md shadow-sm">
                         <input

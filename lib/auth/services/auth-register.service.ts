@@ -104,7 +104,7 @@ export class AuthRegisterService {
     nombre: string,
     apellidos: string,
     telefono?: string
-  ): Promise<{ user: any; error: string | null }> {
+  ): Promise<{ user: Record<string, unknown> | null; error: string | null }> {
     try {
       const { data: user, error } = await supabase
         .from('users')
@@ -212,7 +212,7 @@ export class AuthRegisterService {
    * @param {any} error - Error capturado durante el registro
    * @returns {AuthResponse} Respuesta con el error correspondiente
    */
-  private static handleRegisterError(error: any): AuthResponse {
+  private static handleRegisterError(error: Error & { message: string }): AuthResponse {
     console.error('Error en registro:', error);
 
     if (error.message.includes('already registered') || error.message.includes('User already registered')) {

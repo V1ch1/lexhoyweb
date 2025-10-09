@@ -12,10 +12,10 @@ interface Props {
 
 const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, onAsignar }) => {
   const [searchUser, setSearchUser] = useState("");
-  const [userResults, setUserResults] = useState<any[]>([]);
+  const [userResults, setUserResults] = useState<Array<{ id: string; email: string; nombre?: string; apellidos?: string; despacho_id?: string }>>([]);
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; nombre?: string; apellidos?: string; despacho_id?: string } | null>(null);
 
   useEffect(() => {
     if (!show || !searchUser) {
