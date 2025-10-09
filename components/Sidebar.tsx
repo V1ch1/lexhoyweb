@@ -7,7 +7,7 @@ import {
   CogIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
-} from "@heroicons/react/24/solid"; // Usando ClipboardIcon
+} from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 
 const Sidebar = () => {
