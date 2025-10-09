@@ -14,7 +14,6 @@ import {
   ArrowTrendingUpIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-  PlusCircleIcon,
   DocumentTextIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
@@ -557,17 +556,17 @@ const DashboardPage = () => {
           {user.role === "usuario" && (
             <>
               <QuickActionCard
-                title="Solicitar Despacho"
-                description="Crea o solicita acceso a un despacho"
-                icon={PlusCircleIcon}
-                onClick={() => router.push("/dashboard/solicitar-despacho")}
+                title="Buscar Despachos"
+                description="Encuentra y solicita acceso a despachos"
+                icon={BuildingOfficeIcon}
+                onClick={() => router.push("/dashboard/despachos")}
                 color="orange"
               />
               <QuickActionCard
                 title="Mis Solicitudes"
                 description="Revisa el estado de tus solicitudes"
                 icon={DocumentTextIcon}
-                onClick={() => router.push("/dashboard/solicitar-despacho?tab=enviadas")}
+                onClick={() => router.push("/dashboard/settings?tab=solicitudes")}
                 color="blue"
               />
               <QuickActionCard

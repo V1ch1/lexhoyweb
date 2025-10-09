@@ -48,22 +48,20 @@ const Sidebar = () => {
               </button>
             </li>
 
-            {/* Despachos - Solo para despacho_admin y super_admin */}
-            {(user.role === "despacho_admin" || user.role === "super_admin") && (
-              <li>
-                <button
-                  onClick={() => handleNavigation("/dashboard/despachos")}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    pathname === "/dashboard/despachos" 
-                      ? "bg-gray-700 text-white" 
-                      : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                  }`}
-                >
-                  <BuildingOfficeIcon className="h-5 w-5" />
-                  <span>Despachos</span>
-                </button>
-              </li>
-            )}
+            {/* Despachos - Visible para todos los usuarios */}
+            <li>
+              <button
+                onClick={() => handleNavigation("/dashboard/despachos")}
+                className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  pathname === "/dashboard/despachos" 
+                    ? "bg-gray-700 text-white" 
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                }`}
+              >
+                <BuildingOfficeIcon className="h-5 w-5" />
+                <span>Despachos</span>
+              </button>
+            </li>
 
             {/* Leads - Solo para despacho_admin y super_admin */}
             {(user.role === "despacho_admin" || user.role === "super_admin") && (
