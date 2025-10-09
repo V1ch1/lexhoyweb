@@ -47,19 +47,27 @@ type DespachoSummary = {
 const DespachosPage = () => {
   // Estado para búsqueda de usuario
   const [showAsignarModal, setShowAsignarModal] = useState(false);
-  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(null);
+  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(
+    null
+  );
   const [searchUser, setSearchUser] = useState("");
   const [userResults, setUserResults] = useState<any[]>([]);
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  
+
   // Estado para modal de solicitar propiedad
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
-  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
+  const [despachoSolicitar, setDespachoSolicitar] =
+    useState<DespachoSummary | null>(null);
   const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
-  const [mensajePropiedad, setMensajePropiedad] = useState<{tipo: 'success' | 'error', texto: string} | null>(null);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Set<string>>(new Set());
+  const [mensajePropiedad, setMensajePropiedad] = useState<{
+    tipo: "success" | "error";
+    texto: string;
+  } | null>(null);
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<
+    Set<string>
+  >(new Set());
 
   // Buscar usuarios en tiempo real por email o nombre de despacho
   useEffect(() => {
@@ -73,7 +81,9 @@ const DespachosPage = () => {
       const { data, error } = await supabase
         .from("users")
         .select("id, email, nombre, apellidos, despacho_nombre")
-        .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%,despacho_nombre.ilike.%${searchUser}%`)
+        .or(
+          `email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%,despacho_nombre.ilike.%${searchUser}%`
+        )
         .limit(10);
       if (error) {
         setUserError("Error al buscar usuarios");
@@ -110,40 +120,45 @@ const DespachosPage = () => {
     if (!despachoSolicitar || !user?.email || !user?.id) return;
     setSolicitandoPropiedad(true);
     setMensajePropiedad(null);
-    
+
     // Obtener datos completos del usuario
     const { data: userData } = await supabase
       .from("users")
       .select("nombre, apellidos")
       .eq("id", user.id)
       .single();
-    
+
     // Crear solicitud pendiente de aprobación
     const { data: solicitudCreada, error } = await supabase
       .from("solicitudes_despacho")
       .insert({
         user_id: user.id,
         user_email: user.email,
-        user_name: userData ? `${userData.nombre || ''} ${userData.apellidos || ''}`.trim() : user.email,
+        user_name: userData
+          ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
+          : user.email,
         despacho_id: despachoSolicitar.object_id || despachoSolicitar.id, // Usar object_id (WordPress ID)
         despacho_nombre: despachoSolicitar.nombre,
         despacho_localidad: despachoSolicitar.localidad,
         despacho_provincia: despachoSolicitar.provincia,
-        estado: 'pendiente',
+        estado: "pendiente",
       })
       .select()
       .single();
-    
-    console.log('✅ Solicitud creada:', solicitudCreada);
-    
+
+    console.log("✅ Solicitud creada:", solicitudCreada);
+
     if (error) {
-      setMensajePropiedad({ tipo: 'error', texto: 'Error al enviar solicitud: ' + error.message });
+      setMensajePropiedad({
+        tipo: "error",
+        texto: "Error al enviar solicitud: " + error.message,
+      });
     } else {
       // Enviar notificación y email al super_admin
       try {
-        await fetch('/api/notificar-solicitud', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/notificar-solicitud", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             solicitudId: solicitudCreada.id,
             userName: solicitudCreada.user_name,
@@ -154,12 +169,17 @@ const DespachosPage = () => {
           }),
         });
       } catch (err) {
-        console.error('Error enviando notificación:', err);
+        console.error("Error enviando notificación:", err);
       }
-      
-      setMensajePropiedad({ tipo: 'success', texto: '✅ Solicitud enviada. Un administrador la revisará pronto.' });
+
+      setMensajePropiedad({
+        tipo: "success",
+        texto: "✅ Solicitud enviada. Un administrador la revisará pronto.",
+      });
       // Agregar a la lista de solicitudes pendientes
-      setSolicitudesPendientes(prev => new Set(prev).add(despachoSolicitar.id));
+      setSolicitudesPendientes((prev) =>
+        new Set(prev).add(despachoSolicitar.id)
+      );
       setTimeout(() => {
         setShowSolicitarModal(false);
         setDespachoSolicitar(null);
@@ -213,11 +233,14 @@ const DespachosPage = () => {
             .eq("despacho_id", d.id)
             .eq("es_principal", true)
             .maybeSingle();
-          
+
           if (sedeError) {
-            console.warn(`⚠️ No se pudo obtener sede para despacho ${d.id}:`, sedeError.message);
+            console.warn(
+              `⚠️ No se pudo obtener sede para despacho ${d.id}:`,
+              sedeError.message
+            );
           }
-          
+
           sedePrincipal = sedes || null;
           // Obtener owner_email directamente del despacho
           ownerEmail = d.owner_email || null;
@@ -260,7 +283,7 @@ const DespachosPage = () => {
         onClose={() => setShowAsignarModal(false)}
         onAsignar={fetchDespachos}
       />
-      
+
       {/* Modal para solicitar propiedad */}
       {showSolicitarModal && despachoSolicitar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -273,27 +296,45 @@ const DespachosPage = () => {
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Solicitar Propiedad</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Solicitar Propiedad
+            </h3>
             <p className="text-gray-700 mb-4">
-              ¿Deseas solicitar la propiedad del despacho <strong>&quot;{despachoSolicitar.nombre}&quot;</strong>?
+              ¿Deseas solicitar la propiedad del despacho{" "}
+              <strong>&quot;{despachoSolicitar.nombre}&quot;</strong>?
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
               <p className="text-sm text-blue-800">
-                <strong>📋 Proceso de aprobación:</strong><br/>
-                Tu solicitud será revisada por un administrador. Recibirás una notificación cuando sea aprobada o rechazada.
+                <strong>📋 Proceso de aprobación:</strong>
+                <br />
+                Tu solicitud será revisada por un administrador. Recibirás una
+                notificación cuando sea aprobada o rechazada.
               </p>
             </div>
-            
+
             {mensajePropiedad && (
-              <div className={`mb-4 p-3 rounded ${mensajePropiedad.tipo === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <div
+                className={`mb-4 p-3 rounded ${mensajePropiedad.tipo === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+              >
                 {mensajePropiedad.texto}
               </div>
             )}
-            
+
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
@@ -313,104 +354,317 @@ const DespachosPage = () => {
               >
                 {solicitandoPropiedad ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Procesando...
                   </>
                 ) : (
-                  'Confirmar'
+                  "Confirmar"
                 )}
               </button>
             </div>
           </div>
         </div>
       )}
-      <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Despachos</h1>
-          <p className="text-gray-600 mt-2">Gestiona la información de los despachos jurídicos</p>
+      <div className="p-6 w-full">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Despachos</h1>
+          <p className="text-lg text-gray-600">
+            {user?.role === "super_admin"
+              ? "Gestiona todos los despachos jurídicos de la plataforma"
+              : "Administra la información de tus despachos"}
+          </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {/* Card de información */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">📊 Estadísticas</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between"><span className="text-gray-600">Total Despachos:</span><span className="font-semibold">-</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Activos:</span><span className="font-semibold text-green-600">-</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Pendientes:</span><span className="font-semibold text-yellow-600">-</span></div>
+
+        {/* Estadísticas principales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Total Despachos
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loadingDespachos ? "..." : total}
+                </p>
+              </div>
+              <div className="bg-blue-500 p-3 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          {/* Card de acciones */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">⚡ Acciones Rápidas</h3>
-            <div className="space-y-3">
-              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">+ Nuevo Despacho</button>
-              <button className="w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors">📋 Ver Todos</button>
-              <button className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">📄 Exportar</button>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Activos
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loadingDespachos
+                    ? "..."
+                    : despachos.filter((d) => d.estado === "activo").length}
+                </p>
+              </div>
+              <div className="bg-green-500 p-3 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          {/* Card de información del usuario */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">👤 Tu Acceso</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between"><span className="text-gray-600">Rol:</span><span className="font-semibold capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">{user?.role === "super_admin" ? "Super Admin" : "Despacho Admin"}</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Permisos:</span><span className="font-semibold text-green-600">Completos</span></div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Con Propietario
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {loadingDespachos
+                    ? "..."
+                    : despachos.filter((d) => d.owner_email).length}
+                </p>
+              </div>
+              <div className="bg-purple-500 p-3 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-1">Tu Rol</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {user?.role === "super_admin"
+                    ? "Super Admin"
+                    : "Despacho Admin"}
+                </p>
+              </div>
+              <div className="bg-orange-500 p-3 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
-        {/* Buscador de despachos WordPress */}
-        <div className="mt-8 bg-white rounded-lg shadow">
+
+        {/* Sección compacta: Importar despacho */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm mb-8 border-2 border-blue-200">
+          <div className="p-4">
+            <details>
+              <summary className="cursor-pointer font-semibold text-gray-900 flex items-center justify-between hover:text-blue-600 transition-colors">
+                <div className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-blue-600 mr-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <span className="text-lg">¿Tu despacho no está en la lista? Impórtalo desde Lexhoy.com</span>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <p className="text-sm text-gray-700 mb-3">
+                  Busca tu despacho en nuestro directorio de Lexhoy.com e impórtalo a la plataforma. Luego podrás solicitar la propiedad.
+                </p>
+                <BuscadorDespachosWordpress onImport={fetchDespachos} />
+              </div>
+            </details>
+          </div>
+        </div>
+
+        {/* Sección principal: Lista de Despachos */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Buscar y vincular despacho desde WordPress</h2>
-            <BuscadorDespachosWordpress onImport={fetchDespachos} />
-          </div>
-        </div>
-        {/* Sección principal */}
-        <div className="mt-8 bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Lista de Despachos</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Despachos Disponibles
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {user?.role === "super_admin"
+                    ? "Gestiona todos los despachos de la plataforma"
+                    : "Solicita la propiedad de tu despacho o gestiona los que ya tienes asignados"}
+                </p>
+              </div>
+            </div>
             <div className="mb-4 flex flex-col sm:flex-row gap-2 items-center justify-between">
-              <input type="text" className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80" placeholder="Buscar por nombre, localidad o provincia" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+              <input
+                type="text"
+                className="border border-gray-300 rounded px-3 py-2 w-full sm:w-80"
+                placeholder="Buscar por nombre, localidad o provincia"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
               <div className="flex gap-2 items-center">
-                <button className="px-2 py-1 rounded border text-xs" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Anterior</button>
-                <span className="text-xs">Página {page} de {totalPages || 1}</span>
-                <button className="px-2 py-1 rounded border text-xs" disabled={page === totalPages || totalPages === 0} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Siguiente</button>
+                <button
+                  className="px-2 py-1 rounded border text-xs"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </button>
+                <span className="text-xs">
+                  Página {page} de {totalPages || 1}
+                </span>
+                <button
+                  className="px-2 py-1 rounded border text-xs"
+                  disabled={page === totalPages || totalPages === 0}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Siguiente
+                </button>
               </div>
             </div>
             {loadingDespachos ? (
-              <div className="text-center py-8 text-gray-500">Cargando despachos...</div>
+              <div className="text-center py-8 text-gray-500">
+                Cargando despachos...
+              </div>
             ) : error ? (
               <div className="text-center py-8 text-red-500">{error}</div>
             ) : despachos.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No hay despachos registrados.</div>
+              <div className="text-center py-8 text-gray-500">
+                No hay despachos registrados.
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Provincia</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nº Sedes</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Propietario</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Nombre
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Localidad
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Provincia
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Teléfono
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Email
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Nº Sedes
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Propietario
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {despachos.map((d) => (
                       <tr key={d.id}>
-                        <td className="px-4 py-2 text-sm font-semibold text-gray-900">{d.nombre}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{d.localidad || "-"}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{d.provincia || "-"}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{d.telefono || "-"}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{d.email || "-"}</td>
-                        <td className="px-4 py-2 text-sm text-center">{d.num_sedes}</td>
+                        <td className="px-4 py-2 text-sm font-semibold text-gray-900">
+                          {d.nombre}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {d.localidad || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {d.provincia || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {d.telefono || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {d.email || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-center">
+                          {d.num_sedes}
+                        </td>
                         <td className="px-4 py-2 text-sm">
                           {d.owner_email ? (
-                            <button 
+                            <button
                               onClick={async () => {
                                 // Buscar el ID del usuario por email
                                 const { data: userData } = await supabase
@@ -418,31 +672,66 @@ const DespachosPage = () => {
                                   .select("id")
                                   .eq("email", d.owner_email)
                                   .single();
-                                
+
                                 if (userData?.id) {
                                   router.push(`/admin/users/${userData.id}`);
                                 }
                               }}
-                              className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2" 
+                              className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2"
                               title={`Ir a ficha de propietario (${d.owner_email})`}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 inline"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                              </svg>
                               {d.owner_email}
                             </button>
                           ) : user?.role === "super_admin" ? (
-                            <button className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1" onClick={() => { setAsignarDespachoId(d.id); setShowAsignarModal(true); }}>
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            <button
+                              className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1"
+                              onClick={() => {
+                                setAsignarDespachoId(d.id);
+                                setShowAsignarModal(true);
+                              }}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 4v16m8-8H4"
+                                />
+                              </svg>
                               Añadir
                             </button>
                           ) : (
-                            <span className="text-gray-400 text-xs italic">Sin propietario</span>
+                            <span className="text-gray-400 text-xs italic">
+                              Sin propietario
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-2 text-sm">
                           {/* Solo puede editar si es super_admin O es el propietario del despacho */}
-                          {user?.role === "super_admin" || d.owner_email === user?.email ? (
-                            <button 
-                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs" 
+                          {user?.role === "super_admin" ||
+                          d.owner_email === user?.email ? (
+                            <button
+                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
                               onClick={() => {
                                 const slug = d.slug || slugify(d.nombre);
                                 router.push(`/dashboard/despachos/${slug}`);
@@ -453,23 +742,51 @@ const DespachosPage = () => {
                           ) : !d.owner_email ? (
                             solicitudesPendientes.has(d.id) ? (
                               <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
                                 Pendiente
                               </span>
                             ) : (
-                              <button 
-                                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1" 
+                              <button
+                                className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1"
                                 onClick={() => {
                                   setDespachoSolicitar(d);
                                   setShowSolicitarModal(true);
                                 }}
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
                                 Solicitar Propiedad
                               </button>
                             )
                           ) : (
-                            <span className="text-gray-400 text-xs italic">Sin permisos</span>
+                            <span className="text-gray-400 text-xs italic">
+                              Sin permisos
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -480,6 +797,7 @@ const DespachosPage = () => {
             )}
           </div>
         </div>
+      </div>
     </>
   );
 };

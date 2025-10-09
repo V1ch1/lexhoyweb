@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
 import { AuthSimpleService } from '@/lib/auth/services/auth-simple.service';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import {
   UserIcon,
   KeyIcon,
@@ -13,7 +14,8 @@ import {
   ShieldCheckIcon,
   ComputerDesktopIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import ProfileTab from '@/components/settings/ProfileTab';
 import PasswordTab from '@/components/settings/PasswordTab';
@@ -23,7 +25,7 @@ import PrivacyTab from '@/components/settings/PrivacyTab';
 import SessionsTab from '@/components/settings/SessionsTab';
 
 // Types
-type SettingsTab = 'profile' | 'password' | 'notifications' | 'mis-despachos' | 'privacy' | 'sessions';
+type SettingsSection = 'overview' | 'profile' | 'password' | 'notifications' | 'mis-despachos' | 'privacy' | 'sessions';
 
 interface Despacho {
   id: string;
@@ -52,10 +54,12 @@ interface UserProfile {
   despacho_nombre?: string;
 }
 
-interface Tab {
-  id: SettingsTab;
+interface SettingsCard {
+  id: SettingsSection;
   name: string;
+  description: string;
   icon: React.ComponentType<{ className?: string }>;
+  color: string;
   visible: boolean;
 }
 
@@ -64,8 +68,9 @@ const userService = new UserService();
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
@@ -87,13 +92,11 @@ export default function SettingsPage() {
       
       try {
         setLoading(true);
-        // Usar los datos básicos del usuario del auth context
         const userData = {
           id: user.id,
           email: user.email,
           name: user.name || '',
           role: user.role,
-          // Inicializar otros campos requeridos
           nombre: user.name?.split(' ')[0] || '',
           apellidos: user.name?.split(' ').slice(1).join(' ') || '',
           telefono: '',
@@ -103,7 +106,6 @@ export default function SettingsPage() {
         
         setProfile(userData);
         
-        // Opcional: Cargar datos adicionales del perfil si es necesario
         try {
           const profileData = await userService.getUserProfile(user.id);
           setProfile(prev => ({
@@ -112,7 +114,6 @@ export default function SettingsPage() {
           }));
         } catch (profileError) {
           console.error('Error al cargar datos adicionales del perfil:', profileError);
-          // Continuar con los datos básicos si falla la carga del perfil
         }
       } catch (error) {
         console.error('Error en loadUserData:', error);
@@ -128,50 +129,57 @@ export default function SettingsPage() {
     loadUserData();
   }, [user]);
 
-  // Tab configuration
-  const tabs: Tab[] = [
+  // Settings cards configuration
+  const settingsCards: SettingsCard[] = [
     {
       id: 'profile',
       name: 'Perfil',
+      description: 'Actualiza tu información personal',
       icon: UserIcon,
+      color: 'blue',
       visible: true
     },
     {
       id: 'password',
       name: 'Contraseña',
+      description: 'Cambia tu contraseña de acceso',
       icon: KeyIcon,
+      color: 'purple',
       visible: true
     },
     {
       id: 'notifications',
       name: 'Notificaciones',
+      description: 'Gestiona tus preferencias de notificaciones',
       icon: BellIcon,
+      color: 'yellow',
       visible: true
     },
     {
       id: 'mis-despachos',
       name: 'Mis Despachos',
+      description: 'Administra tus despachos asignados',
       icon: BuildingOfficeIcon,
+      color: 'green',
       visible: true
     },
     {
       id: 'privacy',
       name: 'Privacidad',
+      description: 'Controla tu privacidad y datos',
       icon: ShieldCheckIcon,
+      color: 'red',
       visible: true
     },
     {
       id: 'sessions',
       name: 'Sesiones',
+      description: 'Gestiona tus sesiones activas',
       icon: ComputerDesktopIcon,
+      color: 'orange',
       visible: true
     }
   ];
-
-  // Handle tab change
-  const handleTabChange = (tabId: SettingsTab) => {
-    setActiveTab(tabId);
-  };
 
   // Handle password change
   const handleChangePassword = async (currentPassword: string, newPassword: string) => {
@@ -180,7 +188,6 @@ export default function SettingsPage() {
     try {
       setIsLoading(true);
       
-      // Verificar la contraseña actual intentando iniciar sesión
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email || '',
         password: currentPassword
@@ -190,7 +197,6 @@ export default function SettingsPage() {
         throw new Error('La contraseña actual es incorrecta');
       }
 
-      // Si la contraseña actual es correcta, actualizar a la nueva contraseña
       const { error: updateError } = await AuthSimpleService.updatePassword(newPassword);
       
       if (updateError) {
@@ -207,13 +213,13 @@ export default function SettingsPage() {
         type: 'error',
         text: error instanceof Error ? error.message : 'Error al cambiar la contraseña. Por favor, verifica tu contraseña actual e inténtalo de nuevo.'
       });
-      throw error; // Para que el componente PasswordTab pueda manejarlo
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // State for Mis Despachos tab
+  // State for Mis Despachos
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   
   // Load user's despachos
@@ -227,7 +233,6 @@ export default function SettingsPage() {
         const data = await response.json();
         if (response.ok) {
           setUserDespachos(data);
-          console.log('✅ Despachos cargados:', data.length);
         } else {
           throw new Error(data.message || 'Error al cargar los despachos');
         }
@@ -242,10 +247,10 @@ export default function SettingsPage() {
       }
     };
 
-    if (activeTab === 'mis-despachos') {
+    if (activeSection === 'mis-despachos') {
       loadUserDespachos();
     }
-  }, [user, activeTab]);
+  }, [user, activeSection]);
 
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
@@ -253,14 +258,12 @@ export default function SettingsPage() {
     
     try {
       setIsLoading(true);
-      // Actualizar el perfil en la base de datos
       const updatedProfile = await userService.updateUserProfile(user.id, {
         nombre: data.nombre || '',
         apellidos: data.apellidos || '',
         telefono: data.telefono || ''
       });
       
-      // Actualizar el estado local
       setProfile(updatedProfile);
       
       setMessage({
@@ -278,13 +281,10 @@ export default function SettingsPage() {
     }
   };
 
-
-
   // Handle despacho deletion
   const handleDeleteDespacho = async (despachoId: string) => {
     try {
       setLoading(true);
-      // Add despacho deletion logic here
       setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
       setMessage({
         type: 'success',
@@ -301,9 +301,9 @@ export default function SettingsPage() {
     }
   };
 
-  // Render tab content
-  const renderTabContent = () => {
-    if (loading) {
+  // Render section content
+  const renderSectionContent = () => {
+    if (loading && activeSection !== 'overview') {
       return (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -311,7 +311,7 @@ export default function SettingsPage() {
       );
     }
 
-    switch (activeTab) {
+    switch (activeSection) {
       case 'profile':
         return (
           <ProfileTab 
@@ -345,7 +345,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && activeSection === 'overview') {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -363,13 +363,62 @@ export default function SettingsPage() {
     );
   }
 
+  // Settings Card Component
+  const SettingsCardComponent = ({ 
+    card, 
+    onClick 
+  }: { 
+    card: SettingsCard; 
+    onClick: () => void;
+  }) => {
+    const colorClasses = {
+      blue: "bg-blue-50 text-blue-600 hover:bg-blue-100",
+      green: "bg-green-50 text-green-600 hover:bg-green-100",
+      purple: "bg-purple-50 text-purple-600 hover:bg-purple-100",
+      orange: "bg-orange-50 text-orange-600 hover:bg-orange-100",
+      yellow: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",
+      red: "bg-red-50 text-red-600 hover:bg-red-100",
+    };
+
+    return (
+      <button
+        onClick={onClick}
+        className={`${colorClasses[card.color as keyof typeof colorClasses]} w-full p-6 rounded-xl transition-all duration-200 hover:shadow-md text-left group`}
+      >
+        <card.icon className="h-8 w-8 mb-3" />
+        <h3 className="text-lg font-semibold mb-1">{card.name}</h3>
+        <p className="text-sm opacity-80">{card.description}</p>
+        <ArrowRightIcon className="h-5 w-5 mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    );
+  };
+
   return (
-    <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Gestiona tu perfil, seguridad y preferencias de la cuenta.
+    <div className="p-6 w-full">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          {activeSection === 'overview' ? 'Configuración' : 
+           settingsCards.find(c => c.id === activeSection)?.name || 'Configuración'}
+        </h1>
+        <p className="text-lg text-gray-600">
+          {activeSection === 'overview' 
+            ? 'Gestiona tu perfil, seguridad y preferencias de la cuenta'
+            : settingsCards.find(c => c.id === activeSection)?.description || ''}
         </p>
+        
+        {/* Breadcrumb */}
+        {activeSection !== 'overview' && (
+          <button
+            onClick={() => setActiveSection('overview')}
+            className="mt-3 text-blue-600 hover:text-blue-700 font-medium flex items-center text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Volver a configuración
+          </button>
+        )}
       </div>
 
       {message && (
@@ -387,32 +436,42 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="bg-white shadow rounded-lg">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <tab.icon className="h-5 w-5 inline-block mr-2 -mt-1" />
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {activeSection === 'overview' ? (
+        <>
+          {/* User Info Card */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+            <div className="flex items-center">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-2xl mr-4">
+                {user.name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'U'}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+                <p className="text-gray-600">{user.email}</p>
+                <span className="inline-block mt-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
+                  {user.role === 'super_admin' ? 'Super Admin' : user.role === 'despacho_admin' ? 'Despacho Admin' : 'Usuario'}
+                </span>
+              </div>
+            </div>
+          </div>
 
-        <div className="p-6">
-          {renderTabContent()}
+          {/* Settings Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {settingsCards.filter(card => card.visible).map((card) => (
+              <SettingsCardComponent
+                key={card.id}
+                card={card}
+                onClick={() => setActiveSection(card.id)}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="p-6">
+            {renderSectionContent()}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
-
-

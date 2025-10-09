@@ -352,7 +352,7 @@ const DashboardPage = () => {
       )}
 
       {user.role === "despacho_admin" && despachoStats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Leads Hoy"
             value={despachoStats.leadsToday}
@@ -373,6 +373,37 @@ const DashboardPage = () => {
             icon={ClipboardDocumentListIcon}
             color="purple"
           />
+          <StatCard
+            title="Mis Despachos"
+            value={despachosLoading ? "..." : userDespachos.length}
+            icon={BuildingOfficeIcon}
+            color="orange"
+          />
+        </div>
+      )}
+
+      {/* Call to action: Importar despacho */}
+      {user.role === "despacho_admin" && userDespachos.length === 0 && !despachosLoading && (
+        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border-2 border-blue-200 p-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <BuildingOfficeIcon className="h-10 w-10 text-blue-600" />
+            </div>
+            <div className="ml-4 flex-1">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">¡Importa tu despacho desde Lexhoy.com!</h3>
+              <p className="text-gray-700 mb-4">
+                Encuentra tu despacho en nuestro directorio de más de 10,000 despachos jurídicos y empieza a gestionar tus leads.
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/despachos")}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center"
+              >
+                <BuildingOfficeIcon className="h-5 w-5 mr-2" />
+                Buscar e importar mi despacho
+                <ArrowRightIcon className="h-5 w-5 ml-2" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -382,19 +413,30 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
             <button
-              onClick={() => router.push("/dashboard/settings?tab=mis-despachos")}
+              onClick={() => router.push("/dashboard/despachos")}
               className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
             >
-              Ver todos
+              Gestionar despachos
               <ArrowRightIcon className="h-4 w-4 ml-1" />
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {despachosLoading ? (
-              <div className="col-span-3 text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              </div>
-            ) : (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 animate-pulse"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="h-6 w-6 bg-gray-200 rounded"></div>
+                    <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded mb-2 w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))
+            ) : userDespachos.length > 0 ? (
               userDespachos.map((despacho) => (
                 <div
                   key={despacho.id}
@@ -417,6 +459,12 @@ const DashboardPage = () => {
                   )}
                 </div>
               ))
+            ) : (
+              <div className="col-span-3 text-center py-8 bg-white rounded-lg border border-gray-100">
+                <BuildingOfficeIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 mb-1">No tienes despachos asignados</p>
+                <p className="text-sm text-gray-400">Solicita un despacho para empezar</p>
+              </div>
             )}
           </div>
         </div>
@@ -485,7 +533,7 @@ const DashboardPage = () => {
               />
               <QuickActionCard
                 title="Mis Despachos"
-                description="Administra la información de tus despachos"
+                description="Importa o gestiona tus despachos de Lexhoy.com"
                 icon={BuildingOfficeIcon}
                 onClick={() => router.push("/dashboard/despachos")}
                 color="green"
