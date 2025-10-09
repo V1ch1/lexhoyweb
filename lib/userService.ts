@@ -1220,27 +1220,42 @@ export class UserService {
     
     console.log("📋 Solicitud obtenida:", solicitud);
 
-    // NOTA: El despacho ya debería estar importado cuando se solicita la propiedad
-    // Por lo tanto, no necesitamos sincronizar de nuevo desde WordPress
     const objectId = solicitud.despacho_id;
     console.log("📋 Despacho solicitado - object_id:", objectId);
 
     // Obtener el ID numérico del despacho en Supabase usando el object_id
     console.log("🔍 Buscando despacho en Supabase con object_id:", objectId);
-    const { data: despacho, error: despachoError } = await supabase
+    const { data: despachoData, error: despachoError } = await supabase
       .from("despachos")
       .select("id")
       .eq("object_id", objectId)
       .single();
 
-    if (despachoError || !despacho) {
-      console.error("❌ Error: Despacho no encontrado en Supabase:", despachoError);
-      throw new Error(
-        `Despacho con object_id ${objectId} no encontrado en Supabase. Detalles: ${despachoError?.message || "No data"}`
-      );
-    }
+    let despacho = despachoData;
 
-    console.log("✅ Despacho encontrado en Supabase, ID:", despacho.id);
+    // Si el despacho no existe, importarlo desde la API de Lexhoy
+    if (despachoError || !despacho) {
+      console.warn("⚠️ Despacho no encontrado en Supabase, importando desde API...");
+      
+      try {
+        // Importar el despacho desde la API
+        const importedDespacho = await this.importDespachoFromAPI(objectId);
+        
+        if (!importedDespacho) {
+          throw new Error(`No se pudo importar el despacho con object_id ${objectId}`);
+        }
+        
+        console.log("✅ Despacho importado correctamente, ID:", importedDespacho.id);
+        despacho = { id: importedDespacho.id };
+      } catch (importError) {
+        console.error("❌ Error importando despacho:", importError);
+        throw new Error(
+          `No se pudo encontrar ni importar el despacho con object_id ${objectId}. Detalles: ${importError instanceof Error ? importError.message : "Error desconocido"}`
+        );
+      }
+    } else {
+      console.log("✅ Despacho encontrado en Supabase, ID:", despacho.id);
+    }
 
     // Cambiar rol del usuario a despacho_admin
     console.log("👤 Cambiando rol del usuario a despacho_admin");
@@ -1456,6 +1471,57 @@ export class UserService {
       console.log("✅ Email enviado al usuario");
     } catch (error) {
       console.error("⚠️ Error enviando email:", error);
+    }
+  }
+
+  /**
+   * Importar un despacho desde la API de Lexhoy.com usando su object_id
+   */
+  async importDespachoFromAPI(objectId: string): Promise<{ id: number } | null> {
+    console.log("🔄 Importando despacho desde API, object_id:", objectId);
+    
+    try {
+      // Llamar a la API de Lexhoy.com para obtener los datos del despacho
+      const apiUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`;
+      console.log("📡 Llamando a API:", apiUrl);
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`API respondió con status ${response.status}`);
+      }
+      
+      const despachoData = await response.json();
+      console.log("📦 Datos del despacho obtenidos:", despachoData.title?.rendered);
+      
+      // Extraer datos relevantes
+      const nombre = despachoData.title?.rendered || "Despacho sin nombre";
+      const slug = despachoData.slug || "";
+      
+      // Insertar el despacho en Supabase
+      const { data: insertedDespacho, error: insertError } = await supabase
+        .from("despachos")
+        .insert({
+          object_id: objectId,
+          nombre: nombre,
+          slug: slug,
+          descripcion: despachoData.excerpt?.rendered || null,
+          estado: "aprobado",
+          fecha_creacion: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      
+      if (insertError) {
+        console.error("❌ Error insertando despacho:", insertError);
+        throw insertError;
+      }
+      
+      console.log("✅ Despacho importado exitosamente, ID:", insertedDespacho.id);
+      return insertedDespacho;
+    } catch (error) {
+      console.error("❌ Error importando despacho desde API:", error);
+      return null;
     }
   }
 }
