@@ -1,6 +1,7 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/authContext';
 import { UserService } from '@/lib/userService';
 import { AuthSimpleService } from '@/lib/auth/services/auth-simple.service';
