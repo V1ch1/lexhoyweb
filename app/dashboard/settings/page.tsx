@@ -329,7 +329,7 @@ export default function SettingsPage() {
           />
         );
       case 'notifications':
-        return <NotificationsTab loading={loading} notifications={{}} onUpdate={() => {}} onSubmit={() => {}} />;
+        return <NotificationsTab loading={loading} notifications={{ email_nuevos_leads: false, email_actualizaciones: false, email_sistema: false, push_leads: false, push_mensajes: false }} onUpdate={() => {}} onSubmit={() => {}} />;
       case 'mis-despachos':
         return (
           <MisDespachosTab 

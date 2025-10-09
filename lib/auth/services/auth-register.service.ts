@@ -65,16 +65,15 @@ export class AuthRegisterService {
           error: createUserError || 'Error al crear el perfil del usuario',
         };
       }
-
       // 3. Enviar notificación a administradores
       await this.notifyAdmins(userData);
 
       return {
         user: {
-          id: user.id,
-          email: user.email,
+          id: String(user.id),
+          email: String(user.email),
           name: `${user.nombre} ${user.apellidos}`,
-          role: user.rol,
+          role: (user.rol as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario',
         },
         error: null,
       };
