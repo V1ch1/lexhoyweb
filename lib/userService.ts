@@ -1507,7 +1507,8 @@ export class UserService {
           slug: slug,
           descripcion: despachoData.excerpt?.rendered || null,
           estado: "aprobado",
-          fecha_creacion: new Date().toISOString(),
+          num_sedes: 0,
+          created_at: new Date().toISOString(),
         })
         .select("id")
         .single();

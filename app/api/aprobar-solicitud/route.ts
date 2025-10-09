@@ -66,11 +66,13 @@ export async function POST(request: Request) {
       message: "Solicitud aprobada correctamente",
     });
   } catch (error) {
-    console.error("Error al aprobar solicitud:", error);
+    console.error("💥 Error completo al aprobar solicitud:", error);
+    console.error("💥 Stack trace:", error instanceof Error ? error.stack : "No stack");
     return NextResponse.json(
       {
         error: "Error al aprobar solicitud",
-        details: error instanceof Error ? error.message : "Error desconocido",
+        details: error instanceof Error ? error.message : JSON.stringify(error),
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );
