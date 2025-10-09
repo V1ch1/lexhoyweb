@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { headers } from 'next/headers';
 
 interface MetaData {
   direccion?: string;

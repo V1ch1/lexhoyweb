@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
  * Endpoint temporal para sincronizar despachos con owner_email a user_despachos
  * Este endpoint crea los registros faltantes en user_despachos para usuarios que tienen despachos con owner_email
  */
-export async function POST(request: Request) {
+export async function POST() {
   try {
     console.log('🔄 Iniciando sincronización de owner_email a user_despachos...');
 
