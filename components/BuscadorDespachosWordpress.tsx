@@ -32,7 +32,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
-  const [importResult, setImportResult] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<Record<string, string>>({});
   const [importSummary, setImportSummary] = useState<{
     success: boolean;
     despacho?: {
@@ -55,7 +55,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     setLoading(true);
     setError(null);
     setResultados([]);
-    setImportResult(null);
+    setImportResult({});
 
     try {
       console.log('🔍 Buscando despacho:', query);
@@ -113,7 +113,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
 
   const importarDespacho = async (objectId: string) => {
     setImportando(objectId);
-    setImportResult(null);
+    setImportResult(prev => ({ ...prev, [objectId]: '' }));
     setImportSummary(null);
     
     try {
@@ -179,9 +179,9 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       
       if (success && despachoId) {
         const mensaje = yaExiste 
-          ? "✅ Despacho actualizado correctamente desde WordPress"
-          : "✅ Despacho importado correctamente desde WordPress";
-        setImportResult(mensaje);
+          ? "✅ Despacho actualizado correctamente"
+          : "✅ Despacho importado correctamente";
+        setImportResult(prev => ({ ...prev, [objectId]: mensaje }));
         setImportSummary({
           success: true,
           message: `${yaExiste ? 'Actualizado' : 'Importado'} correctamente. ID: ${despachoId}, Object ID: ${wpObjectId}`
@@ -192,7 +192,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       }
     } catch (error) {
       console.error('❌ Error en importarDespacho:', error);
-      setImportResult(`❌ ${error instanceof Error ? error.message : 'Error al importar el despacho'}`);
+      setImportResult(prev => ({ ...prev, [objectId]: `❌ ${error instanceof Error ? error.message : 'Error al importar'}` }));
       setImportSummary({
         success: false,
         error: error instanceof Error ? error.message : 'Error desconocido'
@@ -251,20 +251,30 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                   d.provincia || 
                   '-';
                 
+                const yaImportado = d._fromSupabase || false;
+                const mensajeResultado = importResult[d.object_id];
+                
                 return (
                   <tr key={d.object_id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    <td className="p-3 font-medium text-gray-900">{d.nombre}</td>
+                    <td className="p-3">
+                      <div className="font-medium text-gray-900">{d.nombre}</div>
+                      {mensajeResultado && (
+                        <div className={`text-xs mt-1 font-semibold ${mensajeResultado.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                          {mensajeResultado}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-3 text-gray-700">{localidad}</td>
                     <td className="p-3 text-gray-700">{provincia}</td>
                     <td className="p-3">
                       <button
-                        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        className={`${yaImportado ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm`}
                         onClick={() => importarDespacho(d.object_id)}
                         disabled={importando === d.object_id}
                       >
                         {importando === d.object_id
                           ? "Sincronizando..."
-                          : "Importar/Actualizar"}
+                          : yaImportado ? "🔄 Actualizar" : "📥 Importar"}
                       </button>
                     </td>
                   </tr>
@@ -272,11 +282,6 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
               })}
             </tbody>
           </table>
-          {importResult && (
-            <div className="mt-2 text-sm font-semibold text-green-700">
-              {importResult}
-            </div>
-          )}
           {importSummary && importSummary.despacho && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded p-4 text-xs text-gray-800">
               <div className="font-bold mb-2">Resumen de importación:</div>

@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     // Si busca por ID, ir directo a WordPress para obtener datos completos
     if (id) {
       console.log('🌐 Buscando por ID en WordPress...');
-      const username = process.env.NEXT_PUBLIC_WP_USER;
-      const appPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD;
+      const username = process.env.WORDPRESS_USERNAME;
+      const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
       
       if (!username || !appPassword) {
         console.error('❌ Faltan credenciales de WordPress');
@@ -91,8 +91,8 @@ export async function GET(request: Request) {
 
     // 2. Si no se encuentra en Next.js, buscar en WordPress
     console.log('🌐 Buscando en WordPress...');
-    const username = process.env.NEXT_PUBLIC_WP_USER;
-    const appPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD;
+    const username = process.env.WORDPRESS_USERNAME;
+    const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
     
     if (!username || !appPassword) {
       console.error('❌ Faltan credenciales de WordPress');

@@ -261,8 +261,8 @@ export class SyncService {
       };
 
       // Autenticación con WordPress
-      const username = process.env.NEXT_PUBLIC_WP_USER;
-      const appPassword = process.env.NEXT_PUBLIC_WP_APP_PASSWORD;
+      const username = process.env.WORDPRESS_USERNAME;
+      const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
       const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
 
       let wpResponse;
