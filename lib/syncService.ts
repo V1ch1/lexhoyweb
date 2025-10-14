@@ -38,16 +38,55 @@ interface DespachoWordPress {
 }
 
 interface Sede {
+  // Básicos
   nombre?: string;
+  descripcion?: string;
+  es_principal?: boolean;
+  
+  // Ubicación
+  direccion?: string;
+  calle?: string;
+  numero?: string;
+  piso?: string;
   localidad?: string;
   provincia?: string;
-  direccion?: string;
+  codigo_postal?: string;
+  pais?: string;
+  
+  // Contacto
   telefono?: string;
   email?: string;
+  email_contacto?: string;
   web?: string;
-  es_principal?: boolean;
-  descripcion?: string;
+  persona_contacto?: string;
+  
+  // Profesional
+  ano_fundacion?: string;
+  tamano_despacho?: string;
+  numero_colegiado?: string;
+  colegio?: string;
+  experiencia?: string;
+  
+  // Servicios
   areas_practica?: string[];
+  especialidades?: string;
+  servicios_especificos?: string;
+  
+  // Multimedia
+  foto_perfil?: string;
+  logo?: string;
+  
+  // Horarios y redes
+  horarios?: Record<string, string>;
+  redes_sociales?: {
+    facebook?: string;
+    twitter?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
+  
+  // Otros
+  observaciones?: string;
 }
 
 export class SyncService {
@@ -121,7 +160,11 @@ export class SyncService {
       // Importar sedes si existen
       console.log('🔍 Meta completo:', JSON.stringify(despachoWP.meta, null, 2));
       const sedes = despachoWP.meta?._despacho_sedes;
-      console.log('🔍 Sedes encontradas:', sedes);
+      console.log('🔍 Sedes encontradas:', JSON.stringify(sedes, null, 2));
+      
+      // También verificar otros campos del meta que podrían tener info adicional
+      console.log('📋 Año fundación en meta:', despachoWP.meta?.ano_fundacion || despachoWP.meta?.year_founded);
+      console.log('📋 Redes sociales en meta:', despachoWP.meta?.redes_sociales || despachoWP.meta?.social_media);
       if (sedes && Array.isArray(sedes) && sedes.length > 0) {
         console.log(`📍 Importando ${sedes.length} sede(s)...`);
         
@@ -174,21 +217,104 @@ export class SyncService {
       for (let i = 0; i < sedes.length; i++) {
         const sede = sedes[i];
         const esPrincipal = i === 0 || sede.es_principal === true;
+        
+        console.log(`📍 Importando sede ${i + 1}:`, JSON.stringify(sede, null, 2));
+
+        // Parsear dirección completa desde WordPress
+        // Formato: "C/ Fonseca 6 4º, A Coruña, A Coruña, (15004)"
+        let calle = sede.calle || '';
+        let numero = sede.numero || '';
+        let piso = sede.piso || '';
+        let codigoPostal = sede.codigo_postal || '';
+        let localidad = sede.localidad || '';
+        let provincia = sede.provincia || '';
+        
+        if (sede.direccion && !calle) {
+          // Separar por comas: [dirección, localidad, provincia, CP]
+          const partes = sede.direccion.split(',').map(p => p.trim());
+          
+          if (partes.length >= 1) {
+            // Primera parte: calle, número y piso
+            const direccionMatch = partes[0].match(/^(.+?)\s+(\d+)\s*(.*)$/);
+            if (direccionMatch) {
+              calle = direccionMatch[1]?.trim() || '';
+              numero = direccionMatch[2] || '';
+              piso = direccionMatch[3]?.trim() || '';
+            } else {
+              calle = partes[0];
+            }
+          }
+          
+          if (partes.length >= 2 && !localidad) {
+            localidad = partes[1];
+          }
+          
+          if (partes.length >= 3 && !provincia) {
+            provincia = partes[2];
+          }
+          
+          // Extraer código postal del formato (15004) o 15004
+          if (partes.length >= 4) {
+            const cpMatch = partes[3].match(/\(?(\d{5})\)?/);
+            if (cpMatch) {
+              codigoPostal = cpMatch[1];
+            }
+          }
+        }
+        
+        // Limpiar localidad de código postal si lo tiene
+        localidad = localidad.replace(/\(?\d{5}\)?/, '').trim();
 
         const { error: sedeError } = await supabase.from('sedes').insert({
+          // Relación
           despacho_id: despachoId,
+          
+          // Básicos
           nombre: sede.nombre || 'Sede Principal',
-          es_principal: esPrincipal,
-          localidad: sede.localidad || '',
-          provincia: sede.provincia || '',
-          calle: sede.direccion || '',
-          telefono: sede.telefono || '',
-          email_contacto: sede.email || '',
-          web: sede.web || '',
           descripcion: sede.descripcion || null,
+          es_principal: esPrincipal,
+          
+          // Ubicación
+          localidad: localidad,
+          provincia: provincia,
+          pais: sede.pais || 'España',
+          calle: calle,
+          numero: numero || null,
+          piso: piso || null,
+          codigo_postal: codigoPostal || null,
+          
+          // Contacto
+          telefono: sede.telefono || null,
+          email_contacto: sede.email || sede.email_contacto || null,
+          web: sede.web || null,
+          persona_contacto: sede.persona_contacto || null,
+          
+          // Profesional
+          ano_fundacion: sede.ano_fundacion || null,
+          tamano_despacho: sede.tamano_despacho || null,
+          numero_colegiado: sede.numero_colegiado || null,
+          colegio: sede.colegio || null,
+          experiencia: sede.experiencia || null,
+          
+          // Servicios
           areas_practica: sede.areas_practica || [],
+          especialidades: sede.especialidades || null,
+          servicios_especificos: sede.servicios_especificos || null,
+          
+          // Multimedia
+          foto_perfil: sede.foto_perfil || sede.logo || null,
+          
+          // Horarios y redes
+          horarios: sede.horarios || {},
+          redes_sociales: sede.redes_sociales || {},
+          
+          // Otros
+          observaciones: sede.observaciones || null,
+          
+          // Estado
           activa: true,
           estado_verificacion: 'pendiente',
+          estado_registro: 'activo',
         });
         
         if (sedeError) {
