@@ -429,6 +429,34 @@ export default function DespachoPage() {
       );
       setSedes(sedesActualizadas);
 
+      // Sincronizar con WordPress si el despacho tiene object_id
+      // TEMPORALMENTE DESHABILITADO - Problema de autenticación con WordPress
+      /*
+      if (despacho?.object_id) {
+        console.log('🔄 Sincronizando cambios con WordPress...');
+        try {
+          const syncResponse = await fetch('/api/sync-despacho', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              despachoId: despacho.id,
+              objectId: despacho.object_id 
+            })
+          });
+
+          if (syncResponse.ok) {
+            console.log('✅ Sincronizado con WordPress');
+          } else {
+            console.warn('⚠️ Error al sincronizar con WordPress:', await syncResponse.text());
+          }
+        } catch (syncError) {
+          console.error('❌ Error en sincronización con WordPress:', syncError);
+          // No mostramos error al usuario, solo log
+        }
+      }
+      */
+      console.log('ℹ️ Sincronización con WordPress deshabilitada temporalmente');
+
       setSuccess(true);
       setEditingSedeId(null);
       setEditSedeData(null);
@@ -573,11 +601,6 @@ export default function DespachoPage() {
             {/* Contenido de la sede activa - Versión compacta */}
             {sedes[activeSedeTab] && (
               <div className="space-y-4">
-                {/* Debug temporal */}
-                {console.log('🔍 Sede activa:', sedes[activeSedeTab])}
-                {console.log('📅 Año fundación:', sedes[activeSedeTab].ano_fundacion)}
-                {console.log('📱 Redes sociales:', sedes[activeSedeTab].redes_sociales)}
-                
                 {/* Botón de edición */}
                 <div className="flex justify-end gap-2">
                   {editingSedeId === sedes[activeSedeTab].id && (

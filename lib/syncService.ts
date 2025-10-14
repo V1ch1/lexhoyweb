@@ -353,7 +353,7 @@ export class SyncService {
         throw new Error('Despacho no encontrado');
       }
 
-      // Preparar payload para WordPress
+      // Preparar payload para WordPress con TODOS los campos
       const payload = {
         title: despacho.nombre,
         content: despacho.descripcion || '',
@@ -363,49 +363,82 @@ export class SyncService {
           localidad: despacho.sedes?.[0]?.localidad || '',
           provincia: despacho.sedes?.[0]?.provincia || '',
           telefono: despacho.sedes?.[0]?.telefono || '',
-          email_contacto: despacho.sedes?.[0]?.email || '',
-          _despacho_sedes: despacho.sedes?.map((sede: {
-            nombre: string;
-            localidad: string;
-            provincia: string;
-            calle: string;
-            telefono: string;
-            email: string;
-            web: string;
-            es_principal: boolean;
-          }) => ({
-            nombre: sede.nombre,
-            localidad: sede.localidad,
-            provincia: sede.provincia,
-            direccion: sede.calle,
-            telefono: sede.telefono,
-            email: sede.email,
-            web: sede.web,
-            es_principal: sede.es_principal,
-          })) || [],
+          email_contacto: despacho.sedes?.[0]?.email_contacto || '',
+          _despacho_sedes: despacho.sedes?.map((sede: any) => {
+            // Construir dirección completa desde campos separados
+            const direccionPartes = [
+              sede.calle && sede.numero ? `${sede.calle} ${sede.numero}` : sede.calle,
+              sede.piso,
+              sede.localidad,
+              sede.provincia,
+              sede.codigo_postal ? `(${sede.codigo_postal})` : ''
+            ].filter(Boolean);
+            
+            return {
+              nombre: sede.nombre,
+              descripcion: sede.descripcion,
+              localidad: sede.localidad,
+              provincia: sede.provincia,
+              pais: sede.pais,
+              direccion: direccionPartes.join(', '),
+              calle: sede.calle,
+              numero: sede.numero,
+              piso: sede.piso,
+              codigo_postal: sede.codigo_postal,
+              telefono: sede.telefono,
+              email: sede.email_contacto,
+              email_contacto: sede.email_contacto,
+              web: sede.web,
+              persona_contacto: sede.persona_contacto,
+              ano_fundacion: sede.ano_fundacion,
+              tamano_despacho: sede.tamano_despacho,
+              numero_colegiado: sede.numero_colegiado,
+              colegio: sede.colegio,
+              experiencia: sede.experiencia,
+              areas_practica: sede.areas_practica,
+              especialidades: sede.especialidades,
+              servicios_especificos: sede.servicios_especificos,
+              foto_perfil: sede.foto_perfil,
+              logo: sede.foto_perfil,
+              horarios: sede.horarios,
+              redes_sociales: sede.redes_sociales,
+              observaciones: sede.observaciones,
+              es_principal: sede.es_principal,
+            };
+          }) || [],
         },
       };
 
       // Autenticación con WordPress
       const username = process.env.WORDPRESS_USERNAME;
       const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
+      
+      if (!username || !appPassword) {
+        console.error('❌ Faltan credenciales de WordPress');
+        throw new Error('Credenciales de WordPress no configuradas');
+      }
+      
       const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
+      console.log('🔑 Autenticando con WordPress como:', username);
+      console.log('📝 Payload a enviar:', JSON.stringify(payload, null, 2));
 
       let wpResponse;
       
       if (despacho.object_id) {
         // Actualizar despacho existente
-        wpResponse = await fetch(
-          `https://lexhoy.com/wp-json/wp/v2/despacho/${despacho.object_id}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          }
-        );
+        const url = `https://lexhoy.com/wp-json/wp/v2/despacho/${despacho.object_id}`;
+        console.log('🔄 URL de actualización:', url);
+        
+        wpResponse = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+        
+        console.log('📊 Respuesta de WordPress:', wpResponse.status, wpResponse.statusText);
       } else {
         // Crear nuevo despacho
         wpResponse = await fetch(
