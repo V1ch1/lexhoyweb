@@ -24,8 +24,6 @@ export class AuthLoginService {
    */
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      console.log('🔐 AuthLoginService.login - Iniciando autenticación para:', credentials.email);
-      
       // Limpiar JWT previo
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('supabase_jwt');
@@ -37,26 +35,17 @@ export class AuthLoginService {
         password: credentials.password,
       });
 
-      console.log('🔐 AuthLoginService.login - Respuesta de Supabase:', { 
-        hasUser: !!authData?.user, 
-        hasSession: !!authData?.session,
-        error: authError 
-      });
-
       // Guardar JWT
       const jwt = authData?.session?.access_token;
       if (jwt && typeof window !== 'undefined') {
         window.localStorage.setItem('supabase_jwt', jwt);
-        console.log('🔐 JWT guardado');
       }
 
       if (authError) {
-        console.error('🔐 Error de autenticación:', authError);
         return this.handleLoginError(authError);
       }
 
       if (!authData.user) {
-        console.error('🔐 No se recibió usuario de Supabase');
         return {
           user: null,
           error: 'No se pudo obtener la información del usuario',
@@ -65,8 +54,6 @@ export class AuthLoginService {
 
       // TEMPORALMENTE: Usar solo datos básicos de Supabase Auth
       // La consulta a la tabla 'users' se está colgando, probablemente por problemas de RLS
-      console.log('⚠️ Omitiendo consulta a tabla users (se cuelga), usando datos básicos de Auth');
-      
       const basicUserData = {
         user: {
           id: authData.user.id,
@@ -77,7 +64,6 @@ export class AuthLoginService {
         error: null,
       };
       
-      console.log('✅ Retornando datos básicos del usuario:', basicUserData);
       return basicUserData;
       
       // TODO: Investigar y arreglar la consulta a la tabla 'users'

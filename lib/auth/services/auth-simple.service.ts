@@ -10,8 +10,6 @@ export class AuthSimpleService {
    */
   static async login(email: string, password: string) {
     try {
-      console.log('🔐 AuthSimpleService.login - Iniciando para:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -36,7 +34,6 @@ export class AuthSimpleService {
       let userName = data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario';
       
       try {
-        console.log('🔍 Consultando tabla users para obtener rol...');
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('rol, nombre, apellidos')
@@ -44,7 +41,6 @@ export class AuthSimpleService {
           .single();
 
         if (!userError && userData) {
-          console.log('✅ Datos de usuario obtenidos:', userData);
           userRole = (userData.rol || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario';
           if (userData.nombre) {
             userName = `${userData.nombre} ${userData.apellidos || ''}`.trim();
@@ -63,7 +59,6 @@ export class AuthSimpleService {
         role: userRole,
       };
 
-      console.log('✅ Login exitoso:', user);
       return { user, error: null };
     } catch (error) {
       console.error('❌ Error en login:', error);
@@ -76,8 +71,6 @@ export class AuthSimpleService {
    */
   static async logout() {
     try {
-      console.log('🚪 AuthSimpleService.logout - Cerrando sesión');
-      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -92,7 +85,6 @@ export class AuthSimpleService {
         window.localStorage.removeItem('isAuthenticated');
       }
 
-      console.log('✅ Sesión cerrada exitosamente');
       return { error: null };
     } catch (error) {
       console.error('❌ Error en logout:', error);
@@ -186,8 +178,6 @@ export class AuthSimpleService {
    */
   static async register(email: string, password: string, metadata?: { name?: string; role?: string }) {
     try {
-      console.log('📝 AuthSimpleService.register - Registrando:', email);
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -212,7 +202,6 @@ export class AuthSimpleService {
         role: (metadata?.role || 'usuario') as 'super_admin' | 'despacho_admin' | 'usuario',
       };
 
-      console.log('✅ Registro exitoso:', user);
       return { user, error: null };
     } catch (error) {
       console.error('❌ Error en register:', error);

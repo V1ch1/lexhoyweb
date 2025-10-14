@@ -10,11 +10,8 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  console.log('🏠 DashboardLayout - Estado:', { user: !!user, isLoading, userEmail: user?.email });
-
   // Solo mostrar loading si realmente está cargando Y no hay usuario
   if (isLoading && !user) {
-    console.log('⏳ DashboardLayout - Mostrando spinner de carga');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -27,14 +24,8 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
 
   // Si no hay usuario después de cargar, redirigir al login
   if (!isLoading && !user) {
-    console.log('🚨 DashboardLayout - No hay usuario, redirigiendo a login');
     router.push("/login");
     return null;
-  }
-
-  // Si hay usuario, mostrar el dashboard
-  if (user) {
-    console.log('✅ DashboardLayout - Usuario autenticado, mostrando dashboard');
   }
 
   return (

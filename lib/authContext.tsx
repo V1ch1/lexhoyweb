@@ -39,15 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const loadSession = async () => {
       try {
-        console.log("🔄 Cargando sesión...");
-        
         // Cargar desde localStorage PRIMERO
         const storedUser = localStorage.getItem("lexhoy_user");
         if (storedUser && mounted) {
           try {
             const userData = JSON.parse(storedUser);
             setUser(userData);
-            console.log("✅ Usuario cargado desde localStorage:", userData.email);
           } catch (e) {
             console.error("❌ Error al parsear usuario de localStorage:", e);
           }
@@ -57,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // No esperamos a la verificación del servidor para no bloquear la UI
         if (mounted) {
           setIsLoading(false);
-          console.log("✅ loadSession completado, isLoading = false");
         }
         
         // Verificar la sesión con el servidor en segundo plano (opcional)
@@ -66,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!mounted) return;
           
           if (response.error || !response.user) {
-            console.log("❌ No hay sesión activa en el servidor");
             setUser(null);
             localStorage.removeItem("lexhoy_user");
             return;
@@ -82,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           setUser(userData);
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-          console.log("✅ Sesión verificada desde servidor con rol:", userData.role);
         }).catch(error => {
           console.error("⚠️ Error al verificar sesión con servidor (no crítico):", error);
         });
@@ -115,8 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     unsubscribe = AuthSimpleService.onAuthStateChange((event: string, session: unknown) => {
       if (!mounted) return;
       
-      console.log(`🔄 Evento de autenticación: ${event}`);
-      
       // Solo actualizar el estado si es un evento de cierre de sesión
       // Los eventos SIGNED_IN se manejan manualmente en el componente de login
       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
@@ -130,14 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           setUser(userData);
           localStorage.setItem("lexhoy_user", JSON.stringify(userData));
-          console.log(`✅ Usuario actualizado por evento ${event}:`, userData.email);
         } else {
-          console.log("🚪 Sesión cerrada o expirada");
           setUser(null);
           localStorage.removeItem("lexhoy_user");
         }
-      } else if (event === 'SIGNED_IN') {
-        console.log("ℹ️ Evento SIGNED_IN detectado, pero será manejado por el componente de login");
       }
     });
 
@@ -153,8 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData: User): boolean => {
     try {
-      console.log("🔑 Iniciando proceso de login para:", userData?.email || 'usuario desconocido');
-      
       // Validar datos del usuario
       if (!userData || !userData.id || !userData.email) {
         console.error("❌ Datos de usuario inválidos:", userData);
@@ -168,9 +154,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("lexhoy_user", JSON.stringify(userData));
       localStorage.setItem("isAuthenticated", "true");
       
-      console.log("✅ Usuario autenticado exitosamente:", userData.email);
-      console.log("📝 Datos del usuario:", userData);
-      
       return true;
     } catch (error) {
       console.error("❌ Error en la función login:", error);
@@ -180,7 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      console.log("🚪 Cerrando sesión...");
       const { error } = await AuthSimpleService.logout();
       
       if (error) {
