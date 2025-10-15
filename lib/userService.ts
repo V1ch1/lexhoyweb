@@ -1369,7 +1369,7 @@ export class UserService {
               </ul>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${baseUrl}/dashboard/settings?tab=mis-despachos" 
+                <a href="https://despachos.lexhoy.com/dashboard/settings?tab=mis-despachos" 
                    style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">
                   Ir a Mi Despacho
                 </a>
