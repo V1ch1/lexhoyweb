@@ -1335,7 +1335,6 @@ export class UserService {
     // Enviar email al usuario
     try {
       const { EmailService } = await import("./emailService");
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       
       await EmailService.send({
         to: solicitud.user_email,
