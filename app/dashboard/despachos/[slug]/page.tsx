@@ -653,11 +653,13 @@ export default function DespachoPage() {
                           if (!file) return;
                           
                           // Validar dimensiones
-                          const img = new Image();
-                          img.onload = () => {
+                          const img = new window.Image();
+                          img.onload = function() {
                             if (img.width !== 500 || img.height !== 500) {
                               alert('La imagen debe ser exactamente 500x500 píxeles');
-                              e.target.value = '';
+                              if (e.target) {
+                                (e.target as HTMLInputElement).value = '';
+                              }
                               return;
                             }
                             
@@ -667,6 +669,15 @@ export default function DespachoPage() {
                               setEditSedeData(prev => prev ? {...prev, foto_perfil: reader.result as string} : null);
                             };
                             reader.readAsDataURL(file);
+                            
+                            // Liberar el objeto URL creado
+                            URL.revokeObjectURL(img.src);
+                          };
+                          img.onerror = () => {
+                            console.error('Error al cargar la imagen');
+                            if (e.target) {
+                              (e.target as HTMLInputElement).value = '';
+                            }
                           };
                           img.src = URL.createObjectURL(file);
                         }}
