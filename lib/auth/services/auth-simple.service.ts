@@ -17,7 +17,21 @@ export class AuthSimpleService {
 
       if (error) {
         console.error('❌ Error de autenticación:', error);
-        return { user: null, error: error.message };
+        
+        // Manejar diferentes tipos de errores de autenticación
+        let errorMessage = 'Error de autenticación';
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Correo electrónico o contraseña incorrectos';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Por favor, verifica tu correo electrónico antes de iniciar sesión';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde';
+        } else if (error.message.includes('Network error')) {
+          errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet';
+        }
+        
+        return { user: null, error: errorMessage };
       }
 
       if (!data.user) {

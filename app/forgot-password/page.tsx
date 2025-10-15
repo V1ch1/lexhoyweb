@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-export default function ForgotPasswordPage() {
+const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentOrigin, setCurrentOrigin] = useState("");
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     setCurrentOrigin(window.location.origin);
@@ -17,31 +17,32 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage("");
-    setError("");
     setIsLoading(true);
+    setMessage("");
+    setIsError(false);
 
     try {
-      console.log('Enviando email de recuperación a:', email);
-      console.log('Redirect URL:', `${currentOrigin}/reset-password`);
-      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${currentOrigin}/reset-password`,
       });
 
       if (error) {
-        console.error('Error en resetPasswordForEmail:', error);
-        setError(`Error: ${error.message}`);
-        return;
+        throw new Error(
+          "No se pudo enviar el correo de recuperación. Por favor, verifica el correo electrónico e inténtalo de nuevo."
+        );
       }
 
-      console.log('Email enviado exitosamente');
       setMessage(
-        "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y spam."
+        "¡Correo enviado! Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y la carpeta de spam."
       );
+      setEmail("");
     } catch (err) {
-      setError("Error de conexión. Inténtalo de nuevo.");
-      console.error("Error:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error al enviar el correo";
+      setMessage(errorMessage);
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -50,55 +51,65 @@ export default function ForgotPasswordPage() {
   return (
     <section className="h-screen flex justify-center items-center bg-gray-50">
       <div className="bg-white p-10 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900">
+        <h2 className="text-3xl font-bold text-text text-center">
           Recuperar Contraseña
         </h2>
-        <p className="text-sm text-gray-600 text-center mt-2">
-          Ingresa tu correo y te enviaremos un enlace para restablecer tu
-          contraseña.
+
+        <p className="text-gray-600 text-center mt-2">
+          Ingresa tu correo electrónico y te enviaremos un enlace para
+          restablecer tu contraseña.
         </p>
-        
+
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <input
             type="email"
-            placeholder="Correo Electrónico"
+            placeholder="Correo electrónico"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={isLoading}
-            className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            className="border p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          
+
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
           >
-            {isLoading ? "Enviando..." : "Enviar enlace"}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Enviando...
+              </>
+            ) : (
+              "Enviar enlace de recuperación"
+            )}
           </button>
-          
+
           {message && (
-            <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-md text-sm">
+            <div
+              className={`p-3 rounded-md text-center text-sm ${isError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+            >
               {message}
-            </div>
-          )}
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
-              {error}
             </div>
           )}
         </form>
 
-        <div className="mt-6 text-center">
-          <Link 
-            href="/login" 
-            className="text-blue-600 hover:text-blue-800 text-sm transition-colors"
-          >
-            ← Volver al login
+        <p className="text-center text-sm text-gray-600 mt-6">
+          <Link href="/login" className="text-primary hover:underline">
+            ← Volver al inicio de sesión
           </Link>
-        </div>
+        </p>
+
+        <p className="mt-4 text-gray-600 text-center text-sm">
+          ¿No tienes una cuenta?{" "}
+          <Link href="/register" className="text-primary hover:underline">
+            Regístrate aquí
+          </Link>
+        </p>
       </div>
     </section>
   );
-}
+};
+
+export default ForgotPasswordPage;

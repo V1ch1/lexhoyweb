@@ -8,7 +8,7 @@ const nextConfig = {
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
   },
   images: {
-    domains: ['oepcitgbnqylfpdryffx.supabase.co'],
+    domains: ["oepcitgbnqylfpdryffx.supabase.co", "lexhoy.com"],
   },
 };
 
