@@ -364,7 +364,7 @@ export class SyncService {
           provincia: despacho.sedes?.[0]?.provincia || '',
           telefono: despacho.sedes?.[0]?.telefono || '',
           email_contacto: despacho.sedes?.[0]?.email_contacto || '',
-          _despacho_sedes: despacho.sedes?.map((sede: any) => {
+          _despacho_sedes: despacho.sedes?.map((sede: Sede) => {
             // Construir dirección completa desde campos separados
             const direccionPartes = [
               sede.calle && sede.numero ? `${sede.calle} ${sede.numero}` : sede.calle,

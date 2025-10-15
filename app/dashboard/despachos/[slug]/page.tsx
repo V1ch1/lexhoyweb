@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Image from 'next/image';
 import { slugify } from "@/lib/slugify";
 import {
   BuildingOfficeIcon,
@@ -636,9 +637,11 @@ export default function DespachoPage() {
                   {editingSedeId === sedes[activeSedeTab].id ? (
                     <div className="space-y-3">
                       {editSedeData?.foto_perfil && (
-                        <img 
+                        <Image 
                           src={editSedeData.foto_perfil} 
                           alt="Foto de perfil" 
+                          width={128}
+                          height={128}
                           className="w-32 h-32 object-cover rounded-lg border border-gray-300"
                         />
                       )}
@@ -673,9 +676,11 @@ export default function DespachoPage() {
                     </div>
                   ) : (
                     sedes[activeSedeTab].foto_perfil ? (
-                      <img 
+                      <Image 
                         src={sedes[activeSedeTab].foto_perfil} 
                         alt="Foto de perfil" 
+                        width={128}
+                        height={128}
                         className="w-32 h-32 object-cover rounded-lg border border-gray-300"
                       />
                     ) : (
