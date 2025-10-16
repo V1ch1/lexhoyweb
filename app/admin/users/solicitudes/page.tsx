@@ -28,6 +28,9 @@ export default function SolicitudesPage() {
     type: "success" | "error" | "info" | "warning";
     message: string;
   } | null>(null);
+  
+  // Estado para rastrear las solicitudes que se están procesando
+  const [processingSolicitudes, setProcessingSolicitudes] = useState<{[key: string]: 'approving' | 'rejecting' | null}>({});
 
   const loadSolicitudes = useCallback(async () => {
     try {
@@ -75,6 +78,11 @@ export default function SolicitudesPage() {
 
   const handleApproveSolicitud = async (solicitudId: string, notas?: string) => {
     try {
+      // Marcar esta solicitud como en proceso de aprobación
+      setProcessingSolicitudes(prev => ({
+        ...prev,
+        [solicitudId]: 'approving'
+      }));
       const { createClient } = await import("@supabase/supabase-js");
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -120,11 +128,22 @@ export default function SolicitudesPage() {
         type: "error",
         message: error instanceof Error ? error.message : "Error al aprobar la solicitud.",
       });
+    } finally {
+      // Quitar el estado de procesamiento independientemente del resultado
+      setProcessingSolicitudes(prev => ({
+        ...prev,
+        [solicitudId]: null
+      }));
     }
   };
 
   const handleRejectSolicitud = async (solicitudId: string, notas: string) => {
     try {
+      // Marcar esta solicitud como en proceso de rechazo
+      setProcessingSolicitudes(prev => ({
+        ...prev,
+        [solicitudId]: 'rejecting'
+      }));
       const { createClient } = await import("@supabase/supabase-js");
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -167,6 +186,12 @@ export default function SolicitudesPage() {
         type: "error",
         message: error instanceof Error ? error.message : "Error al rechazar la solicitud.",
       });
+    } finally {
+      // Quitar el estado de procesamiento independientemente del resultado
+      setProcessingSolicitudes(prev => ({
+        ...prev,
+        [solicitudId]: null
+      }));
     }
   };
 
@@ -264,30 +289,63 @@ export default function SolicitudesPage() {
                 <div className="flex gap-3 mt-2">
                   <button
                     onClick={() => handleApproveSolicitud(solicitud.id)}
-                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
+                    disabled={!!processingSolicitudes[solicitud.id]}
+                    className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white ${
+                      processingSolicitudes[solicitud.id] === 'approving'
+                        ? 'bg-green-400 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+                    }`}
                   >
-                    <CheckCircleIcon className="h-5 w-5" />
-                    Aprobar
+                    {processingSolicitudes[solicitud.id] === 'approving' ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-4 w-4 mr-1" />
+                        Aprobar
+                      </>
+                    )}
                   </button>
                   <button
-                    onClick={() =>
-                      handleRejectSolicitud(
-                        solicitud.id,
-                        "Rechazado por el administrador"
-                      )
-                    }
-                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
+                    onClick={() => {
+                      const notas = prompt("Motivo del rechazo:");
+                      if (notas) {
+                        handleRejectSolicitud(solicitud.id, notas);
+                      }
+                    }}
+                    disabled={!!processingSolicitudes[solicitud.id]}
+                    className={`inline-flex items-center px-3 py-1.5 border ${
+                      processingSolicitudes[solicitud.id] === 'rejecting'
+                        ? 'border-red-300 bg-red-50 cursor-not-allowed'
+                        : 'border-gray-300 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                    } shadow-sm text-xs font-medium rounded-md text-gray-700`}
                   >
-                    <XCircleIcon className="h-5 w-5" />
-                    Rechazar
+                    {processingSolicitudes[solicitud.id] === 'rejecting' ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <XCircleIcon className="h-4 w-4 mr-1 text-red-500" />
+                        Rechazar
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Información adicional */}
-            {(solicitud.despacho_nombre || solicitud.datosDespacho || solicitud.mensaje) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                 {solicitud.despacho_nombre && (
                   <div className="flex items-start gap-2 text-sm">
                     <BuildingOfficeIcon className="h-4 w-4 text-gray-400 mt-0.5" />
@@ -336,7 +394,6 @@ export default function SolicitudesPage() {
                   </div>
                 )}
               </div>
-            )}
           </div>
         ))}
       </div>
