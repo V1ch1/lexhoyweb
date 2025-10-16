@@ -1,16 +1,19 @@
+"use client";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client";
+
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
 
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
-// Utilidad para decodificar entidades HTML
+// Función para decodificar entidades HTML
 function decodeHtmlEntities(str: string) {
-  if (!str) return "";
+  if (!str) return '';
   return str
     .replace(/&#([0-9]{1,4});/g, (match, dec) => String.fromCharCode(dec))
     .replace(/&amp;/g, "&")
@@ -21,7 +24,6 @@ function decodeHtmlEntities(str: string) {
     .replace(/&nbsp;/g, " ")
     .replace(/&#8211;/g, "–");
 }
-import { supabase } from "@/lib/supabase";
 import { slugify } from "@/lib/slugify";
 
 // ...existing code...
@@ -157,78 +159,98 @@ const DespachosPage = () => {
     }
   };
 
+  // Estado para controlar si ya se ha enviado una solicitud exitosa
+  const [solicitudExitosa, setSolicitudExitosa] = useState(false);
+
   // Solicitar propiedad del despacho
   const handleSolicitarPropiedad = async () => {
-    if (!despachoSolicitar || !user?.email || !user?.id) return;
-    setSolicitandoPropiedad(true);
-    setMensajePropiedad(null);
+    // Validar que tengamos los datos necesarios y que no haya una solicitud en curso o exitosa
+    if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad || solicitudExitosa) return;
+    
+    try {
+      // Iniciar estado de carga
+      setSolicitandoPropiedad(true);
+      setMensajePropiedad(null);
 
-    // Obtener datos completos del usuario
-    const { data: userData } = await supabase
-      .from("users")
-      .select("nombre, apellidos")
-      .eq("id", user.id)
-      .single();
+      // Obtener datos completos del usuario
+      const { data: userData } = await supabase
+        .from("users")
+        .select("nombre, apellidos")
+        .eq("id", user.id)
+        .single();
 
-    // Crear solicitud pendiente de aprobación
-    const { data: solicitudCreada, error } = await supabase
-      .from("solicitudes_despacho")
-      .insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: userData
-          ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
-          : user.email,
-        despacho_id: despachoSolicitar.object_id || despachoSolicitar.id, // Usar object_id (WordPress ID)
-        despacho_nombre: despachoSolicitar.nombre,
-        despacho_localidad: despachoSolicitar.localidad,
-        despacho_provincia: despachoSolicitar.provincia,
-        estado: "pendiente",
-      })
-      .select()
-      .single();
+      // Crear solicitud pendiente de aprobación
+      const { data: solicitudCreada, error } = await supabase
+        .from("solicitudes_despacho")
+        .insert({
+          user_id: user.id,
+          user_email: user.email,
+          user_name: userData
+            ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
+            : user.email,
+          despacho_id: despachoSolicitar.object_id || despachoSolicitar.id,
+          despacho_nombre: despachoSolicitar.nombre,
+          despacho_localidad: despachoSolicitar.localidad,
+          despacho_provincia: despachoSolicitar.provincia,
+          estado: "pendiente",
+        })
+        .select()
+        .single();
 
-    console.log("✅ Solicitud creada:", solicitudCreada);
+      if (error) throw error;
 
-    if (error) {
-      setMensajePropiedad({
-        tipo: "error",
-        texto: "Error al enviar solicitud: " + error.message,
+      console.log("✅ Solicitud creada:", solicitudCreada);
+
+      // Marcar la solicitud como exitosa
+      setSolicitudExitosa(true);
+
+      // Enviar notificación al administrador (sin esperar respuesta)
+      fetch("/api/notificar-solicitud", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          solicitudId: solicitudCreada.id,
+          userName: solicitudCreada.user_name,
+          userEmail: solicitudCreada.user_email,
+          despachoNombre: solicitudCreada.despacho_nombre,
+          despachoLocalidad: solicitudCreada.despacho_localidad,
+          despachoProvincia: solicitudCreada.despacho_provincia,
+        }),
+      }).catch(err => console.error("Error enviando notificación:", err));
+
+      // Actualizar estado de solicitudes pendientes
+      setSolicitudesPendientes(prev => {
+        const nuevasSolicitudes = new Set(prev);
+        nuevasSolicitudes.add(despachoSolicitar.id);
+        return nuevasSolicitudes;
       });
-    } else {
-      // Enviar notificación y email al super_admin
-      try {
-        await fetch("/api/notificar-solicitud", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            solicitudId: solicitudCreada.id,
-            userName: solicitudCreada.user_name,
-            userEmail: solicitudCreada.user_email,
-            despachoNombre: solicitudCreada.despacho_nombre,
-            despachoLocalidad: solicitudCreada.despacho_localidad,
-            despachoProvincia: solicitudCreada.despacho_provincia,
-          }),
-        });
-      } catch (err) {
-        console.error("Error enviando notificación:", err);
-      }
-
+      
+      // Mostrar mensaje de éxito
       setMensajePropiedad({
         tipo: "success",
         texto: "✅ Solicitud enviada. Un administrador la revisará pronto.",
       });
-      // Agregar a la lista de solicitudes pendientes
-      setSolicitudesPendientes((prev) =>
-        new Set(prev).add(despachoSolicitar.id)
-      );
-      setTimeout(() => {
+
+      // Cerrar el modal después de 2 segundos
+      setTimeout(async () => {
+        // Actualizar las solicitudes pendientes antes de cerrar
+        await cargarSolicitudesPendientes();
+        
         setShowSolicitarModal(false);
         setDespachoSolicitar(null);
         setMensajePropiedad(null);
-      }, 3000);
+        setSolicitudExitosa(false); // Resetear el estado al cerrar
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error("Error al enviar solicitud:", error);
+      setMensajePropiedad({
+        tipo: "error",
+        texto: `Error al enviar la solicitud: ${error.message || 'Inténtalo de nuevo más tarde'}`,
+      });
+    } finally {
+      setSolicitandoPropiedad(false);
     }
-    setSolicitandoPropiedad(false);
   };
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -307,12 +329,77 @@ const DespachosPage = () => {
     setLoadingDespachos(false);
   };
 
-  // useEffect: llama a fetchDespachos cuando user está cargado y cambia page/search
+  // Función para cargar las solicitudes pendientes del usuario
+  const cargarSolicitudesPendientes = useCallback(async () => {
+    if (!user?.id) {
+      console.log('No hay usuario, no se pueden cargar solicitudes pendientes');
+      return;
+    }
+    
+    console.log('Cargando solicitudes pendientes para el usuario:', user.id);
+    
+    try {
+      // Obtener las solicitudes pendientes del usuario actual
+      const { data: solicitudes, error } = await supabase
+        .from('solicitudes_despacho')
+        .select('despacho_id')
+        .eq('user_id', user.id)
+        .eq('estado', 'pendiente');
+
+      if (error) throw error;
+
+      console.log('Solicitudes pendientes encontradas:', solicitudes);
+
+      if (solicitudes && solicitudes.length > 0) {
+        // Extraer los IDs de los despachos con solicitud pendiente
+        const idsPendientes = solicitudes.map(s => String(s.despacho_id));
+        console.log('IDs de despachos con solicitud pendiente:', idsPendientes);
+        
+        // Actualizar el estado con los nuevos IDs
+        setSolicitudesPendientes(new Set(idsPendientes));
+      } else {
+        console.log('No se encontraron solicitudes pendientes');
+        setSolicitudesPendientes(new Set());
+      }
+    } catch (error) {
+      console.error('Error cargando solicitudes pendientes:', error);
+      setSolicitudesPendientes(new Set());
+    }
+  }, [user?.id]);
+
+  // Cargar despachos y solicitudes pendientes cuando el usuario esté disponible
   useEffect(() => {
-    if (!user) return;
-    fetchDespachos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, page, search]);
+    if (!user) {
+      console.log('Usuario no autenticado, no se pueden cargar datos');
+      return;
+    }
+    
+    console.log('Cargando datos para el usuario:', user.id);
+    
+    const cargarDatos = async () => {
+      try {
+        console.log('Iniciando carga de datos...');
+        
+        // Primero cargar las solicitudes pendientes
+        await cargarSolicitudesPendientes();
+        
+        // Luego cargar los despachos
+        await fetchDespachos();
+        
+        console.log('Datos cargados correctamente');
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      }
+    };
+    
+    cargarDatos();
+    
+    // Limpiar el estado al desmontar el componente
+    return () => {
+      console.log('Limpiando estado de solicitudes pendientes');
+      setSolicitudesPendientes(new Set());
+    };
+  }, [user, page, search, cargarSolicitudesPendientes]);
 
   // Calcular totalPages para la paginación
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -380,24 +467,34 @@ const DespachosPage = () => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
+                  if (solicitandoPropiedad) return;
                   setShowSolicitarModal(false);
                   setDespachoSolicitar(null);
                   setMensajePropiedad(null);
+                  setSolicitudExitosa(false);
                 }}
-                disabled={solicitandoPropiedad}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
+                disabled={solicitandoPropiedad || solicitudExitosa}
+                className={`px-4 py-2 rounded ${
+                  solicitandoPropiedad || solicitudExitosa
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
               >
-                Cancelar
+                {solicitandoPropiedad ? 'Espere...' : 'Cancelar'}
               </button>
               <button
                 onClick={handleSolicitarPropiedad}
-                disabled={solicitandoPropiedad}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                disabled={solicitandoPropiedad || solicitudExitosa}
+                className={`px-4 py-2 rounded flex items-center justify-center gap-2 min-w-[120px] ${
+                  (solicitandoPropiedad || solicitudExitosa)
+                    ? 'bg-green-500 cursor-not-allowed text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
               >
                 {solicitandoPropiedad ? (
                   <>
                     <svg
-                      className="animate-spin h-4 w-4"
+                      className="animate-spin h-4 w-4 text-white"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -419,7 +516,7 @@ const DespachosPage = () => {
                     Procesando...
                   </>
                 ) : (
-                  "Confirmar"
+                  'Confirmar'
                 )}
               </button>
             </div>
@@ -763,67 +860,97 @@ const DespachosPage = () => {
                             )}
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {/* Solo puede editar si es super_admin O es el propietario del despacho */}
-                            {user?.role === "super_admin" ||
-                            d.owner_email === user?.email ? (
-                              <button
-                                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                                onClick={() => {
-                                  const slug = d.slug || slugify(d.nombre);
-                                  router.push(`/dashboard/despachos/${slug}`);
-                                }}
-                              >
-                                Ver/Editar
-                              </button>
-                            ) : !d.owner_email ? (
-                              solicitudesPendientes.has(d.id) ? (
-                                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                            {(() => {
+                              // Usar object_id para la comparación, ya que es el que se guarda en solicitudes_despacho
+                              const despachoId = d.object_id ? String(d.object_id) : String(d.id);
+                              // Verificar si hay alguna solicitud pendiente para este despacho
+                              const tieneSolicitud = Array.from(solicitudesPendientes).some(
+                                id => String(id) === despachoId
+                              );
+                              
+                              console.log('Despacho:', {
+                                id: d.id,
+                                object_id: d.object_id,
+                                nombre: d.nombre,
+                                tieneSolicitud,
+                                solicitudesPendientes: Array.from(solicitudesPendientes)
+                              });
+                              
+                              // Si es admin o propietario, mostrar botón de editar
+                              if (user?.role === "super_admin" || d.owner_email === user?.email) {
+                                return (
+                                  <button
+                                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
+                                    onClick={() => {
+                                      const slug = d.slug || slugify(d.nombre);
+                                      router.push(`/dashboard/despachos/${slug}`);
+                                    }}
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                  Pendiente
+                                    Ver/Editar
+                                  </button>
+                                );
+                              }
+                              
+                              // Si no tiene dueño
+                              if (!d.owner_email) {
+                                // Si ya tiene una solicitud pendiente
+                                if (tieneSolicitud) {
+                                  return (
+                                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                      </svg>
+                                      Pendiente
+                                    </span>
+                                  );
+                                }
+                                
+                                // Si no tiene solicitud pendiente, mostrar botón para solicitar
+                                return (
+                                  <button
+                                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1"
+                                    onClick={() => {
+                                      setDespachoSolicitar(d);
+                                      setShowSolicitarModal(true);
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    Solicitar Propiedad
+                                  </button>
+                                );
+                              }
+                              
+                              // Por defecto, mostrar mensaje de sin permisos
+                              return (
+                                <span className="text-gray-400 text-xs italic">
+                                  Sin permisos
                                 </span>
-                              ) : (
-                                <button
-                                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1"
-                                  onClick={() => {
-                                    setDespachoSolicitar(d);
-                                    setShowSolicitarModal(true);
-                                  }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                  Solicitar Propiedad
-                                </button>
-                              )
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">
-                                Sin permisos
-                              </span>
-                            )}
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { UserService } from "@/lib/userService";
+import RechazarSolicitudModal from "@/components/RechazarSolicitudModal";
 import { SolicitudRegistro } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
 import Toast from "@/components/Toast";
@@ -31,12 +32,24 @@ export default function SolicitudesPage() {
   
   // Estado para rastrear las solicitudes que se están procesando
   const [processingSolicitudes, setProcessingSolicitudes] = useState<{[key: string]: 'approving' | 'rejecting' | null}>({});
+  
+  // Estado para controlar el modal de rechazo
+  const [rechazoModal, setRechazoModal] = useState<{
+    isOpen: boolean;
+    solicitudId: string | null;
+    notas: string;
+  }>({
+    isOpen: false,
+    solicitudId: null,
+    notas: ''
+  });
 
   const loadSolicitudes = useCallback(async () => {
     try {
       const allSolicitudes = await userService.getAllSolicitudes();
-      setSolicitudes(
-        allSolicitudes.map((s) => ({
+      const filteredSolicitudes = allSolicitudes
+        .filter(s => s.estado === 'pendiente')
+        .map((s) => ({
           id: s.id as string,
           user_id: s.user_id as string | undefined,
           user_email: s.user_email as string | undefined,
@@ -45,28 +58,33 @@ export default function SolicitudesPage() {
           despacho_nombre: s.despacho_nombre as string | undefined,
           despacho_localidad: s.despacho_localidad as string | undefined,
           despacho_provincia: s.despacho_provincia as string | undefined,
-          estado: s.estado as "pendiente" | "aprobado" | "rechazado",
+          estado: 'pendiente' as const,
           fechaSolicitud: s.fecha_solicitud
             ? new Date(s.fecha_solicitud as string)
             : new Date(0),
           fechaRespuesta: s.fecha_respuesta
             ? new Date(s.fecha_respuesta as string)
             : undefined,
-          respondidoPor: s.respondidoPor as string | undefined,
-          notasRespuesta: s.notasRespuesta as string | undefined,
-          userCreadoId: s.userCreadoId as string | undefined,
-          despachoCreadoId: s.despachoCreadoId as string | undefined,
+          respondidoPor: s.respondido_por as string | undefined,
+          notasRespuesta: s.notas_respuesta as string | undefined,
+          userCreadoId: s.user_creado_id as string | undefined,
+          despachoCreadoId: s.despacho_creado_id as string | undefined,
           email: s.email as string | undefined,
           nombre: s.nombre as string | undefined,
           apellidos: s.apellidos as string | undefined,
           telefono: s.telefono as string | undefined,
           empresa: s.empresa as string | undefined,
           mensaje: s.mensaje as string | undefined,
-          datosDespacho: s.datosDespacho as SolicitudRegistro["datosDespacho"],
-        }))
-      );
+          datosDespacho: s.datos_despacho as SolicitudRegistro["datosDespacho"],
+        }));
+      
+      setSolicitudes(filteredSolicitudes);
     } catch (error) {
       console.error("Error loading solicitudes:", error);
+      setToast({
+        type: "error",
+        message: "Error al cargar las solicitudes. Por favor, recarga la página."
+      });
     }
   }, []);
 
@@ -137,13 +155,30 @@ export default function SolicitudesPage() {
     }
   };
 
-  const handleRejectSolicitud = async (solicitudId: string, notas: string) => {
+  const handleOpenRechazoModal = (solicitudId: string) => {
+    setRechazoModal({
+      isOpen: true,
+      solicitudId,
+      notas: ''
+    });
+  };
+
+  const handleCloseRechazoModal = () => {
+    setRechazoModal({
+      isOpen: false,
+      solicitudId: null,
+      notas: ''
+    });
+  };
+
+  const handleRejectSolicitud = async (solicitudId: string, notas: string = '') => {
     try {
       // Marcar esta solicitud como en proceso de rechazo
       setProcessingSolicitudes(prev => ({
         ...prev,
         [solicitudId]: 'rejecting'
       }));
+      
       const { createClient } = await import("@supabase/supabase-js");
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -178,16 +213,23 @@ export default function SolicitudesPage() {
         throw new Error(data.error || "Error al rechazar solicitud");
       }
 
-      await loadSolicitudes();
-      setToast({ type: "info", message: "Solicitud rechazada correctamente." });
+      // Actualizar el estado local para eliminar la solicitud rechazada
+      setSolicitudes(prevSolicitudes => 
+        prevSolicitudes.filter(s => s.id !== solicitudId)
+      );
+      
+      setToast({ 
+        type: "success", 
+        message: "Solicitud rechazada correctamente." 
+      });
     } catch (error) {
-      console.error("Error rejecting solicitud:", error);
+      console.error("Error rechazando solicitud:", error);
       setToast({
         type: "error",
         message: error instanceof Error ? error.message : "Error al rechazar la solicitud.",
       });
     } finally {
-      // Quitar el estado de procesamiento independientemente del resultado
+      // Quitar el estado de procesamiento
       setProcessingSolicitudes(prev => ({
         ...prev,
         [solicitudId]: null
@@ -197,16 +239,11 @@ export default function SolicitudesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando solicitudes...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
-
-  const solicitudesPendientes = solicitudes.filter((s) => s.estado === "pendiente");
 
   return (
     <div className="w-full">
@@ -232,13 +269,13 @@ export default function SolicitudesPage() {
           Solicitudes de Despacho
         </h1>
         <p className="text-lg text-gray-600">
-          {solicitudesPendientes.length} solicitudes pendientes de revisión
+          {solicitudes.length} solicitudes pendientes de revisión
         </p>
       </div>
 
       {/* Grid de solicitudes */}
       <div className="grid grid-cols-1 gap-6">
-        {solicitudesPendientes.map((solicitud) => (
+        {solicitudes.map((solicitud) => (
           <div
             key={solicitud.id}
             className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-all duration-200"
@@ -312,12 +349,7 @@ export default function SolicitudesPage() {
                     )}
                   </button>
                   <button
-                    onClick={() => {
-                      const notas = prompt("Motivo del rechazo:");
-                      if (notas) {
-                        handleRejectSolicitud(solicitud.id, notas);
-                      }
-                    }}
+                    onClick={() => handleOpenRechazoModal(solicitud.id)}
                     disabled={!!processingSolicitudes[solicitud.id]}
                     className={`inline-flex items-center px-3 py-1.5 border ${
                       processingSolicitudes[solicitud.id] === 'rejecting'
@@ -398,7 +430,19 @@ export default function SolicitudesPage() {
         ))}
       </div>
 
-      {solicitudesPendientes.length === 0 && (
+      <RechazarSolicitudModal
+        isOpen={rechazoModal.isOpen}
+        onClose={handleCloseRechazoModal}
+        onConfirm={(notas) => {
+          if (rechazoModal.solicitudId) {
+            handleRejectSolicitud(rechazoModal.solicitudId, notas);
+          }
+          handleCloseRechazoModal();
+        }}
+        isLoading={rechazoModal.solicitudId ? !!processingSolicitudes[rechazoModal.solicitudId] : false}
+      />
+
+      {solicitudes.length === 0 && (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
           <ClipboardDocumentListIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-600">No hay solicitudes pendientes</p>
