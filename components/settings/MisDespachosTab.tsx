@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { slugify } from '@/lib/slugify';
+import { Skeleton, DespachoSkeleton } from '@/components/ui/skeleton';
 
 export interface Despacho {
   id: string;
@@ -21,6 +22,7 @@ export interface Despacho {
 interface MisDespachosTabProps {
   userDespachos: Despacho[];
   onDeleteDespacho?: (despachoId: string) => void;
+  isLoading?: boolean;
 }
 
 // Función para decodificar entidades HTML
@@ -31,7 +33,19 @@ function decodeHtmlEntities(text: string): string {
   return textarea.value;
 }
 
-export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: MisDespachosTabProps) {
+export default function MisDespachosTab({ userDespachos, onDeleteDespacho, isLoading = false }: MisDespachosTabProps) {
+  // Mostrar skeleton loading si está cargando
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64 mb-6" />
+        <div className="space-y-4">
+          <DespachoSkeleton />
+          <DespachoSkeleton />
+        </div>
+      </div>
+    );
+  }
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

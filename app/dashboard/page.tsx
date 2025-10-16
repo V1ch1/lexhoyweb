@@ -406,17 +406,19 @@ const DashboardPage = () => {
       )}
 
       {/* Mis Despachos (para despacho_admin) */}
-      {user.role === "despacho_admin" && userDespachos.length > 0 && (
+      {user.role === "despacho_admin" && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
-            <button
-              onClick={() => router.push("/dashboard/despachos")}
-              className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
-            >
-              Gestionar despachos
-              <ArrowRightIcon className="h-4 w-4 ml-1" />
-            </button>
+            {!despachosLoading && userDespachos.length > 0 && (
+              <button
+                onClick={() => router.push("/dashboard/despachos")}
+                className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
+              >
+                Gestionar despachos
+                <ArrowRightIcon className="h-4 w-4 ml-1" />
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {despachosLoading ? (

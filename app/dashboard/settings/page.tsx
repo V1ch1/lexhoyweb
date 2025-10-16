@@ -224,34 +224,33 @@ export default function SettingsPage() {
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   
   // Load user's despachos
-  useEffect(() => {
-    const loadUserDespachos = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/users/${user.id}/despachos`);
-        const data = await response.json();
-        if (response.ok) {
-          setUserDespachos(data);
-        } else {
-          throw new Error(data.message || 'Error al cargar los despachos');
-        }
-      } catch (error) {
-        console.error('Error al cargar los despachos:', error);
-        setMessage({
-          type: 'error',
-          text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
-        });
-      } finally {
-        setLoading(false);
+  const loadUserDespachos = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/users/${user.id}/despachos`);
+      const data = await response.json();
+      if (response.ok) {
+        setUserDespachos(data);
+      } else {
+        throw new Error(data.message || 'Error al cargar los despachos');
       }
-    };
-
-    if (activeSection === 'mis-despachos') {
-      loadUserDespachos();
+    } catch (error) {
+      console.error('Error al cargar los despachos:', error);
+      setMessage({
+        type: 'error',
+        text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [user, activeSection]);
+  };
+
+  // Cargar despachos cuando se monta el componente o cambia el usuario
+  useEffect(() => {
+    loadUserDespachos();
+  }, [user]);
 
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
@@ -329,20 +328,15 @@ export default function SettingsPage() {
           />
         );
       case 'notifications':
-        return <NotificationsTab loading={loading} notifications={{ email_nuevos_leads: false, email_actualizaciones: false, email_sistema: false, push_leads: false, push_mensajes: false }} onUpdate={() => {}} onSubmit={() => {}} />;
+        return <NotificationsTab loading={isLoading} notifications={{ email_nuevos_leads: false, email_actualizaciones: false, email_sistema: false, push_leads: false, push_mensajes: false }} onUpdate={() => {}} onSubmit={() => {}} />;
       case 'mis-despachos':
         return (
-          <MisDespachosTab 
-            userDespachos={userDespachos} 
-            onDeleteDespacho={handleDeleteDespacho} 
+          <MisDespachosTab
+            userDespachos={userDespachos}
+            onDeleteDespacho={handleDeleteDespacho}
+            isLoading={loading}
           />
         );
-      case 'privacy':
-        return <PrivacyTab loading={loading} />;
-      case 'sessions':
-        return <SessionsTab loading={loading} />;
-      default:
-        return null;
     }
   };
 

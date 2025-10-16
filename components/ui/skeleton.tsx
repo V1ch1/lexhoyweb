@@ -55,6 +55,24 @@ export function TableRowSkeleton() {
   );
 }
 
+export function DespachoSkeleton() {
+  return (
+    <div className="space-y-4 p-6 border rounded-lg">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+      <div className="flex justify-end pt-2">
+        <Skeleton className="h-10 w-32" />
+      </div>
+    </div>
+  );
+}
+
 export function DashboardSkeleton() {
   return (
     <div className="space-y-6">
