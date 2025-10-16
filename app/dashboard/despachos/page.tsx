@@ -103,18 +103,58 @@ const DespachosPage = () => {
     if (!selectedUser || !asignarDespachoId) return;
     setUserLoading(true);
     setUserError(null);
-    const { error } = await supabase
-      .from("despachos")
-      .update({ owner_email: selectedUser.email })
-      .eq("id", asignarDespachoId);
-    if (error) {
-      setUserError("Error al asignar propietario");
+    
+    try {
+      // 1. Actualizar el owner_email en la tabla despachos
+      const { error: updateError } = await supabase
+        .from("despachos")
+        .update({ owner_email: selectedUser.email })
+        .eq("id", asignarDespachoId);
+      
+      if (updateError) throw updateError;
+      
+      // 2. Eliminar cualquier relación existente para este despacho
+      const { error: deleteError } = await supabase
+        .from("user_despachos")
+        .delete()
+        .eq("despacho_id", asignarDespachoId);
+      
+      if (deleteError) throw deleteError;
+      
+      // 3. Crear nueva relación en user_despachos
+      const { error: insertError } = await supabase
+        .from("user_despachos")
+        .insert([
+          {
+            user_id: selectedUser.id,
+            despacho_id: asignarDespachoId,
+            fecha_asignacion: new Date().toISOString()
+          }
+        ]);
+      
+      if (insertError) throw insertError;
+      
+      // 4. Actualizar el despacho_nombre en el perfil del usuario
+      const despacho = despachos.find(d => d.id === asignarDespachoId);
+      if (despacho) {
+        await supabase
+          .from("users")
+          .update({ despacho_nombre: despacho.nombre })
+          .eq("id", selectedUser.id);
+      }
+      
+      // Actualizar la UI
+      setShowAsignarModal(false);
+      setSelectedUser(null);
+      setSearchUser("");
+      await fetchDespachos();
+      
+    } catch (error: any) {
+      console.error("Error al asignar propietario:", error);
+      setUserError(`Error al asignar propietario: ${error?.message || 'Error desconocido'}`);
+    } finally {
+      setUserLoading(false);
     }
-    setShowAsignarModal(false);
-    setSelectedUser(null);
-    setSearchUser("");
-    fetchDespachos();
-    setUserLoading(false);
   };
 
   // Solicitar propiedad del despacho

@@ -283,18 +283,33 @@ export default function SettingsPage() {
 
   // Handle despacho deletion
   const handleDeleteDespacho = async (despachoId: string) => {
+    if (!user) return;
+    
     try {
       setLoading(true);
+      
+      // Call the API to disassociate the despacho from the user
+      const response = await fetch(`/api/users/${user.id}/despachos/${despachoId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar el despacho');
+      }
+
+      // Update local state to remove the despacho from the list
       setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
+      
       setMessage({
         type: 'success',
-        text: 'Despacho eliminado correctamente'
+        text: 'Despacho eliminado correctamente. Ahora está disponible para ser asignado a otro usuario.'
       });
     } catch (error) {
       console.error('Error al eliminar el despacho:', error);
       setMessage({
         type: 'error',
-        text: 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
+        text: error instanceof Error ? error.message : 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
       });
     } finally {
       setLoading(false);
