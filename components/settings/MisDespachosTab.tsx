@@ -34,6 +34,11 @@ function decodeHtmlEntities(text: string): string {
 }
 
 export default function MisDespachosTab({ userDespachos, onDeleteDespacho, isLoading = false }: MisDespachosTabProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
   // Mostrar skeleton loading si está cargando
   if (isLoading) {
     return (
@@ -46,10 +51,6 @@ export default function MisDespachosTab({ userDespachos, onDeleteDespacho, isLoa
       </div>
     );
   }
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const handleDeleteClick = (despachoId: string) => {
     setShowDeleteConfirm(despachoId);

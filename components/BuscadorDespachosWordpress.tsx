@@ -3,21 +3,29 @@
 import { useState } from "react";
 
 // Tipos de datos
-interface Ubicacion {
+type StringOrNumber = string | number;
+type Primitive = string | number | boolean | undefined;
+
+interface BaseUbicacion {
   localidad?: string;
   provincia?: string;
   direccion?: string;
   codigo_postal?: string;
-  [key: string]: any;
 }
 
-interface Sede extends Ubicacion {
-  // Puedes añadir más campos específicos de sede si es necesario
+interface Ubicacion extends BaseUbicacion {
+  [key: string]: Primitive | Record<string, unknown>;
 }
 
-interface MetaData extends Ubicacion {
+interface Sede extends BaseUbicacion {
+  localidad: string;
+  provincia: string;
+  [key: string]: Primitive | Record<string, unknown>;
+}
+
+interface MetaData extends BaseUbicacion {
   _despacho_sedes?: Sede[];
-  [key: string]: any;
+  [key: string]: Primitive | Sede[] | Record<string, unknown> | undefined;
 }
 
 interface DespachoWP {
@@ -32,6 +40,9 @@ interface DespachoWP {
   email_contacto?: string;
   telefono?: string;
   ubicacion?: Ubicacion;
+  _fromWordPress?: boolean;
+  _fromSupabase?: boolean;
+  [key: string]: Primitive | { rendered?: string } | MetaData | Ubicacion | undefined;
 }
 
 interface Props {
