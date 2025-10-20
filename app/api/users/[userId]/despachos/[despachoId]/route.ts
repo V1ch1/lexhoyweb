@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+interface Params {
+  params: {
+    userId: string;
+    despachoId: string;
+  };
+}
+
 export async function DELETE(
   request: Request,
-  { params }: { params: { userId: string, despachoId: string } }
-) {
+  { params }: Params
+): Promise<NextResponse> {
   try {
     const { userId, despachoId } = params;
 

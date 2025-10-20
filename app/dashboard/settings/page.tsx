@@ -222,35 +222,35 @@ export default function SettingsPage() {
 
   // State for Mis Despachos
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
-  
-  // Load user's despachos
-  const loadUserDespachos = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/users/${user.id}/despachos`);
-      const data = await response.json();
-      if (response.ok) {
-        setUserDespachos(data);
-      } else {
-        throw new Error(data.message || 'Error al cargar los despachos');
-      }
-    } catch (error) {
-      console.error('Error al cargar los despachos:', error);
-      setMessage({
-        type: 'error',
-        text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Cargar despachos cuando se monta el componente o cambia el usuario
   useEffect(() => {
+    // Load user's despachos
+    const loadUserDespachos = async () => {
+      if (!user) return;
+      
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/users/${user.id}/despachos`);
+        const data = await response.json();
+        if (response.ok) {
+          setUserDespachos(data);
+        } else {
+          throw new Error(data.message || 'Error al cargar los despachos');
+        }
+      } catch (error) {
+        console.error('Error al cargar los despachos:', error);
+        setMessage({
+          type: 'error',
+          text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadUserDespachos();
-  }, [user, loadUserDespachos]);
+  }, [user]);
 
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {

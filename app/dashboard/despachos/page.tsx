@@ -261,72 +261,80 @@ const DespachosPage = () => {
   const PAGE_SIZE = 20;
   const [loadingDespachos, setLoadingDespachos] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Fetch despachos con useEffect bien configurado
-  const fetchDespachos = async () => {
+  // Fetch despachos con useCallback para evitar recreación en cada render
+  const fetchDespachos = useCallback(async () => {
+    if (!user) return;
+    
     setLoadingDespachos(true);
     setError(null);
-    let query = supabase
-      .from("despachos")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-    if (search) {
-      query = query.ilike("nombre", `%${search}%`);
-    }
-    const { data, error, count } = await query;
-    if (error) {
-      console.error("Supabase error al cargar despachos:", error);
-      setError("Error al cargar los despachos: " + JSON.stringify(error));
+    
+    try {
+      // Construir la consulta base
+      let query = supabase
+        .from("despachos")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      
+      // Aplicar filtro de búsqueda si existe
+      if (search) {
+        query = query.ilike("nombre", `%${search}%`);
+      }
+      
+      // Ejecutar la consulta
+      const { data, error, count } = await query;
+      
+      if (error) throw error;
+      
+      if (data) {
+        // Mapear los datos de los despachos
+        const mapped = await Promise.all(
+          data.map(async (d: any) => {
+            let sedePrincipal = null;
+            
+            // Obtener sede principal si el despacho tiene ID
+            if (d.id) {
+              const { data: sedes, error: sedeError } = await supabase
+                .from("sedes")
+                .select("*")
+                .eq("despacho_id", d.id)
+                .eq("es_principal", true)
+                .maybeSingle();
+                
+              if (sedeError) {
+                console.warn(`⚠️ No se pudo obtener sede para despacho ${d.id}:`, sedeError.message);
+              }
+              
+              sedePrincipal = sedes || null;
+            }
+            
+            return {
+              id: d.id,
+              object_id: d.object_id,
+              nombre: decodeHtmlEntities(d.nombre || ''),
+              num_sedes: d.num_sedes || 0,
+              created_at: d.created_at || new Date().toISOString(),
+              estado: d.estado || 'activo',
+              localidad: sedePrincipal?.localidad || "",
+              provincia: sedePrincipal?.provincia || "",
+              telefono: sedePrincipal?.telefono || "",
+              email: sedePrincipal?.email_contacto || "",
+              owner_email: d.owner_email || null,
+            } as DespachoSummary;
+          })
+        );
+        
+        setDespachos(mapped);
+        setTotal(count || 0);
+      }
+    } catch (error) {
+      console.error("Error al cargar despachos:", error);
+      setError("Error al cargar los despachos. Por favor, inténtalo de nuevo.");
       setDespachos([]);
       setTotal(0);
+    } finally {
       setLoadingDespachos(false);
-      return;
     }
-    // Mostrar el objeto recibido en consola para análisis
-
-    // Para cada despacho, obtener la sede principal y el propietario (usuario con ese despacho_id)
-    const mapped = await Promise.all(
-      (data || []).map(async (d: any) => {
-        let sedePrincipal = null;
-        let ownerEmail = null;
-        if (d.id) {
-          // Sede principal - con manejo de errores
-          const { data: sedes, error: sedeError } = await supabase
-            .from("sedes")
-            .select("*")
-            .eq("despacho_id", d.id)
-            .eq("es_principal", true)
-            .maybeSingle();
-
-          if (sedeError) {
-            console.warn(
-              `⚠️ No se pudo obtener sede para despacho ${d.id}:`,
-              sedeError.message
-            );
-          }
-
-          sedePrincipal = sedes || null;
-          // Obtener owner_email directamente del despacho
-          ownerEmail = d.owner_email || null;
-        }
-        return {
-          id: d.id,
-          object_id: d.object_id,
-          nombre: decodeHtmlEntities(d.nombre),
-          num_sedes: d.num_sedes,
-          created_at: d.created_at,
-          estado: d.estado,
-          localidad: sedePrincipal?.localidad || "",
-          provincia: sedePrincipal?.provincia || "",
-          telefono: sedePrincipal?.telefono || "",
-          email: sedePrincipal?.email_contacto || "",
-          owner_email: ownerEmail,
-        };
-      })
-    );
-    setDespachos(mapped);
-    setTotal(count || 0);
-    setLoadingDespachos(false);
   };
 
   // Función para cargar las solicitudes pendientes del usuario
@@ -405,7 +413,7 @@ const DespachosPage = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <>
+    // ... (rest of the code remains the same)
       <ModalAsignarPropietario
         despachoId={asignarDespachoId}
         show={showAsignarModal}
@@ -415,15 +423,23 @@ const DespachosPage = () => {
 
       {/* Modal para solicitar propiedad */}
       {showSolicitarModal && despachoSolicitar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative">
+        <div
+          className={`fixed inset-0 bg-black bg-opacity-50 z-50 ${showSolicitarModal ? 'flex' : 'hidden'} items-center justify-center`}
+          onClick={() => setShowSolicitarModal(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative"
+            role="document"
+          >
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowSolicitarModal(false);
                 setDespachoSolicitar(null);
                 setMensajePropiedad(null);
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -443,10 +459,10 @@ const DespachosPage = () => {
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               Solicitar Propiedad
             </h3>
-            <p className="text-gray-700 mb-4">
-              ¿Deseas solicitar la propiedad del despacho{" "}
-              <strong>&quot;{despachoSolicitar.nombre}&quot;</strong>?
-            </p>
+              <p className="text-gray-700 mb-4">
+                ¿Deseas solicitar la propiedad del despacho{" "}
+                <strong>&quot;{despachoSolicitar?.nombre || 'este despacho'}&quot;</strong>?
+              </p>
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
               <p className="text-sm text-blue-800">
                 <strong>📋 Proceso de aprobación:</strong>
@@ -458,9 +474,10 @@ const DespachosPage = () => {
 
             {mensajePropiedad && (
               <div
-                className={`mb-4 p-3 rounded ${mensajePropiedad.tipo === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                className={`mb-4 p-3 rounded ${mensajePropiedad?.tipo === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                role="alert"
               >
-                {mensajePropiedad.texto}
+                {mensajePropiedad?.texto || 'Ha ocurrido un error'}
               </div>
             )}
 
