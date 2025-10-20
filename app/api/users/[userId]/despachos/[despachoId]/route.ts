@@ -3,17 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-type RouteParams = {
+interface RouteContext {
   params: {
     userId: string;
     despachoId: string;
   };
-};
+}
 
 export async function DELETE(
   request: NextRequest,
-  context: RouteParams
-): Promise<NextResponse> {
+  context: RouteContext
+) {
   try {
     const { userId, despachoId } = context.params;
 
