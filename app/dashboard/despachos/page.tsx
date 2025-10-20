@@ -399,7 +399,7 @@ const DespachosPage = () => {
       console.log('Limpiando estado de solicitudes pendientes');
       setSolicitudesPendientes(new Set());
     };
-  }, [user, page, search, cargarSolicitudesPendientes]);
+  }, [user, page, search, cargarSolicitudesPendientes, fetchDespachos]);
 
   // Calcular totalPages para la paginación
   const totalPages = Math.ceil(total / PAGE_SIZE);

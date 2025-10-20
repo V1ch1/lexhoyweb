@@ -250,7 +250,7 @@ export default function SettingsPage() {
   // Cargar despachos cuando se monta el componente o cambia el usuario
   useEffect(() => {
     loadUserDespachos();
-  }, [user]);
+  }, [user, loadUserDespachos]);
 
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {

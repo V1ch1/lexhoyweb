@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 // Tipos de datos
-type StringOrNumber = string | number;
 type Primitive = string | number | boolean | undefined;
 
 interface BaseUbicacion {
@@ -134,7 +133,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       console.log('📦 Datos recibidos del API:', JSON.parse(JSON.stringify(data)));
 
       // Función para decodificar entidades HTML
-      const decodeHtml = (html: any) => {
+      const decodeHtml = (html: string | { rendered?: string } | null | undefined): string => {
         if (!html) return '';
         const text = typeof html === 'string' ? html : html.rendered || '';
         return text
@@ -147,7 +146,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       };
       
       // Mapear resultados al formato esperado
-      const resultadosFormateados = data.map((d: any) => {
+      const resultadosFormateados = data.map((d: DespachoWP) => {
         console.log('🔍 Estructura del elemento:', JSON.parse(JSON.stringify(d)));
         
         // Extraer datos de ubicación de diferentes estructuras posibles

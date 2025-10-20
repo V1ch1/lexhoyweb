@@ -181,17 +181,47 @@ export async function GET(request: Request) {
     }
     
     // Formatear la respuesta para que coincida con el formato de Supabase
-    const formattedData = data.map((item: any, index: number) => {
+    interface Sede {
+      localidad?: string;
+      provincia?: string;
+      direccion?: string;
+      codigo_postal?: string;
+      telefono?: string;
+      email?: string;
+    }
+
+    interface WordPressItem {
+      id: string | number;
+      title?: string | { rendered?: string };
+      content?: string | { rendered?: string };
+      slug?: string;
+      meta?: {
+        _despacho_sedes?: Sede[];
+        localidad?: string;
+        provincia?: string;
+        email_contacto?: string;
+        telefono?: string;
+      };
+      localidad?: string;
+      provincia?: string;
+      email_contacto?: string;
+      telefono?: string;
+    }
+    
+    const formattedData = data.map((item: WordPressItem) => {
       console.log('📦 Datos completos de WordPress:', JSON.stringify(item, null, 2));
       
       // Extraer las sedes si existen
       const sedes = item.meta?._despacho_sedes || [];
       const sedePrincipal = Array.isArray(sedes) && sedes.length > 0 ? sedes[0] : null;
       
+      const title = typeof item.title === 'object' ? item.title.rendered : item.title;
+      const content = typeof item.content === 'object' ? item.content.rendered : item.content;
+      
       return {
         id: item.id,
-        title: item.title,
-        content: item.content,
+        title: title,
+        content: content,
         // Incluir campos directos para facilitar el acceso
         localidad: sedePrincipal?.localidad || item.meta?.localidad || '',
         provincia: sedePrincipal?.provincia || item.meta?.provincia || '',
