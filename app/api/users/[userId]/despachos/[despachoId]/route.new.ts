@@ -1,21 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-type RouteParams = {
-  params: {
-    userId: string;
-    despachoId: string;
-  };
-};
-
 export async function DELETE(
-  request: NextRequest,
-  context: RouteParams
-): Promise<NextResponse> {
+  request: Request,
+  { params }: { params: { userId: string; despachoId: string } }
+) {
   try {
-    const { userId, despachoId } = context.params;
+    const { userId, despachoId } = params;
 
     if (!userId || !despachoId) {
       return NextResponse.json(
@@ -31,7 +24,7 @@ export async function DELETE(
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 1. Actualizar el owner_email en la tabla despachos a null
+    // 1. Update the owner_email in the despachos table to null
     const { error: updateError } = await supabase
       .from("despachos")
       .update({ 
@@ -57,7 +50,6 @@ export async function DELETE(
       );
     }
 
-    console.log(`Successfully disassociated despacho ${despachoId} from user ${userId}`);
     console.log(`✅ Successfully disassociated despacho ${despachoId} from user ${userId}`);
     return NextResponse.json({ success: true });
 

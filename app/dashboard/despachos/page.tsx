@@ -62,8 +62,8 @@ const DespachosPage = () => {
 
   // Estado para modal de solicitar propiedad
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
-  const [despachoSolicitar, setDespachoSolicitar] =
-    useState<DespachoSummary | null>(null);
+  const [showImportarModal, setShowImportarModal] = useState(false);
+  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
   const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
   const [mensajePropiedad, setMensajePropiedad] = useState<{
     tipo: "success" | "error";
@@ -335,7 +335,7 @@ const DespachosPage = () => {
     } finally {
       setLoadingDespachos(false);
     }
-  };
+  }, [user, page, search, PAGE_SIZE]);
 
   // Función para cargar las solicitudes pendientes del usuario
   const cargarSolicitudesPendientes = useCallback(async () => {
@@ -413,7 +413,7 @@ const DespachosPage = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    // ... (rest of the code remains the same)
+    <>
       <ModalAsignarPropietario
         despachoId={asignarDespachoId}
         show={showAsignarModal}
@@ -424,7 +424,7 @@ const DespachosPage = () => {
       {/* Modal para solicitar propiedad */}
       {showSolicitarModal && despachoSolicitar && (
         <div
-          className={`fixed inset-0 bg-black bg-opacity-50 z-50 ${showSolicitarModal ? 'flex' : 'hidden'} items-center justify-center`}
+          className={`fixed inset-0 bg-black bg-opacity-50 z-50 ${showSolicitarModal ? 'flex items-center justify-center' : 'hidden'}`}
           onClick={() => setShowSolicitarModal(false)}
           role="dialog"
           aria-modal="true"
@@ -1069,7 +1069,7 @@ const DespachosPage = () => {
         {/* Modal para importar desde Lexhoy.com */}
         <div
           id="modal-importar-lexhoy"
-          className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className={`fixed inset-0 bg-black bg-opacity-50 z-50 p-4 ${showImportarModal ? 'flex items-center justify-center' : 'hidden'}`}
         >
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-t-xl flex items-center justify-between">
