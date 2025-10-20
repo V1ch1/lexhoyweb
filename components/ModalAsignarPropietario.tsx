@@ -16,29 +16,51 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; nombre?: string; apellidos?: string; despacho_id?: string } | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
+  // Mantener el foco en el input cuando se actualizan los resultados
   useEffect(() => {
-    if (!show || !searchUser) {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [userResults, show]);
+
+  // Buscar usuarios con un pequeño retraso
+  useEffect(() => {
+    if (!show) {
       setUserResults([]);
       return;
     }
-    setUserLoading(true);
-    setUserError(null);
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, email, nombre, apellidos, despacho_id")
-        .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
-        .limit(10);
-      if (error) {
+
+    // No buscar si el campo está vacío
+    if (!searchUser.trim()) {
+      setUserResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setUserLoading(true);
+      setUserError(null);
+      
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, email, nombre, apellidos, despacho_id")
+          .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
+          .limit(10);
+          
+        if (error) throw error;
+        setUserResults(data || []);
+      } catch (error) {
+        console.error("Error buscando usuarios:", error);
         setUserError("Error al buscar usuarios");
         setUserResults([]);
-      } else {
-        setUserResults(data || []);
+      } finally {
+        setUserLoading(false);
       }
-      setUserLoading(false);
-    };
-    fetchUsers();
+    }, 200); // Pequeño retraso para evitar búsquedas muy rápidas
+
+    return () => clearTimeout(timer);
   }, [searchUser, show]);
 
   const handleAsignar = async () => {
@@ -69,12 +91,14 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold mb-4">Asignar propietario</h3>
         <input
+          ref={inputRef}
           type="text"
           className="border rounded px-3 py-2 w-full mb-2"
           placeholder="Buscar por email o nombre de despacho"
           value={searchUser}
           onChange={e => setSearchUser(e.target.value)}
           disabled={userLoading}
+          autoFocus
         />
         {userLoading && <div className="text-blue-500 mb-2">Buscando...</div>}
         {userError && <div className="text-red-500 mb-2">{userError}</div>}
@@ -95,9 +119,9 @@ const ModalAsignarPropietario: React.FC<Props> = ({ despachoId, show, onClose, o
           ) : null}
         </div>
         {selectedUser && (
-          <div className="mb-2 p-2 border rounded bg-gray-50">
-            <div><b>Seleccionado:</b> {selectedUser.nombre} {selectedUser.apellidos}</div>
-            <div><b>Email:</b> {selectedUser.email}</div>
+          <div className="mb-2 p-3 border border-blue-200 rounded-lg bg-blue-50">
+            <div className="text-gray-800"><b className="text-blue-700">Seleccionado:</b> {selectedUser.nombre} {selectedUser.apellidos}</div>
+            <div className="text-gray-600"><b className="text-blue-700">Email:</b> {selectedUser.email}</div>
           </div>
         )}
         <div className="flex gap-2 mt-4">
