@@ -887,7 +887,7 @@ const DespachosPage = () => {
           id="modal-importar-lexhoy"
           className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         >
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-[90%] max-w-[90%] max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-t-xl flex items-center justify-between">
               <div className="flex items-center gap-3 text-white">
                 <svg
