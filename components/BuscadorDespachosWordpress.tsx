@@ -116,12 +116,25 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         perPage: response.pagination?.perPage || prev.perPage,
       }));
 
-      const data = response.data || response;
+      let data = response.data || response;
 
       if (!data || data.length === 0) {
         setError("No se encontraron despachos con los filtros actuales");
         setResultados([]);
         return;
+      }
+
+      // Aplicar filtros si existen
+      if (filtros.provincia) {
+        data = data.filter(d => 
+          d.meta?._despacho_sedes?.[0]?.provincia === filtros.provincia
+        );
+      }
+
+      if (filtros.localidad) {
+        data = data.filter(d => 
+          d.meta?._despacho_sedes?.[0]?.localidad === filtros.localidad
+        );
       }
 
       setResultados(data);
@@ -197,7 +210,9 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                     <option value="">Todas las provincias</option>
                     {[
                       ...new Set(
-                        resultados.map((d) => d.provincia || "").filter(Boolean)
+                        resultados
+                          .map(d => d.meta?._despacho_sedes?.[0]?.provincia)
+                          .filter(Boolean)
                       ),
                     ].map((provincia) => (
                       <option key={provincia} value={provincia}>
@@ -231,8 +246,8 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                       [
                         ...new Set(
                           resultados
-                            .filter((d) => d.provincia === filtros.provincia)
-                            .map((d) => d.localidad || "")
+                            .filter(d => d.meta?._despacho_sedes?.[0]?.provincia === filtros.provincia)
+                            .map(d => d.meta?._despacho_sedes?.[0]?.localidad)
                             .filter(Boolean)
                         ),
                       ].map((localidad) => (
@@ -343,18 +358,19 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                     {resultados.map((d) => (
                       <tr key={d.object_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {d.title?.rendered || d.nombre}
+                          <div 
+                            className="text-sm font-medium text-gray-900"
+                            dangerouslySetInnerHTML={{ __html: d.title?.rendered || d.nombre || '' }}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {d.meta?._despacho_sedes?.[0]?.localidad || "N/A"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {d.localidad || d.ubicacion?.localidad || "N/A"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {d.provincia || d.ubicacion?.provincia || "N/A"}
+                            {d.meta?._despacho_sedes?.[0]?.provincia || "N/A"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
