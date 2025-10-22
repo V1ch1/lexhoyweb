@@ -84,7 +84,7 @@ const ModalAsignarPropietario = ({
       setSelectedUser(null);
       setSearchUser("");
       setUserResults([]);
-    } catch (error) {
+    } catch (_error) {
       setUserError("Error al asignar propietario");
     } finally {
       setUserLoading(false);

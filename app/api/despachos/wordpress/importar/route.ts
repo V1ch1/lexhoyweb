@@ -215,7 +215,8 @@ export async function POST(request: Request) {
           if (sedeError) throw sedeError;
           
           // Extraemos solo los campos necesarios
-          const { id: wp_sede_id, ...sedeSinId } = sede;
+          // @ts-expect-error - El objeto sede puede tener un id
+          const { id: _wp_sede_id, ...sedeSinId } = sede; // Prefijo con _ para indicar que no se usa
           const datosSede = {
             ...sedeSinId,
             despacho_id: resultado.id,

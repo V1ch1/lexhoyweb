@@ -73,9 +73,9 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   const [, setImportSummary] = useState<{success: boolean; error?: string} | null>(null);
 
   // Buscar despachos en WordPress usando la API real
-  const buscarDespachos = async (
-    e: React.FormEvent | null,
-    page: number = 1
+  const buscarDespachos = useCallback(async (
+    e?: React.FormEvent,
+    page = 1
   ) => {
     e?.preventDefault?.();
     setLoading(true);
@@ -98,7 +98,9 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Error al buscar despachos");
+        throw new Error(
+          typeof errorData?.message === 'string' ? errorData.message : "Error al buscar despachos en WordPress"
+        );
       }
 
       const response = await res.json();
@@ -122,20 +124,20 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
       }
 
       // Asegurarse de que cada despacho tenga un object_id
-      data = data.map((item: any) => ({
+      data = data.map((item: DespachoWP) => ({
         ...item,
         object_id: item.object_id || item.id || String(Math.random())
       }));
 
       // Aplicar filtros si existen
       if (filtros.provincia) {
-        data = data.filter((d: any) => 
+        data = data.filter((d: DespachoWP) => 
           d.meta?._despacho_sedes?.[0]?.provincia === filtros.provincia
         );
       }
 
       if (filtros.localidad) {
-        data = data.filter((d: any) => 
+        data = data.filter((d: DespachoWP) => 
           d.meta?._despacho_sedes?.[0]?.localidad === filtros.localidad
         );
       }
@@ -148,6 +150,21 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
       );
     } finally {
       setLoading(false);
+    }
+  }, [query, pagination.perPage, filtros]);
+
+  // Efecto para búsqueda inicial
+  useEffect(() => {
+    buscarDespachos(undefined, 1);
+  }, [buscarDespachos]);
+
+  // Función para manejar la búsqueda con evento opcional
+  const handleBuscar = (e?: React.FormEvent, page = 1) => {
+    if (e) {
+      e.preventDefault();
+      buscarDespachos(e, page);
+    } else {
+      buscarDespachos(undefined, page);
     }
   };
 
@@ -188,7 +205,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
             if (onClose) onClose();
           }, 1500);
           // Actualizar la lista después de importar
-          buscarDespachos(null, pagination.page);
+          buscarDespachos(undefined, pagination.page);
         } else {
           throw new Error(data.error || "Error desconocido al importar el despacho");
         }
@@ -201,46 +218,32 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     }
   };
 
-  // Resto del código de importación...
+  // Eliminadas las funciones no utilizadas
+  // handlePageChange y handleFilter
 
-  // Efecto para buscar cuando cambian los filtros
-  // Usar useCallback para memoizar la función y evitar bucles infinitos
-  const buscarDespachosMemoized = useCallback(async (
-    e?: React.FormEvent,
-    page: number = 1
-  ) => {
-    e?.preventDefault?.();
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const params = new URLSearchParams();
-      if (filtros.localidad) params.append('localidad', filtros.localidad);
-      if (filtros.provincia) params.append('provincia', filtros.provincia);
-      params.append('page', page.toString());
+  const clearFilters = () => {
+    setFiltros({ localidad: "", provincia: "" });
+    // Usar un pequeño retraso para asegurar que el estado se actualice
+    setTimeout(() => buscarDespachos(undefined, 1), 0);
+  };
 
-      const response = await fetch(`/api/despachos/wordpress/buscar?${params.toString()}`);
-      if (!response.ok) throw new Error('Error al buscar despachos');
-      
-      const data = await response.json();
-      setResultados(data);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Error desconocido');
-      setError(error.message);
-      toast.error('Error al buscar despachos');
-    } finally {
-      setLoading(false);
-    }
-  }, [filtros.localidad, filtros.provincia]);
+  // Función auxiliar para manejar la navegación de páginas
+  const handleNextPage = () => {
+    buscarDespachos(undefined, pagination.page + 1);
+  };
 
-  useEffect(() => {
-    buscarDespachosMemoized();
-  }, [buscarDespachosMemoized]);
+  const handlePrevPage = () => {
+    buscarDespachos(undefined, pagination.page - 1);
+  };
+
+  const handleLastPage = () => {
+    buscarDespachos(undefined, pagination.totalPages);
+  };
 
   return (
     <div className="mb-6">
       <form
-        onSubmit={(e) => buscarDespachosMemoized(e, 1)}
+        onSubmit={handleBuscar}
         className="flex flex-col sm:flex-row gap-4 items-center mb-4"
       >
         <input
@@ -341,9 +344,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                 <div className="flex items-end">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFiltros({ localidad: "", provincia: "" });
-                    }}
+                    onClick={clearFilters}
                     className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md text-sm font-medium transition-colors h-[42px] w-full"
                     disabled={!filtros.localidad && !filtros.provincia}
                   >
@@ -371,7 +372,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                 {pagination.totalPages > 1 && (
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => buscarDespachos(null, 1)}
+                      onClick={() => handleBuscar(undefined, 1)}
                       disabled={pagination.page === 1 || loading}
                       className="px-2 py-1 rounded-md text-sm font-medium disabled:opacity-50"
                       title="Primera página"
@@ -379,7 +380,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                       «
                     </button>
                     <button
-                      onClick={() => buscarDespachos(null, pagination.page - 1)}
+                      onClick={handlePrevPage}
                       disabled={pagination.page === 1 || loading}
                       className="px-3 py-1 rounded-md text-sm font-medium disabled:opacity-50"
                       title="Página anterior"
@@ -390,7 +391,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                       Página {pagination.page} de {pagination.totalPages}
                     </span>
                     <button
-                      onClick={() => buscarDespachos(null, pagination.page + 1)}
+                      onClick={handleNextPage}
                       disabled={
                         pagination.page >= pagination.totalPages || loading
                       }
@@ -401,7 +402,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                     </button>
                     <button
                       onClick={() =>
-                        buscarDespachos(null, pagination.totalPages)
+                        handleLastPage()
                       }
                       disabled={
                         pagination.page >= pagination.totalPages || loading
