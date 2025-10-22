@@ -23,6 +23,7 @@ const ModalAsignarPropietario = ({
   onAsignar: () => void;
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [searchUser, setSearchUser] = useState("");
   const [userResults, setUserResults] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(false);
@@ -34,6 +35,11 @@ const ModalAsignarPropietario = ({
     apellidos?: string;
     despacho_id?: string;
   } | null>(null);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchUser(e.target.value);
+    setSelectedUser(null);
+  };
 
   useEffect(() => {
     if (!show || !searchUser) {
@@ -100,7 +106,6 @@ const ModalAsignarPropietario = ({
         <input
           ref={inputRef}
           type="text"
-          ref={inputRef}
           className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Buscar por email o nombre"
           value={searchUser}
