@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface User {
@@ -27,7 +27,7 @@ const ModalAsignarPropietario = ({
   const [searchUser, setSearchUser] = useState("");
   const [userResults, setUserResults] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState(false);
-  const [userError, setUserError] = useState<string | null>(null);
+  const [_userError, setUserError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<{
     id: string;
     email: string;
@@ -117,10 +117,8 @@ const ModalAsignarPropietario = ({
             Buscando usuarios...
           </div>
         )}
-        {userError && (
-          <div className="text-red-600 font-medium bg-red-50 px-3 py-2 rounded-md mb-3">
-            {userError}
-          </div>
+        {_userError && (
+          <div className="text-red-500 text-sm mb-4">{_userError}</div>
         )}
         <div className="mb-2">
           {userResults.length > 0 ? (

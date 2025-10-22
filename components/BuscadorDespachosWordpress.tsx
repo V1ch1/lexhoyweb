@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from 'react-hot-toast';
 
 // Tipos de datos
@@ -9,16 +9,25 @@ interface Ubicacion {
   provincia?: string;
   direccion?: string;
   codigo_postal?: string;
-  [key: string]: any;
+  [key: string]: string | number | undefined; // Añadido number para permitir id
 }
 
 interface Sede extends Ubicacion {
-  // Puedes añadir más campos específicos de sede si es necesario
+  id?: string | number;
+  nombre?: string;
+  telefono?: string;
+  email?: string;
 }
 
-interface MetaData extends Ubicacion {
+interface MetaData {
   _despacho_sedes?: Sede[];
-  [key: string]: any;
+  telefono?: string;
+  email?: string;
+  localidad?: string;
+  provincia?: string;
+  direccion?: string;
+  codigo_postal?: string;
+  [key: string]: unknown;
 }
 
 interface DespachoWP {
@@ -61,21 +70,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
   // Eliminado: ya no usamos importResult ya que usamos toast
-  const [importSummary, setImportSummary] = useState<{
-    success: boolean;
-    despacho?: {
-      id: string | number;
-      wp_id: string | number;
-      titulo: string;
-      contenido: string;
-      estado: string;
-      fecha_publicacion: string;
-      actualizado_en: string;
-      [key: string]: unknown;
-    };
-    message?: string;
-    error?: string;
-  } | null>(null);
+  const [, setImportSummary] = useState<{success: boolean; error?: string} | null>(null);
 
   // Buscar despachos en WordPress usando la API real
   const buscarDespachos = async (
@@ -209,16 +204,43 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   // Resto del código de importación...
 
   // Efecto para buscar cuando cambian los filtros
-  useEffect(() => {
-    if (resultados.length > 0) {
-      buscarDespachos(null, 1);
+  // Usar useCallback para memoizar la función y evitar bucles infinitos
+  const buscarDespachosMemoized = useCallback(async (
+    e?: React.FormEvent,
+    page: number = 1
+  ) => {
+    e?.preventDefault?.();
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams();
+      if (filtros.localidad) params.append('localidad', filtros.localidad);
+      if (filtros.provincia) params.append('provincia', filtros.provincia);
+      params.append('page', page.toString());
+
+      const response = await fetch(`/api/despachos/wordpress/buscar?${params.toString()}`);
+      if (!response.ok) throw new Error('Error al buscar despachos');
+      
+      const data = await response.json();
+      setResultados(data);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Error desconocido');
+      setError(error.message);
+      toast.error('Error al buscar despachos');
+    } finally {
+      setLoading(false);
     }
   }, [filtros.localidad, filtros.provincia]);
+
+  useEffect(() => {
+    buscarDespachosMemoized();
+  }, [buscarDespachosMemoized]);
 
   return (
     <div className="mb-6">
       <form
-        onSubmit={(e) => buscarDespachos(e, 1)}
+        onSubmit={(e) => buscarDespachosMemoized(e, 1)}
         className="flex flex-col sm:flex-row gap-4 items-center mb-4"
       >
         <input
