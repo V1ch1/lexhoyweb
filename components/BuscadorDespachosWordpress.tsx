@@ -107,14 +107,19 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
       console.log("📊 Resultados:", response);
 
       // Actualizar la paginación con la respuesta del servidor
-      setPagination((prev) => ({
+      const paginationData = response.pagination || {
+        page,
+        total: response.data?.length || response.length || 0,
+        totalPages: 1,
+        perPage: pagination.perPage
+      };
+
+      setPagination(prev => ({
         ...prev,
-        page: response.pagination?.page || page,
-        total: response.pagination?.total || response.length || 0,
-        totalPages: response.pagination?.totalPages || 1,
-        perPage: response.pagination?.perPage || prev.perPage,
+        ...paginationData
       }));
 
+      // Usar data si está presente, de lo contrario usar la respuesta completa
       let data = response.data || response;
 
       if (!data || data.length === 0) {

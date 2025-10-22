@@ -8,14 +8,22 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query") || "";
   const id = searchParams.get("id");
+  const page = parseInt(searchParams.get("page") || "1");
+  const perPage = parseInt(searchParams.get("perPage") || "10");
   
-  console.log('🔍 [WordPress] Búsqueda de despacho:', { query, id });
+  console.log('🔍 [WordPress] Búsqueda de despacho:', { query, id, page, perPage });
   
+  // Si no hay query ni id, devolver lista vacía en lugar de error
   if (!query && !id) {
-    return NextResponse.json(
-      { error: "Se requiere un término de búsqueda o un ID" },
-      { status: 400 }
-    );
+    return NextResponse.json({
+      data: [],
+      pagination: {
+        page,
+        perPage,
+        total: 0,
+        totalPages: 0
+      }
+    });
   }
 
   try {
@@ -29,7 +37,21 @@ export async function GET(request: Request) {
     // Búsqueda por texto
     console.log('🔎 [WordPress] Buscando por texto:', query);
     const resultados = await buscarDespachosPorTexto(query);
-    return NextResponse.json(resultados);
+    
+    // Aplicar paginación
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const paginatedResults = resultados.slice(start, end);
+    
+    return NextResponse.json({
+      data: paginatedResults,
+      pagination: {
+        page,
+        perPage,
+        total: resultados.length,
+        totalPages: Math.ceil(resultados.length / perPage)
+      }
+    });
     
   } catch (error) {
     console.error('❌ [WordPress] Error en la búsqueda:', error);

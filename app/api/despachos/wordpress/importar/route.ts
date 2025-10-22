@@ -107,31 +107,77 @@ export async function POST(request: Request) {
     };
 
     // 2.1 Preparar datos de sedes
-    const sedesData = despacho.meta?._despacho_sedes?.map((sede, index) => {
-      const sedeData = {
-        nombre: `Sede ${index + 1} - ${sede.localidad || 'Principal'}`,
-        descripcion: `Sede en ${sede.localidad || 'ubicación principal'}`,
-        calle: sede.direccion?.split(',')[0]?.trim() || '',
+    const sedesData = (despacho.meta?._despacho_sedes || []).map((sede, index) => {
+      // Mapeo de campos de WordPress a la estructura de la tabla sedes
+      interface SedeData {
+        nombre: string;
+        telefono: string;
+        email_contacto: string;
+        web: string;
+        calle: string;
+        localidad: string;
+        provincia: string;
+        codigo_postal: string;
+        pais: string;
+        estado_verificacion: 'pendiente' | 'verificado' | 'rechazado';
+        estado_registro: 'activo' | 'inactivo' | 'suspendido';
+        is_verified: boolean;
+        activa: boolean;
+        es_principal: boolean;
+        sincronizado_wp: boolean;
+        created_at: string;
+        updated_at: string;
+        descripcion: string;
+        horarios: { horario: string } | null;
+        despacho_id: string;
+        wp_sede_id?: string;
+      }
+
+      const sedeData: SedeData = {
+        // Campos obligatorios
+        nombre: `Sede ${index + 1} - ${sede.localidad || 'Sin ubicación'}`,
+        
+        // Datos de contacto
+        telefono: sede.telefono || '',
+        email_contacto: sede.email || '',
+        web: despacho.meta?._despacho_web || '',
+        
+        // Dirección
+        calle: sede.direccion || '',
         localidad: sede.localidad || '',
         provincia: sede.provincia || '',
         codigo_postal: sede.codigo_postal || '',
-        telefono: sede.telefono || despacho.meta?._despacho_telefono || '',
-        email_contacto: sede.email || despacho.meta?._despacho_email_contacto || '', // Usamos email_contacto en lugar de email
-        web: despacho.meta?._despacho_web || '',
-        es_principal: index === 0,
+        pais: 'España', // Valor por defecto
+        
+        // Estado y verificación
+        estado_verificacion: 'pendiente', // Valores permitidos: 'pendiente', 'verificado', 'rechazado'
+        estado_registro: 'activo', // Valores permitidos: 'activo', 'inactivo', 'suspendido'
+        is_verified: false,
         activa: true,
-        estado_verificacion: 'pendiente',
+        es_principal: index === 0,
         sincronizado_wp: true,
+        
+        // Fechas
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Usar el ID de la sede si está disponible
-        wp_sede_id: sede.id?.toString() || ''
+        
+        // Otros campos con valores por defecto
+        descripcion: despacho.content?.rendered || '',
+        horarios: sede.horario ? { horario: sede.horario } : null,
+        
+        // Relación con el despacho (se establecerá más adelante)
+        despacho_id: '' // Se actualizará con el ID real del despacho
       };
-
+      
+      // Mapear campos adicionales si existen
+      if (sede.id) {
+        sedeData.wp_sede_id = sede.id.toString();
+      }
+      
       console.log('📝 Datos de la sede a guardar:', JSON.stringify(sedeData, null, 2));
-
       return sedeData;
-    }) || [];
+    });
+
     
     // 3. Verificar si el despacho ya existe
     const { data: despachoExistente } = await supabase
@@ -182,9 +228,20 @@ export async function POST(request: Request) {
         console.error('❌ [Supabase] Error al obtener sedes existentes:', fetchError);
       } else {
         // Marcar como inactivas las sedes que ya no están en los datos de WordPress
-        const sedesAEliminar = sedesExistentes.filter(
-          se => !sedesData.some(sd => sd.wp_sede_id && se.wp_sede_id === sd.wp_sede_id)
-        );
+        const sedesAEliminar = sedesExistentes.filter(se => {
+          return !sedesData.some(sd => {
+            // Try to match by wp_sede_id if it exists in both
+            const hasWpSedeIdMatch = se.wp_sede_id && 
+                                  'wp_sede_id' in sd && 
+                                  se.wp_sede_id === sd.wp_sede_id;
+            
+            // Fall back to matching by name and location
+            const hasNameMatch = se.nombre && 'nombre' in sd && se.nombre === sd.nombre;
+            const hasLocationMatch = se.localidad && 'localidad' in sd && se.localidad === sd.localidad;
+            
+            return hasWpSedeIdMatch || (hasNameMatch && hasLocationMatch);
+          });
+        });
         
         for (const sede of sedesAEliminar) {
           const { error: updateError } = await supabase
@@ -202,7 +259,7 @@ export async function POST(request: Request) {
       }
       
       // Luego, insertar o actualizar las sedes
-      for (const [index, sede] of sedesData.entries()) {
+      for (const sede of sedesData) {
         try {
           // Verificar si la sede ya existe (por dirección y localidad)
           const { data: sedeExistente, error: sedeError } = await supabase
@@ -214,51 +271,46 @@ export async function POST(request: Request) {
             
           if (sedeError) throw sedeError;
           
-          // Extraemos solo los campos necesarios
-          // @ts-expect-error - El objeto sede puede tener un id
-          const { id: _wp_sede_id, ...sedeSinId } = sede; // Prefijo con _ para indicar que no se usa
-          const datosSede = {
-            ...sedeSinId,
-            despacho_id: resultado.id,
-            activa: true,
-            updated_at: new Date().toISOString()
-          };
-          
           if (sedeExistente) {
             // Actualizar sede existente
             const { error: updateError } = await supabase
-            .from('sedes')
-            .update(datosSede)
-            .eq('id', sedeExistente.id)
-            .select()
-            .single();
-            
-            if (updateError) throw updateError;
-            console.log(`✅ [Supabase] Sede actualizada: ${datosSede.nombre}`);
+              .from('sedes')
+              .update({
+                ...sede,
+                despacho_id: resultado.id,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', sedeExistente.id);
+              
+            if (updateError) {
+              console.error(`❌ [Supabase] Error al actualizar la sede ${sede.nombre}:`, updateError);
+            } else {
+              console.log(`✅ [Supabase] Sede actualizada: ${sede.nombre}`);
+            }
           } else {
             // Insertar nueva sede
             const { error: insertError } = await supabase
               .from('sedes')
-              .insert([datosSede])
-              .select()
-              .single();
+              .insert([{ ...sede, despacho_id: resultado.id }]);
               
-            if (insertError) throw insertError;
-            console.log(`✅ [Supabase] Nueva sede creada: ${datosSede.nombre}`);
+            if (insertError) {
+              console.error(`❌ [Supabase] Error al insertar la sede ${sede.nombre}:`, insertError);
+            } else {
+              console.log(`✅ [Supabase] Sede insertada: ${sede.nombre}`);
+            }
           }
         } catch (error) {
-          console.error(`❌ [Supabase] Error al procesar la sede ${sede.nombre || index + 1}:`, error);
+          console.error(`❌ [Error] Error al procesar la sede ${sede.nombre}:`, error);
         }
       }
-      
-      console.log(`✅ [Supabase] Procesadas ${sedesData.length} sedes`);
     }
     
     return NextResponse.json({
       success: true,
       message: 'Despacho importado correctamente',
       data: resultado,
-      isNew: !!resultado.isNew
+      isNew: !!resultado.isNew,
+      sedesProcesadas: sedesData.length
     });
     
   } catch (error) {
