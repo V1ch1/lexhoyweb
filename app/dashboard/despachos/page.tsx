@@ -974,11 +974,40 @@ const DespachosPage = () => {
                 </div>
               </div>
               <BuscadorDespachosWordpress
-                onImport={() => {
-                  fetchDespachos();
-                  const modal = document.getElementById(
-                    "modal-importar-lexhoy"
-                  );
+                onImport={async (objectId) => {
+                  try {
+                    // Llamar a la API para importar el despacho
+                    console.log('🔄 [Importar] Iniciando importación del despacho:', objectId);
+                    const response = await fetch('/api/despachos/wordpress/importar', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ objectId }),
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                      throw new Error(result.error || 'Error al importar el despacho');
+                    }
+
+                    // Actualizar la lista de despachos
+                    await fetchDespachos();
+                    
+                    // Retornar éxito
+                    return { success: true };
+                  } catch (error) {
+                    console.error('Error al importar el despacho:', error);
+                    return { 
+                      success: false, 
+                      error: error instanceof Error ? error.message : 'Error desconocido al importar el despacho' 
+                    };
+                  }
+                }}
+                onClose={() => {
+                  // Cerrar el modal
+                  const modal = document.getElementById("modal-importar-lexhoy");
                   if (modal) modal.classList.add("hidden");
                 }}
               />

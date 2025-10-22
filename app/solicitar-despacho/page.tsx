@@ -43,7 +43,7 @@ export default function SolicitarDespacho() {
     try {
       const token = getJWT();
       const res = await fetch(
-        `/api/search-despachos?query=${encodeURIComponent(query)}`,
+        `/api/despachos/wordpress/buscar?query=${encodeURIComponent(query)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

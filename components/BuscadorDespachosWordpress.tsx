@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from 'react-hot-toast';
 
 // Tipos de datos
 interface Ubicacion {
@@ -35,10 +36,11 @@ interface DespachoWP {
 }
 
 interface Props {
-  onImport?: (objectId: string) => void;
+  onImport?: (objectId: string) => Promise<{success: boolean, error?: string}>;
+  onClose?: () => void;
 }
 
-export default function BuscadorDespachosWordpress({ onImport }: Props) {
+export default function BuscadorDespachosWordpress({ onImport, onClose }: Props) {
   const [query, setQuery] = useState("");
   // Estado para la paginación
   const [pagination, setPagination] = useState({
@@ -58,7 +60,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
-  const [importResult, setImportResult] = useState<Record<string, string>>({});
+  // Eliminado: ya no usamos importResult ya que usamos toast
   const [importSummary, setImportSummary] = useState<{
     success: boolean;
     despacho?: {
@@ -83,7 +85,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
     e?.preventDefault?.();
     setLoading(true);
     setError(null);
-    setImportResult({});
+    setImportSummary(null);
 
     try {
       console.log("🔍 Buscando despacho:", { query, page, filtros });
@@ -97,7 +99,7 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         ...(filtros.provincia && { provincia: filtros.provincia }),
       });
 
-      const res = await fetch(`/api/search-despachos?${params.toString()}`);
+      const res = await fetch(`/api/despachos/wordpress/buscar?${params.toString()}`);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -124,15 +126,21 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
         return;
       }
 
+      // Asegurarse de que cada despacho tenga un object_id
+      data = data.map((item: any) => ({
+        ...item,
+        object_id: item.object_id || item.id || String(Math.random())
+      }));
+
       // Aplicar filtros si existen
       if (filtros.provincia) {
-        data = data.filter(d => 
+        data = data.filter((d: any) => 
           d.meta?._despacho_sedes?.[0]?.provincia === filtros.provincia
         );
       }
 
       if (filtros.localidad) {
-        data = data.filter(d => 
+        data = data.filter((d: any) => 
           d.meta?._despacho_sedes?.[0]?.localidad === filtros.localidad
         );
       }
@@ -145,6 +153,56 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImport = async (objectId: string) => {
+    setImportando(objectId);
+    
+    try {
+      if (onImport) {
+        // Si hay un manejador de importación personalizado, usarlo
+        const result = await onImport(objectId);
+        if (result?.success) {
+          toast.success("Despacho importado correctamente");
+          // Cerrar el modal después de 1.5 segundos
+          setTimeout(() => {
+            if (onClose) onClose();
+          }, 1500);
+        } else {
+          throw new Error(result?.error || 'Error al importar el despacho');
+        }
+      } else {
+        // Comportamiento por defecto si no hay manejador personalizado
+        console.log("🔄 [Importar] Iniciando importación del despacho:", objectId);
+        const response = await fetch("/api/despachos/wordpress/importar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ objectId }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log("✅ [Importar] Despacho importado correctamente:", data);
+          toast.success("Despacho importado correctamente");
+          // Cerrar el modal después de 1.5 segundos
+          setTimeout(() => {
+            if (onClose) onClose();
+          }, 1500);
+          // Actualizar la lista después de importar
+          buscarDespachos(null, pagination.page);
+        } else {
+          throw new Error(data.error || "Error desconocido al importar el despacho");
+        }
+      }
+    } catch (error) {
+      console.error("❌ [Importar] Error al importar el despacho:", error);
+      toast.error(`Error al importar el despacho: ${error instanceof Error ? error.message : "Error desconocido"}`);
+    } finally {
+      setImportando(null);
     }
   };
 
@@ -375,13 +433,11 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
-                            onClick={() => importarDespacho(d.object_id)}
+                            onClick={() => handleImport(d.object_id || String(d.id || ''))}
                             className="text-indigo-600 hover:text-indigo-900"
-                            disabled={importando === d.object_id}
+                            disabled={importando === (d.object_id || String(d.id || ''))}
                           >
-                            {importando === d.object_id
-                              ? "Importando..."
-                              : "Importar"}
+                            Importar
                           </button>
                         </td>
                       </tr>
@@ -401,8 +457,3 @@ export default function BuscadorDespachosWordpress({ onImport }: Props) {
   );
 }
 
-// Función auxiliar para importar despachos (debes implementarla según tus necesidades)
-async function importarDespacho(objectId: string) {
-  // Implementa la lógica de importación aquí
-  console.log("Importando despacho:", objectId);
-}
