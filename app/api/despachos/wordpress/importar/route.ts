@@ -20,10 +20,10 @@ interface DespachoWP {
       horario?: string;
       es_principal?: boolean;
     }>;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   slug?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -124,6 +124,7 @@ export async function POST(request: Request) {
         sincronizado_wp: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // Usar el ID de la sede si está disponible
         wp_sede_id: sede.id?.toString() || ''
       };
 
@@ -213,8 +214,8 @@ export async function POST(request: Request) {
             
           if (sedeError) throw sedeError;
           
-          // Eliminamos wp_sede_id ya que no existe en la tabla
-          const { wp_sede_id, ...sedeSinId } = sede;
+          // Extraemos solo los campos necesarios
+          const { id: wp_sede_id, ...sedeSinId } = sede;
           const datosSede = {
             ...sedeSinId,
             despacho_id: resultado.id,
@@ -235,7 +236,7 @@ export async function POST(request: Request) {
             console.log(`✅ [Supabase] Sede actualizada: ${datosSede.nombre}`);
           } else {
             // Insertar nueva sede
-            const { data: nuevaSede, error: insertError } = await supabase
+            const { error: insertError } = await supabase
               .from('sedes')
               .insert([datosSede])
               .select()

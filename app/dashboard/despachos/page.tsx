@@ -8,6 +8,14 @@ import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
 
+interface User {
+  id: string;
+  email: string;
+  nombre?: string;
+  apellidos?: string;
+  despacho_id?: string;
+}
+
 // Utilidad para decodificar entidades HTML
 function decodeHtmlEntities(str: string) {
   if (!str) return "";
@@ -52,11 +60,11 @@ const DespachosPage = () => {
   const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(
     null
   );
-  const [searchUser, setSearchUser] = useState("");
-  const [userResults, setUserResults] = useState<any[]>([]);
-  const [userLoading, setUserLoading] = useState(false);
+  const [searchUser, setSearchUser] = useState<string>("");
+  const [userResults, setUserResults] = useState<User[]>([]);
+  const [userLoading, setUserLoading] = useState<boolean>(false);
   const [userError, setUserError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Estado para modal de solicitar propiedad
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
