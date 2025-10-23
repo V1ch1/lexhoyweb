@@ -1,6 +1,7 @@
 import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/slugify";
-import { DespachosListSkeleton } from "./DespachosListSkeleton";
+import { DespachosListSkeleton } from "./skeletons";
+import { useState } from "react";
 
 interface DespachosListProps {
   search: string;
@@ -50,6 +51,18 @@ export function DespachosList({
   setShowSolicitarModal,
 }: DespachosListProps) {
   const router = useRouter();
+  const [localSearch, setLocalSearch] = useState(search);
+
+  const handleSearch = () => {
+    setSearch(localSearch);
+    setPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   // Si está cargando, mostrar el skeleton independientemente de si hay búsqueda o no
   if (loadingDespachos) {
@@ -75,16 +88,25 @@ export function DespachosList({
           </div>
         </div>
         <div className="mb-4 flex flex-col sm:flex-row gap-2 items-center justify-between">
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg px-4 py-2.5 w-full sm:w-96 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Buscar por nombre, localidad o provincia..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
+          <div className="flex w-full max-w-2xl">
+            <input
+              type="text"
+              className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Buscar por nombre, localidad o provincia..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button
+              onClick={handleSearch}
+              className="px-4 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="ml-1 hidden sm:inline">Buscar</span>
+            </button>
+          </div>
           <div className="flex gap-2 items-center">
             <button
               className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"

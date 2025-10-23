@@ -28,12 +28,12 @@ export function DespachosListSkeleton() {
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <tr key={i}>
-                {Array.from({ length: 8 }).map((_, j) => (
-                  <td key={j} className="px-4 py-3">
-                    <Skeleton className="h-4 w-full" />
+          <tbody className="divide-y divide-gray-200">
+            {[1, 2, 3, 4, 5].map((row) => (
+              <tr key={row}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((cell) => (
+                  <td key={cell} className="px-4 py-3 whitespace-nowrap">
+                    <Skeleton className="h-4 w-3/4" />
                   </td>
                 ))}
               </tr>
@@ -44,3 +44,7 @@ export function DespachosListSkeleton() {
     </div>
   );
 }
+
+export default {
+  DespachosListSkeleton,
+};
