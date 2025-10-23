@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
+import { DespachosListSkeleton } from "@/components/despachos/DespachosListSkeleton";
+import { DespachosList } from "@/components/despachos/DespachosList";
 
 interface User {
   id: string;
@@ -533,275 +535,22 @@ const DespachosPage = () => {
         </div>
 
         {/* Sección principal: Lista de Despachos - Solo si hay búsqueda o hay despachos */}
-        {(search || despachos.length > 0) && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Despachos Disponibles
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {user?.role === "super_admin"
-                      ? "Gestiona todos los despachos de la plataforma"
-                      : "Solicita la propiedad de tu despacho o gestiona los que ya tienes asignados"}
-                  </p>
-                </div>
-              </div>
-              <div className="mb-4 flex flex-col sm:flex-row gap-2 items-center justify-between">
-                <input
-                  type="text"
-                  className="border border-gray-300 rounded-lg px-4 py-2.5 w-full sm:w-96 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Buscar por nombre, localidad o provincia..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                />
-                <div className="flex gap-2 items-center">
-                  <button
-                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={page === 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    Anterior
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    Página {page} de {totalPages || 1}
-                  </span>
-                  <button
-                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={page === totalPages || totalPages === 0}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
-              {loadingDespachos ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Cargando despachos...</p>
-                </div>
-              ) : error ? (
-                <div className="text-center py-8 text-red-500">{error}</div>
-              ) : despachos.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-16 w-16 text-gray-400 mx-auto mb-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
-                  <p className="text-gray-600 text-lg font-medium mb-2">
-                    No se encontraron despachos
-                  </p>
-                  <p className="text-gray-500 text-sm">
-                    Intenta con otros términos de búsqueda o importa tu despacho
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Nombre
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Localidad
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Provincia
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Teléfono
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Email
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Nº Sedes
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Propietario
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
-                      {despachos.map((d) => (
-                        <tr key={d.id}>
-                          <td className="px-4 py-2 text-sm font-semibold text-gray-900">
-                            {d.nombre}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">
-                            {d.localidad || "-"}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">
-                            {d.provincia || "-"}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">
-                            {d.telefono || "-"}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">
-                            {d.email || "-"}
-                          </td>
-                          <td className="px-4 py-2 text-sm  text-gray-700 text-center">
-                            {d.num_sedes}
-                          </td>
-                          <td className="px-4 py-2 text-sm">
-                            {user?.role === "super_admin" || d.owner_email === user?.email ? (
-                              d.owner_email ? (
-                                <button
-                                  onClick={async () => {
-                                    const { data: userData } = await supabase
-                                      .from("users")
-                                      .select("id")
-                                      .eq("email", d.owner_email)
-                                      .single();
-
-                                    if (userData?.id) {
-                                      router.push(`/admin/users/${userData.id}`);
-                                    }
-                                  }}
-                                  className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2"
-                                  title={`Ir a ficha de propietario (${d.owner_email})`}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4 inline"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                    />
-                                  </svg>
-                                  {d.owner_email}
-                                </button>
-                              ) : user?.role === "super_admin" ? (
-                                <button
-                                  className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1"
-                                  onClick={() => {
-                                    setAsignarDespachoId(d.id);
-                                    setShowAsignarModal(true);
-                                  }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 4v16m8-8H4"
-                                    />
-                                  </svg>
-                                  Añadir
-                                </button>
-                              ) : (
-                                <span className="text-gray-400 text-xs italic">
-                                  Sin propietario
-                                </span>
-                              )
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">
-                                {d.owner_email ? 'Asignado' : 'Sin asignar'}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-sm">
-                            {/* Solo puede editar si es super_admin O es el propietario del despacho */}
-                            {user?.role === "super_admin" ||
-                            d.owner_email === user?.email ? (
-                              <button
-                                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                                onClick={() => {
-                                  const slug = d.slug || slugify(d.nombre);
-                                  router.push(`/dashboard/despachos/${slug}`);
-                                }}
-                              >
-                                Ver/Editar
-                              </button>
-                            ) : !d.owner_email ? (
-                              solicitudesPendientes.has(d.id) ? (
-                                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                  Pendiente
-                                </span>
-                              ) : (
-                                <button
-                                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1"
-                                  onClick={() => {
-                                    setDespachoSolicitar(d);
-                                    setShowSolicitarModal(true);
-                                  }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                  Solicitar Propiedad
-                                </button>
-                              )
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">
-                                Sin permisos
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <DespachosList
+          search={search}
+          setSearch={setSearch}
+          page={page}
+          setPage={setPage}
+          totalPages={totalPages}
+          loadingDespachos={loadingDespachos}
+          error={error}
+          despachos={despachos}
+          user={user}
+          setAsignarDespachoId={setAsignarDespachoId}
+          setShowAsignarModal={setShowAsignarModal}
+          solicitudesPendientes={solicitudesPendientes}
+          setDespachoSolicitar={setDespachoSolicitar}
+          setShowSolicitarModal={setShowSolicitarModal}
+        />
 
         {/* Sección: ¿No encuentras tu despacho? */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border-2 border-blue-200 p-6">
