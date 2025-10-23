@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { AuthSimpleService } from "@/lib/auth/services/auth-simple.service";
 import { useAuth } from "@/lib/authContext";
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // Tipado de la variable "form" y "error"
 interface FormState {

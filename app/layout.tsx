@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
 import { AuthProvider } from "@/lib/authContext"; // Contexto de autenticación
 import { Inter, Work_Sans } from "next/font/google";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 import "./globals.css";
 
 // Fuentes
@@ -46,7 +46,7 @@ export default function RootLayout({
 
           {/* Solo mostramos el Footer si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Footer />}
-          <Toaster position="top-right" />
+          <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </body>
     </html>

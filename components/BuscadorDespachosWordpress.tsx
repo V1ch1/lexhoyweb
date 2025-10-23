@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   BusquedaDespachosResponse,
   DespachoWP as BaseDespachoWP,
@@ -172,28 +172,17 @@ export default function BuscadorDespachosWordpress({
     [query, pagination.perPage, filtros]
   );
 
-  // Efecto para buscar cuando cambian los filtros
-  useEffect(() => {
-    if (query.trim()) {
-      buscarDespachos(undefined, 1, { ...filtros });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtros, buscarDespachos, query]);
-
   /**
-   * Maneja el evento de búsqueda
-   * @param {React.FormEvent} [e] - Evento del formulario (opcional)
-   * @param {number} [page=1] - Página a mostrar
+   * Manejador de envío del formulario de búsqueda
+   * @param e - Evento del formulario
    */
-  const handleBuscar = (e?: React.FormEvent, page = 1) => {
-    e?.preventDefault?.();
-
-    // Solo buscar si hay un término de búsqueda
-    if (query.trim()) {
-      buscarDespachos(e, page, { ...filtros });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Solo busca si hay un término de búsqueda o filtros activos
+    if (query.trim() || filtros.localidad || filtros.provincia) {
+      buscarDespachos(e, 1, { ...filtros });
     } else {
-      // Si no hay término de búsqueda, limpiar resultados
-      setResultados([]);
+      toast.info('Por favor, introduce un término de búsqueda o selecciona algún filtro');
       setError("Por favor, introduce un término de búsqueda");
     }
   };
@@ -321,10 +310,8 @@ export default function BuscadorDespachosWordpress({
   const clearFilters = () => {
     const newFilters = { localidad: "", provincia: "" };
     setFiltros(newFilters);
-    // Si hay un término de búsqueda, realizar búsqueda sin filtros
-    if (query.trim()) {
-      buscarDespachos(undefined, 1, newFilters);
-    }
+    // Realizar búsqueda automática al limpiar los filtros
+    buscarDespachos(undefined, 1, newFilters);
   };
 
   // Función auxiliar para manejar la navegación de páginas
@@ -343,7 +330,7 @@ export default function BuscadorDespachosWordpress({
   return (
     <div className="mb-6">
       <form
-        onSubmit={handleBuscar}
+        onSubmit={handleSubmit}
         className="flex flex-col sm:flex-row gap-4 items-center mb-4"
       >
         <input
@@ -355,7 +342,7 @@ export default function BuscadorDespachosWordpress({
           onKeyDown={(e) => {
             // Permitir búsqueda con Enter
             if (e.key === "Enter") {
-              handleBuscar(e);
+              handleSubmit(e);
             }
           }}
           required
@@ -393,11 +380,14 @@ export default function BuscadorDespachosWordpress({
                     className="w-full border border-gray-300 rounded-md p-2 text-sm"
                     value={filtros.provincia}
                     onChange={(e) => {
-                      setFiltros((prev) => ({
-                        ...prev,
+                      const newFilters = {
+                        ...filtros,
                         provincia: e.target.value,
                         localidad: "",
-                      }));
+                      };
+                      setFiltros(newFilters);
+                      // Realizar búsqueda automática al cambiar la provincia
+                      buscarDespachos(undefined, 1, newFilters);
                     }}
                   >
                     <option value="">Todas las provincias</option>
@@ -427,10 +417,13 @@ export default function BuscadorDespachosWordpress({
                     className="w-full border border-gray-300 rounded-md p-2 text-sm"
                     value={filtros.localidad}
                     onChange={(e) => {
-                      setFiltros((prev) => ({
-                        ...prev,
+                      const newFilters = {
+                        ...filtros,
                         localidad: e.target.value,
-                      }));
+                      };
+                      setFiltros(newFilters);
+                      // Realizar búsqueda automática al cambiar la localidad
+                      buscarDespachos(undefined, 1, newFilters);
                     }}
                     disabled={!filtros.provincia}
                   >
@@ -487,7 +480,12 @@ export default function BuscadorDespachosWordpress({
                 {pagination.totalPages > 1 && (
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => handleBuscar(undefined, 1)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPagination(prev => ({ ...prev, page: 1 }));
+                        handleSubmit(e);
+                      }}
                       disabled={pagination.page === 1 || loading}
                       className="px-2 py-1 rounded-md text-sm font-medium disabled:opacity-50 text-black"
                       title="Primera página"
@@ -603,7 +601,11 @@ export default function BuscadorDespachosWordpress({
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            {loading ? "Buscando despachos..." : "No se encontraron resultados"}
+            {loading 
+              ? "Buscando despachos..." 
+              : query.trim() === "" 
+                ? "Ingresa un término de búsqueda para comenzar" 
+                : "No se encontraron resultados"}
           </div>
         )}
       </div>
