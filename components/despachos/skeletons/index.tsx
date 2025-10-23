@@ -45,6 +45,8 @@ export function DespachosListSkeleton() {
   );
 }
 
-export default {
+const despachoSkeletons = {
   DespachosListSkeleton,
 };
+
+export default despachoSkeletons;

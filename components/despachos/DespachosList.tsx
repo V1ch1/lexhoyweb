@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/slugify";
 import { DespachosListSkeleton } from "./skeletons";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface DespachosListProps {
   search: string;
@@ -30,7 +31,18 @@ interface DespachosListProps {
   setAsignarDespachoId: (id: string) => void;
   setShowAsignarModal: (show: boolean) => void;
   solicitudesPendientes: Set<string>;
-  setDespachoSolicitar: (despacho: any) => void;
+  setDespachoSolicitar: (despacho: {
+    id: string;
+    object_id?: string;
+    nombre: string;
+    slug?: string;
+    localidad?: string;
+    provincia?: string;
+    telefono?: string;
+    email?: string;
+    num_sedes: number;
+    owner_email?: string;
+  }) => void;
   setShowSolicitarModal: (show: boolean) => void;
 }
 
@@ -111,7 +123,7 @@ export function DespachosList({
             <button
               className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage(Math.max(1, page - 1))}
             >
               Anterior
             </button>
@@ -121,7 +133,7 @@ export function DespachosList({
             <button
               className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page === totalPages || totalPages === 0}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
             >
               Siguiente
             </button>
@@ -209,14 +221,22 @@ export function DespachosList({
                         d.owner_email ? (
                           <button
                             onClick={async () => {
-                              const { data: userData } = await supabase
-                                .from("users")
-                                .select("id")
-                                .eq("email", d.owner_email)
-                                .single();
+                              if (!d.owner_email) return;
+                              
+                              try {
+                                const { data: userData, error } = await supabase
+                                  .from("users")
+                                  .select("id")
+                                  .eq("email", d.owner_email)
+                                  .single();
 
-                              if (userData?.id) {
-                                router.push(`/admin/users/${userData.id}`);
+                                if (error) throw error;
+
+                                if (userData?.id) {
+                                  router.push(`/admin/users/${userData.id}`);
+                                }
+                              } catch (error) {
+                                console.error("Error fetching user data:", error);
                               }
                             }}
                             className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2"

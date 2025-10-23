@@ -134,7 +134,7 @@ export const DashboardSkeleton = () => (
   </div>
 );
 
-export default {
+const dashboardSkeletons = {
   StatCardSkeleton,
   ActionCardSkeleton,
   LeadsTableSkeleton,
@@ -144,3 +144,5 @@ export default {
   RecentDespachosSkeleton,
   DashboardSkeleton,
 };
+
+export default dashboardSkeletons;

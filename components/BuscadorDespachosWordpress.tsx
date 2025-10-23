@@ -136,17 +136,24 @@ export default function BuscadorDespachosWordpress({
 
         // Asegurarse de que cada despacho tenga un object_id
         const processedData = data.map((item: BaseDespachoWP) => {
-          const itemAny = item as any; // Uso temporal para acceder a propiedades dinámicas
+          const itemWithMeta = item as BaseDespachoWP & {
+            object_id?: string;
+            nombre?: string;
+            localidad?: string;
+            provincia?: string;
+            email_contacto?: string;
+            telefono?: string;
+          };
+          
           return {
             ...item,
             object_id:
-              itemAny.object_id || item.id?.toString() || String(Math.random()),
-            nombre: itemAny.nombre || item.title?.rendered || "Sin nombre",
-            localidad: itemAny.localidad || item.meta?.localidad || "",
-            provincia: itemAny.provincia || item.meta?.provincia || "",
-            email_contacto:
-              itemAny.email_contacto || item.meta?.email_contacto || "",
-            telefono: itemAny.telefono || item.meta?.telefono || "",
+              itemWithMeta.object_id || item.id?.toString() || String(Math.random()),
+            nombre: itemWithMeta.nombre || item.title?.rendered || "Sin nombre",
+            localidad: itemWithMeta.localidad || item.meta?.localidad || "",
+            provincia: itemWithMeta.provincia || item.meta?.provincia || "",
+            email_contacto: itemWithMeta.email_contacto || item.meta?.email_contacto || "",
+            telefono: itemWithMeta.telefono || item.meta?.telefono || "",
           } as LocalDespachoWP;
         });
 
@@ -170,7 +177,8 @@ export default function BuscadorDespachosWordpress({
     if (query.trim()) {
       buscarDespachos(undefined, 1, { ...filtros });
     }
-  }, [filtros.localidad, filtros.provincia]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros, buscarDespachos, query]);
 
   /**
    * Maneja el evento de búsqueda
