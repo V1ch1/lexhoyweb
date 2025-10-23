@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { 
+  BusquedaDespachosResponse, 
+  BusquedaDespachosParams, 
+  DespachoWP 
+} from "@/types/wordpress";
 
 /**
  * Busca despachos en WordPress
@@ -6,12 +11,21 @@ import { NextResponse } from "next/server";
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get("query") || "";
-  const id = searchParams.get("id");
-  const provincia = searchParams.get("provincia") || "";
-  const localidad = searchParams.get("localidad") || "";
-  const page = parseInt(searchParams.get("page") || "1");
-  const perPage = parseInt(searchParams.get("perPage") || "10");
+  
+  // Asegurarse de que los valores numéricos tengan valores por defecto
+  const page = parseInt(searchParams.get("page") || "1") || 1;
+  const perPage = parseInt(searchParams.get("perPage") || "10") || 10;
+  
+  const params: Required<BusquedaDespachosParams> = {
+    query: searchParams.get("query") || "",
+    id: searchParams.get("id") || null,
+    provincia: searchParams.get("provincia") || "",
+    localidad: searchParams.get("localidad") || "",
+    page,
+    perPage
+  };
+  
+  const { query, id, provincia, localidad } = params;
   
   console.log('🔍 [WordPress] Búsqueda de despacho:', { 
     query, 
@@ -40,20 +54,31 @@ export async function GET(request: Request) {
     if (id) {
       console.log('🌐 [WordPress] Buscando por ID:', id);
       const despacho = await buscarDespachoPorId(id);
-      return NextResponse.json(despacho ? [despacho] : []);
+      const response: BusquedaDespachosResponse = {
+        data: despacho ? [despacho] : [],
+        pagination: {
+          page: 1,
+          perPage: 1,
+          total: despacho ? 1 : 0,
+          totalPages: 1
+        }
+      };
+      return NextResponse.json<BusquedaDespachosResponse>(response);
     }
     
     // Búsqueda por texto
     console.log('🔎 [WordPress] Buscando por texto:', { query, provincia, localidad });
-    let resultados = await buscarDespachosPorTexto(query);
+    // Asegurarse de que query sea string (aunque ya tiene valor por defecto '')
+    const searchQuery = query || '';
+    let resultados = await buscarDespachosPorTexto(searchQuery);
     
     // Aplicar filtros si existen
     if (provincia || localidad) {
-      resultados = resultados.filter((despacho: any) => {
+      resultados = resultados.filter((despacho) => {
         const sedes = despacho.meta?._despacho_sedes || [];
         
         // Si no hay sedes, no pasa ningún filtro
-        if (!sedes.length) return false;
+        if (!sedes.length || !sedes[0]) return false;
         
         // Filtrar por provincia si se especificó
         if (provincia && sedes[0].provincia !== provincia) {
@@ -70,19 +95,23 @@ export async function GET(request: Request) {
     }
     
     // Aplicar paginación
-    const start = (page - 1) * perPage;
-    const end = start + perPage;
-    const paginatedResults = resultados.slice(start, end);
-    
-    return NextResponse.json({
-      data: paginatedResults,
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    const resultadosPaginados = resultados.slice(startIndex, endIndex);
+    const total = resultados.length;
+    const totalPages = Math.ceil(total / perPage);
+
+    const response: BusquedaDespachosResponse = {
+      data: resultadosPaginados,
       pagination: {
         page,
         perPage,
-        total: resultados.length,
-        totalPages: Math.ceil(resultados.length / perPage)
-      }
-    });
+        total,
+        totalPages,
+      },
+    };
+
+    return NextResponse.json<BusquedaDespachosResponse>(response);
     
   } catch (error) {
     console.error('❌ [WordPress] Error en la búsqueda:', error);
@@ -115,20 +144,21 @@ async function buscarDespachoPorId(id: string) {
       "Content-Type": "application/json",
     },
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ [WordPress] Error en la respuesta:', response.status, errorText);
+    console.error('❌ [WordPress] Error en la búsqueda:', response.status, errorText);
     return null;
   }
-  
-  return await response.json();
+
+  const data = await response.json();
+  return data as DespachoWP;
 }
 
 /**
  * Busca despachos por texto en WordPress
  */
-async function buscarDespachosPorTexto(query: string) {
+async function buscarDespachosPorTexto(query: string): Promise<DespachoWP[]> {
   const username = process.env.WORDPRESS_USERNAME;
   const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
   

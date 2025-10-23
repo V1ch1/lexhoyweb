@@ -1,55 +1,40 @@
 "use client";
 
+/**
+ * @module components/BuscadorDespachosWordpress
+ * @description Componente para buscar y gestionar despachos de WordPress
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import toast from 'react-hot-toast';
+import { 
+  BusquedaDespachosResponse,
+  DespachoWP as BaseDespachoWP
+} from "@/types/wordpress";
+import { 
+  LocalDespachoWP,
+  BuscadorDespachosProps
+} from "@/types/despachos";
 
-// Tipos de datos
-interface Ubicacion {
-  localidad?: string;
-  provincia?: string;
-  direccion?: string;
-  codigo_postal?: string;
-  [key: string]: string | number | undefined; // Añadido number para permitir id
-}
-
-interface Sede extends Ubicacion {
-  id?: string | number;
-  nombre?: string;
-  telefono?: string;
-  email?: string;
-}
-
-interface MetaData {
-  _despacho_sedes?: Sede[];
-  telefono?: string;
-  email?: string;
-  localidad?: string;
-  provincia?: string;
-  direccion?: string;
-  codigo_postal?: string;
-  [key: string]: unknown;
-}
-
-interface DespachoWP {
-  object_id: string;
-  id?: string | number;
-  title?: { rendered?: string };
-  content?: { rendered?: string };
-  meta?: MetaData;
-  localidad?: string;
-  provincia?: string;
-  nombre: string;
-  email_contacto?: string;
-  telefono?: string;
-  ubicacion?: Ubicacion;
-}
-
-interface Props {
-  onImport?: (objectId: string) => Promise<{success: boolean, error?: string}>;
-  onClose?: () => void;
-}
-
-export default function BuscadorDespachosWordpress({ onImport, onClose }: Props) {
+/**
+ * Componente para buscar y gestionar despachos desde WordPress
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <BuscadorDespachosWordpress 
+ *   onImport={async (id) => {
+ *     // Lógica de importación
+ *     return { success: true };
+ *   }}
+ *   onClose={() => console.log('Buscador cerrado')}
+ * />
+ * ```
+ * 
+ * @param {BuscadorDespachosProps} props - Propiedades del componente
+ * @returns {JSX.Element} Componente de búsqueda de despachos
+ */
+export default function BuscadorDespachosWordpress({ onImport, onClose }: BuscadorDespachosProps) {
   const [query, setQuery] = useState("");
   // Estado para la paginación
   const [pagination, setPagination] = useState({
@@ -65,7 +50,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     provincia: "",
   });
 
-  const [resultados, setResultados] = useState<DespachoWP[]>([]);
+  const [resultados, setResultados] = useState<LocalDespachoWP[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
@@ -73,7 +58,16 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   // Eliminado: ya no usamos importResult ya que usamos toast
   const [, setImportSummary] = useState<{success: boolean; error?: string} | null>(null);
 
-  // Buscar despachos en WordPress usando la API real
+/**
+   * Realiza una búsqueda de despachos en WordPress
+   * @param {React.FormEvent} [e] - Evento del formulario (opcional)
+   * @param {number} [page=1] - Página actual de resultados
+   * @param {Object} [filters] - Filtros de búsqueda
+   * @param {string} [filters.localidad] - Filtrar por localidad
+   * @param {string} [filters.provincia] - Filtrar por provincia
+   * @returns {Promise<void>}
+   * @private
+   */
   const buscarDespachos = useCallback(async (
     e?: React.FormEvent,
     page = 1,
@@ -105,13 +99,13 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         );
       }
 
-      const response = await res.json();
+      const response: BusquedaDespachosResponse = await res.json();
       console.log("📊 Resultados:", response);
 
       // Actualizar la paginación con la respuesta del servidor
       const paginationData = response.pagination || {
         page,
-        total: response.data?.length || response.length || 0,
+        total: response.data?.length || 0,
         totalPages: 1,
         perPage: pagination.perPage
       };
@@ -121,8 +115,8 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         ...paginationData
       }));
 
-      // Usar data si está presente, de lo contrario usar la respuesta completa
-      let data = response.data || response;
+      // Usar data de la respuesta
+      const data = response.data;
 
       if (!data || data.length === 0) {
         setError("No se encontraron despachos con los filtros actuales");
@@ -131,14 +125,22 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
       }
 
       // Asegurarse de que cada despacho tenga un object_id
-      data = data.map((item: DespachoWP) => ({
-        ...item,
-        object_id: item.object_id || item.id || String(Math.random())
-      }));
+      const processedData = data.map((item: BaseDespachoWP) => {
+        const itemAny = item as any; // Uso temporal para acceder a propiedades dinámicas
+        return {
+          ...item,
+          object_id: itemAny.object_id || item.id?.toString() || String(Math.random()),
+          nombre: itemAny.nombre || item.title?.rendered || 'Sin nombre',
+          localidad: itemAny.localidad || item.meta?.localidad || '',
+          provincia: itemAny.provincia || item.meta?.provincia || '',
+          email_contacto: itemAny.email_contacto || item.meta?.email_contacto || '',
+          telefono: itemAny.telefono || item.meta?.telefono || ''
+        } as LocalDespachoWP;
+      });
 
       // Los filtros ya se aplican en el servidor, no es necesario filtrar aquí
 
-      setResultados(data);
+      setResultados(processedData);
     } catch (err) {
       console.error("❌ Error en buscarDespachos:", err);
       setError(
@@ -156,7 +158,11 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     }
   }, [filtros.localidad, filtros.provincia]);
 
-  // Función para manejar la búsqueda
+  /**
+   * Maneja el evento de búsqueda
+   * @param {React.FormEvent} [e] - Evento del formulario (opcional)
+   * @param {number} [page=1] - Página a mostrar
+   */
   const handleBuscar = (e?: React.FormEvent, page = 1) => {
     e?.preventDefault?.();
     
@@ -170,7 +176,12 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     }
   };
 
-  // Función para verificar si un despacho ya está importado
+  /**
+   * Verifica si un despacho ya ha sido importado
+   * @param {string} objectId - ID del objeto a verificar
+   * @returns {Promise<boolean>} true si ya está importado, false en caso contrario
+   * @private
+   */
   const checkIfImported = useCallback(async (objectId: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/despachos/wordpress/check-imported?objectId=${objectId}`);
@@ -203,6 +214,11 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     }
   }, [resultados, checkIfImported]);
 
+  /**
+   * Maneja la importación de un despacho
+   * @param {string} objectId - ID del despacho a importar
+   * @returns {Promise<void>}
+   */
   const handleImport = async (objectId: string) => {
     if (importedOffices.has(objectId)) {
       toast.error("Este despacho ya ha sido importado");
