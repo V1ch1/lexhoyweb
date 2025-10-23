@@ -31,7 +31,7 @@ interface DespachosListProps {
   setAsignarDespachoId: (id: string) => void;
   setShowAsignarModal: (show: boolean) => void;
   solicitudesPendientes: Set<string>;
-  setDespachoSolicitar: (despacho: {
+  setDespachoSolicitar: React.Dispatch<React.SetStateAction<{
     id: string;
     object_id?: string;
     nombre: string;
@@ -42,7 +42,9 @@ interface DespachosListProps {
     email?: string;
     num_sedes: number;
     owner_email?: string;
-  }) => void;
+    created_at?: string;
+    estado?: string;
+  } | null>>;
   setShowSolicitarModal: (show: boolean) => void;
 }
 
