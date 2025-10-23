@@ -2,16 +2,25 @@ import { NextResponse } from "next/server";
 
 /**
  * Busca despachos en WordPress
- * GET /api/despachos/wordpress/buscar?query=...&id=...
+ * GET /api/despachos/wordpress/buscar?query=...&id=...&provincia=...&localidad=...
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("query") || "";
   const id = searchParams.get("id");
+  const provincia = searchParams.get("provincia") || "";
+  const localidad = searchParams.get("localidad") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const perPage = parseInt(searchParams.get("perPage") || "10");
   
-  console.log('🔍 [WordPress] Búsqueda de despacho:', { query, id, page, perPage });
+  console.log('🔍 [WordPress] Búsqueda de despacho:', { 
+    query, 
+    id, 
+    provincia, 
+    localidad, 
+    page, 
+    perPage 
+  });
   
   // Si no hay query ni id, devolver lista vacía en lugar de error
   if (!query && !id) {
@@ -35,8 +44,30 @@ export async function GET(request: Request) {
     }
     
     // Búsqueda por texto
-    console.log('🔎 [WordPress] Buscando por texto:', query);
-    const resultados = await buscarDespachosPorTexto(query);
+    console.log('🔎 [WordPress] Buscando por texto:', { query, provincia, localidad });
+    let resultados = await buscarDespachosPorTexto(query);
+    
+    // Aplicar filtros si existen
+    if (provincia || localidad) {
+      resultados = resultados.filter((despacho: any) => {
+        const sedes = despacho.meta?._despacho_sedes || [];
+        
+        // Si no hay sedes, no pasa ningún filtro
+        if (!sedes.length) return false;
+        
+        // Filtrar por provincia si se especificó
+        if (provincia && sedes[0].provincia !== provincia) {
+          return false;
+        }
+        
+        // Filtrar por localidad si se especificó
+        if (localidad && sedes[0].localidad !== localidad) {
+          return false;
+        }
+        
+        return true;
+      });
+    }
     
     // Aplicar paginación
     const start = (page - 1) * perPage;
@@ -106,7 +137,8 @@ async function buscarDespachosPorTexto(query: string) {
   }
 
   const auth = Buffer.from(`${username}:${appPassword}`).toString("base64");
-  const searchUrl = `https://lexhoy.com/wp-json/wp/v2/despacho?search=${encodeURIComponent(query)}&per_page=20`;
+  // Asegurarse de incluir los campos de metadatos necesarios (_despacho_sedes)
+  const searchUrl = `https://lexhoy.com/wp-json/wp/v2/despacho?search=${encodeURIComponent(query)}&per_page=50&_fields=id,title,content,meta`;
   
   console.log('🔍 [WordPress] Buscando:', searchUrl);
   

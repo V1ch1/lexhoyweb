@@ -69,13 +69,15 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importando, setImportando] = useState<string | null>(null);
+  const [importedOffices, setImportedOffices] = useState<Set<string>>(new Set());
   // Eliminado: ya no usamos importResult ya que usamos toast
   const [, setImportSummary] = useState<{success: boolean; error?: string} | null>(null);
 
   // Buscar despachos en WordPress usando la API real
   const buscarDespachos = useCallback(async (
     e?: React.FormEvent,
-    page = 1
+    page = 1,
+    filters = filtros // Permitir sobrescribir los filtros
   ) => {
     e?.preventDefault?.();
     setLoading(true);
@@ -83,15 +85,15 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     setImportSummary(null);
 
     try {
-      console.log("🔍 Buscando despacho:", { query, page, filtros });
+      console.log("🔍 Buscando despacho:", { query, page, filters });
 
       // Construir los parámetros de búsqueda
       const params = new URLSearchParams({
         query: query || "",
         page: page.toString(),
         perPage: pagination.perPage.toString(),
-        ...(filtros.localidad && { localidad: filtros.localidad }),
-        ...(filtros.provincia && { provincia: filtros.provincia }),
+        ...(filters.localidad && { localidad: filters.localidad }),
+        ...(filters.provincia && { provincia: filters.provincia }),
       });
 
       const res = await fetch(`/api/despachos/wordpress/buscar?${params.toString()}`);
@@ -134,18 +136,7 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         object_id: item.object_id || item.id || String(Math.random())
       }));
 
-      // Aplicar filtros si existen
-      if (filtros.provincia) {
-        data = data.filter((d: DespachoWP) => 
-          d.meta?._despacho_sedes?.[0]?.provincia === filtros.provincia
-        );
-      }
-
-      if (filtros.localidad) {
-        data = data.filter((d: DespachoWP) => 
-          d.meta?._despacho_sedes?.[0]?.localidad === filtros.localidad
-        );
-      }
+      // Los filtros ya se aplican en el servidor, no es necesario filtrar aquí
 
       setResultados(data);
     } catch (err) {
@@ -158,22 +149,66 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
     }
   }, [query, pagination.perPage, filtros]);
 
-  // Efecto para búsqueda inicial
+  // Efecto para buscar cuando cambian los filtros
   useEffect(() => {
-    buscarDespachos(undefined, 1);
-  }, [buscarDespachos]);
+    if (query.trim()) {
+      buscarDespachos(undefined, 1, { ...filtros });
+    }
+  }, [filtros.localidad, filtros.provincia]);
 
-  // Función para manejar la búsqueda con evento opcional
+  // Función para manejar la búsqueda
   const handleBuscar = (e?: React.FormEvent, page = 1) => {
-    if (e) {
-      e.preventDefault();
-      buscarDespachos(e, page);
+    e?.preventDefault?.();
+    
+    // Solo buscar si hay un término de búsqueda
+    if (query.trim()) {
+      buscarDespachos(e, page, { ...filtros });
     } else {
-      buscarDespachos(undefined, page);
+      // Si no hay término de búsqueda, limpiar resultados
+      setResultados([]);
+      setError("Por favor, introduce un término de búsqueda");
     }
   };
 
+  // Función para verificar si un despacho ya está importado
+  const checkIfImported = useCallback(async (objectId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/despachos/wordpress/check-imported?objectId=${objectId}`);
+      if (!response.ok) return false;
+      const data = await response.json();
+      return data.isImported || false;
+    } catch (error) {
+      console.error("Error al verificar si el despacho está importado:", error);
+      return false;
+    }
+  }, []);
+
+  // Verificar si los despachos ya están importados cuando se cargan los resultados
+  useEffect(() => {
+    const checkImportedOffices = async () => {
+      const imported = new Set<string>();
+      for (const despacho of resultados) {
+        if (despacho.object_id) {
+          const isImported = await checkIfImported(despacho.object_id);
+          if (isImported) {
+            imported.add(despacho.object_id);
+          }
+        }
+      }
+      setImportedOffices(imported);
+    };
+
+    if (resultados.length > 0) {
+      checkImportedOffices();
+    }
+  }, [resultados, checkIfImported]);
+
   const handleImport = async (objectId: string) => {
+    if (importedOffices.has(objectId)) {
+      toast.error("Este despacho ya ha sido importado");
+      return;
+    }
+    
     setImportando(objectId);
     
     try {
@@ -182,6 +217,8 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         const result = await onImport(objectId);
         if (result?.success) {
           toast.success("Despacho importado correctamente");
+          // Actualizar el estado de importados
+          setImportedOffices(prev => new Set(prev).add(objectId));
           // Cerrar el modal después de 1.5 segundos
           setTimeout(() => {
             if (onClose) onClose();
@@ -205,6 +242,8 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         if (data.success) {
           console.log("✅ [Importar] Despacho importado correctamente:", data);
           toast.success("Despacho importado correctamente");
+          // Actualizar el estado de importados
+          setImportedOffices(prev => new Set(prev).add(objectId));
           // Cerrar el modal después de 1.5 segundos
           setTimeout(() => {
             if (onClose) onClose();
@@ -227,9 +266,12 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
   // handlePageChange y handleFilter
 
   const clearFilters = () => {
-    setFiltros({ localidad: "", provincia: "" });
-    // Usar un pequeño retraso para asegurar que el estado se actualice
-    setTimeout(() => buscarDespachos(undefined, 1), 0);
+    const newFilters = { localidad: "", provincia: "" };
+    setFiltros(newFilters);
+    // Si hay un término de búsqueda, realizar búsqueda sin filtros
+    if (query.trim()) {
+      buscarDespachos(undefined, 1, newFilters);
+    }
   };
 
   // Función auxiliar para manejar la navegación de páginas
@@ -257,6 +299,12 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
           placeholder="Buscar despacho por nombre"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // Permitir búsqueda con Enter
+            if (e.key === 'Enter') {
+              handleBuscar(e);
+            }
+          }}
           required
         />
         <button
@@ -268,10 +316,16 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
         </button>
       </form>
 
-      {error && <div className="text-red-600 font-medium mb-2">{error}</div>}
-
       <div className="mt-4 max-h-[70vh] overflow-y-auto">
-        {resultados.length > 0 ? (
+        {!query.trim() && resultados.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Ingresa un término de búsqueda para comenzar
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">
+            {error}
+          </div>
+        ) : resultados.length > 0 ? (
           <div className="space-y-4">
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               {/* Filtros */}
@@ -460,13 +514,19 @@ export default function BuscadorDespachosWordpress({ onImport, onClose }: Props)
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleImport(d.object_id || String(d.id || ''))}
-                            className="text-indigo-600 hover:text-indigo-900"
-                            disabled={importando === (d.object_id || String(d.id || ''))}
-                          >
-                            Importar
-                          </button>
+                          {importedOffices.has(d.object_id || String(d.id || '')) ? (
+                            <span className="text-green-600 font-medium">
+                              Importado
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleImport(d.object_id || String(d.id || ''))}
+                              className="text-indigo-600 hover:text-indigo-900"
+                              disabled={importando === (d.object_id || String(d.id || ''))}
+                            >
+                              {importando === (d.object_id || String(d.id || '')) ? 'Importando...' : 'Importar'}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
