@@ -144,17 +144,25 @@ export default function BuscadorDespachosWordpress({
             email_contacto?: string;
             telefono?: string;
           };
-          
+
           return {
             ...item,
             object_id:
-              itemWithMeta.object_id || item.id?.toString() || String(Math.random()),
-            nombre: itemWithMeta.nombre || item.title?.rendered || "Sin nombre",
-            localidad: itemWithMeta.localidad || item.meta?.localidad || "",
-            provincia: itemWithMeta.provincia || item.meta?.provincia || "",
-            email_contacto: itemWithMeta.email_contacto || item.meta?.email_contacto || "",
-            telefono: itemWithMeta.telefono || item.meta?.telefono || "",
-          } as LocalDespachoWP;
+              itemWithMeta.object_id ||
+              item.id?.toString() ||
+              String(Math.random()),
+            title: { 
+              rendered: itemWithMeta.nombre || item.title?.rendered || "Sin nombre" 
+            },
+            meta: {
+              ...item.meta,
+              localidad: itemWithMeta.localidad || item.meta?.localidad || "",
+              provincia: itemWithMeta.provincia || item.meta?.provincia || "",
+              email_contacto: itemWithMeta.email_contacto || item.meta?.email_contacto || "",
+              telefono: itemWithMeta.telefono || item.meta?.telefono || "",
+              _despacho_sedes: item.meta?._despacho_sedes || []
+            }
+          } as unknown as LocalDespachoWP;
         });
 
         // Los filtros ya se aplican en el servidor, no es necesario filtrar aquí
@@ -182,7 +190,9 @@ export default function BuscadorDespachosWordpress({
     if (query.trim() || filtros.localidad || filtros.provincia) {
       buscarDespachos(e, 1, { ...filtros });
     } else {
-      toast.info('Por favor, introduce un término de búsqueda o selecciona algún filtro');
+      toast.info(
+        "Por favor, introduce un término de búsqueda o selecciona algún filtro"
+      );
       setError("Por favor, introduce un término de búsqueda");
     }
   };
@@ -483,7 +493,7 @@ export default function BuscadorDespachosWordpress({
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
-                        setPagination(prev => ({ ...prev, page: 1 }));
+                        setPagination((prev) => ({ ...prev, page: 1 }));
                         handleSubmit(e);
                       }}
                       disabled={pagination.page === 1 || loading}
@@ -601,10 +611,10 @@ export default function BuscadorDespachosWordpress({
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            {loading 
-              ? "Buscando despachos..." 
-              : query.trim() === "" 
-                ? "Ingresa un término de búsqueda para comenzar" 
+            {loading
+              ? "Buscando despachos..."
+              : query.trim() === ""
+                ? "Ingresa un término de búsqueda para comenzar"
                 : "No se encontraron resultados"}
           </div>
         )}
