@@ -3,6 +3,23 @@
  * @module types/despachos
  */
 
+export interface DespachoSummary {
+  id: string;
+  object_id?: string;
+  nombre: string;
+  slug?: string;
+  num_sedes: number;
+  created_at?: string; // Made optional with ?
+  estado?: string;
+  localidad?: string;
+  provincia?: string;
+  telefono?: string;
+  email?: string;
+  owner_nombre?: string;
+  owner_apellidos?: string;
+  owner_email?: string;
+}
+
 import { SedeWP, DespachoWP as BaseDespachoWP } from './wordpress';
 
 /**

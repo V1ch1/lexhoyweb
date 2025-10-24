@@ -3,6 +3,7 @@ import { slugify } from "@/lib/slugify";
 import { DespachosListSkeleton } from "./skeletons";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { DespachoSummary } from "@/types/despachos";
 
 interface DespachosListProps {
   search: string;
@@ -12,18 +13,7 @@ interface DespachosListProps {
   totalPages: number;
   loadingDespachos: boolean;
   error: string | null;
-  despachos: Array<{
-    id: string;
-    object_id?: string;
-    nombre: string;
-    slug?: string;
-    localidad?: string;
-    provincia?: string;
-    telefono?: string;
-    email?: string;
-    num_sedes: number;
-    owner_email?: string;
-  }>;
+  despachos: DespachoSummary[];
   user: {
     role?: string;
     email?: string;
@@ -31,20 +21,7 @@ interface DespachosListProps {
   setAsignarDespachoId: (id: string) => void;
   setShowAsignarModal: (show: boolean) => void;
   solicitudesPendientes: Set<string>;
-  setDespachoSolicitar: React.Dispatch<React.SetStateAction<{
-    id: string;
-    object_id?: string;
-    nombre: string;
-    slug?: string;
-    localidad?: string;
-    provincia?: string;
-    telefono?: string;
-    email?: string;
-    num_sedes: number;
-    owner_email?: string;
-    created_at?: string;
-    estado?: string;
-  } | null>>;
+  setDespachoSolicitar: React.Dispatch<React.SetStateAction<DespachoSummary | null>>;
   setShowSolicitarModal: (show: boolean) => void;
 }
 

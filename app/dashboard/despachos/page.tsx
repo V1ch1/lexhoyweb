@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
+import { DespachoSummary } from "@/types/despachos";
 
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
@@ -38,24 +39,6 @@ import { slugify } from "@/lib/slugify";
 // ...existing code...
 import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
 
-type DespachoSummary = {
-  id: string;
-  object_id?: string;
-  nombre: string;
-  slug?: string;
-  num_sedes: number;
-  created_at: string;
-  estado?: string;
-  // Principal sede fields
-  localidad?: string;
-  provincia?: string;
-  telefono?: string;
-  email?: string;
-  // Owner fields
-  owner_nombre?: string;
-  owner_apellidos?: string;
-  owner_email?: string;
-};
 
 const DespachosPage = () => {
   // Estado para búsqueda de usuario
