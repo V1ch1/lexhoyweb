@@ -1,0 +1,122 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+
+interface Sede {
+  id?: number;
+  nombre?: string;
+  // ... resto de la interfaz Sede ...
+}
+
+interface DespachoSede extends Omit<Sede, 'id' | 'redes_sociales' | 'horarios'> {
+  wp_sede_id?: number;
+  despacho_id: string;
+  created_at: string;
+  updated_at: string;
+  estado: 'activo' | 'inactivo';
+  redes_sociales: string;
+  horarios: string;
+}
+
+interface DespachoWP {
+  id: number;
+  title?: { rendered?: string };
+  content?: { rendered?: string };
+  meta?: {
+    _despacho_email_contacto?: string | string[];
+    _despacho_telefono?: string | string[];
+    _despacho_web?: string | string[];
+    _despacho_sedes?: Array<{
+      id?: number;
+      nombre?: string;
+      // ... resto de los campos de la sede ...
+    }>;
+    [key: string]: unknown;
+  };
+  slug?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Importa un despacho desde WordPress a la base de datos local
+ * POST /api/despachos/wordpress/importar
+ */
+export async function POST(request: Request) {
+  console.log('🔄 [WordPress] Iniciando importación de despacho...');
+  
+  try {
+    const requestData = await request.json();
+    const objectId = requestData?.objectId;
+    
+    console.log('📥 [WordPress] Datos recibidos:', { objectId });
+    
+    if (!objectId) {
+      return NextResponse.json(
+        { 
+          error: 'Se requiere el objectId del despacho',
+          receivedData: requestData
+        },
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Configuración de Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      const errorMsg = 'Falta la configuración de Supabase';
+      console.error('❌ [WordPress]', errorMsg, { supabaseUrl, hasKey: !!supabaseKey });
+      return NextResponse.json(
+        { error: errorMsg },
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // 1. Obtener el despacho de WordPress
+    console.log('🌐 [WordPress] Obteniendo datos del despacho...');
+    const wpResponse = await fetch(`https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`);
+    
+    if (!wpResponse.ok) {
+      const errorText = await wpResponse.text();
+      console.error('❌ [WordPress] Error al obtener el despacho:', wpResponse.status, errorText);
+      return NextResponse.json(
+        { 
+          error: 'No se pudo obtener el despacho de WordPress',
+          details: errorText,
+          status: wpResponse.status
+        },
+        { status: 404 }
+      );
+    }
+    
+    const despacho: DespachoWP = await wpResponse.json();
+    console.log('✅ [WordPress] Despacho obtenido:', { id: despacho.id, titulo: despacho.title?.rendered });
+    
+    // Aquí iría el resto de la lógica de importación...
+    // ...
+    
+    // Ejemplo de respuesta exitosa
+    return NextResponse.json({
+      success: true,
+      message: 'Despacho importado correctamente',
+      data: {},
+      isNew: true,
+      sedesProcesadas: 0
+    });
+    
+  } catch (error) {
+    console.error('❌ [Error] Error en la importación:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error al procesar la solicitud',
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    );
+  }
+}

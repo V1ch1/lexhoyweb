@@ -167,22 +167,48 @@ async function buscarDespachosPorTexto(query: string): Promise<DespachoWP[]> {
   }
 
   const auth = Buffer.from(`${username}:${appPassword}`).toString("base64");
-  // Asegurarse de incluir los campos de metadatos necesarios (_despacho_sedes)
   const searchUrl = `https://lexhoy.com/wp-json/wp/v2/despacho?search=${encodeURIComponent(query)}&per_page=50&_fields=id,title,content,meta`;
   
   console.log('🔍 [WordPress] Buscando:', searchUrl);
   
-  const response = await fetch(searchUrl, {
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json",
-    },
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error en la búsqueda: ${response.status} ${errorText}`);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(searchUrl, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/json",
+      },
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [WordPress] Error en la respuesta: ${response.status}`, errorText);
+      throw new Error(`Error en la búsqueda: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+    
+  } catch (error) {
+    console.error('❌ [WordPress] Error en la búsqueda:', error);
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('La búsqueda tardó demasiado tiempo. Por favor, inténtalo de nuevo.');
+      }
+      
+      if ('code' in error && error.code === 'UND_ERR_SOCKET') {
+        throw new Error('Error de conexión con el servidor de WordPress. Por favor, verifica tu conexión a internet.');
+      }
+      
+      throw new Error(`Error al buscar en WordPress: ${error.message}`);
+    }
+    
+    throw new Error('Error desconocido al buscar en WordPress');
   }
-  
-  return await response.json();
 }

@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -6,432 +6,802 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
       despacho_ownership_requests: {
         Row: {
-          id: string
-          user_id: string
-          despacho_id: string
-          status: string
-          message: string | null
           created_at: string | null
+          despacho_id: string
+          id: string
+          message: string | null
+          status: string
           updated_at: string | null
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          despacho_id: string
-          status?: string
-          message?: string | null
           created_at?: string | null
+          despacho_id: string
+          id?: string
+          message?: string | null
+          status?: string
           updated_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          despacho_id?: string
-          status?: string
-          message?: string | null
           created_at?: string | null
+          despacho_id?: string
+          id?: string
+          message?: string | null
+          status?: string
           updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "despacho_ownership_requests_despacho_id_fkey"
-            columns: ["despacho_id"]
-            referencedRelation: "despachos"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "despacho_ownership_requests_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       despacho_propiedad_historial: {
         Row: {
-          id: string
+          accion: string
+          created_at: string | null
           despacho_id: string
-          anterior_propietario_id: string | null
-          nuevo_propietario_id: string | null
-          realizado_por: string
-          fecha_cambio: string
-          motivo: string | null
+          id: string
+          metadata: Json | null
+          notas: string | null
+          realizado_por: string | null
+          user_id: string | null
+          usuario_anterior: string | null
         }
         Insert: {
-          id?: string
+          accion: string
+          created_at?: string | null
           despacho_id: string
-          anterior_propietario_id?: string | null
-          nuevo_propietario_id?: string | null
-          realizado_por: string
-          fecha_cambio?: string
-          motivo?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          realizado_por?: string | null
+          user_id?: string | null
+          usuario_anterior?: string | null
         }
         Update: {
-          id?: string
+          accion?: string
+          created_at?: string | null
           despacho_id?: string
-          anterior_propietario_id?: string | null
-          nuevo_propietario_id?: string | null
-          realizado_por?: string
-          fecha_cambio?: string
-          motivo?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          realizado_por?: string | null
+          user_id?: string | null
+          usuario_anterior?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "despacho_propiedad_historial_anterior_propietario_id_fkey"
-            columns: ["anterior_propietario_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despacho_propiedad_historial_despacho_id_fkey"
-            columns: ["despacho_id"]
-            referencedRelation: "despachos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despacho_propiedad_historial_nuevo_propietario_id_fkey"
-            columns: ["nuevo_propietario_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "despacho_propiedad_historial_realizado_por_fkey"
             columns: ["realizado_por"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "despacho_propiedad_historial_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despacho_propiedad_historial_usuario_anterior_fkey"
+            columns: ["usuario_anterior"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       despachos: {
         Row: {
+          created_at: string | null
+          descripcion: string | null
+          featured_media_url: string | null
           id: string
           nombre: string
-          direccion: string | null
-          telefono: string | null
-          email: string | null
-          web: string | null
-          logo_url: string | null
-          activo: boolean
-          fecha_creacion: string
-          fecha_actualizacion: string | null
-          creado_por: string | null
-          aprobado_por: string | null
-          fecha_aprobacion: string | null
-          sede_id: string | null
-          tipo_despacho: string
-          propietario_id: string | null
+          slug: string
+          status: string | null
+          updated_at: string | null
+          wordpress_id: number | null
         }
         Insert: {
+          created_at?: string | null
+          descripcion?: string | null
+          featured_media_url?: string | null
           id?: string
           nombre: string
-          direccion?: string | null
-          telefono?: string | null
-          email?: string | null
-          web?: string | null
-          logo_url?: string | null
-          activo?: boolean
-          fecha_creacion?: string
-          fecha_actualizacion?: string | null
-          creado_por?: string | null
-          aprobado_por?: string | null
-          fecha_aprobacion?: string | null
-          sede_id?: string | null
-          tipo_despacho?: string
-          propietario_id?: string | null
+          slug: string
+          status?: string | null
+          updated_at?: string | null
+          wordpress_id?: number | null
         }
         Update: {
+          created_at?: string | null
+          descripcion?: string | null
+          featured_media_url?: string | null
           id?: string
           nombre?: string
-          direccion?: string | null
-          telefono?: string | null
-          email?: string | null
-          web?: string | null
-          logo_url?: string | null
-          activo?: boolean
-          fecha_creacion?: string
-          fecha_actualizacion?: string | null
-          creado_por?: string | null
-          aprobado_por?: string | null
-          fecha_aprobacion?: string | null
-          sede_id?: string | null
-          tipo_despacho?: string
-          propietario_id?: string | null
+          slug?: string
+          status?: string | null
+          updated_at?: string | null
+          wordpress_id?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "despachos_aprobado_por_fkey"
-            columns: ["aprobado_por"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despachos_creado_por_fkey"
-            columns: ["creado_por"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despachos_propietario_id_fkey"
-            columns: ["propietario_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "despachos_sede_id_fkey"
-            columns: ["sede_id"]
-            referencedRelation: "sedes"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
-      leads: {
+      despachos_backup_20241028: {
         Row: {
-          id: string
-          nombre: string
-          apellidos: string | null
-          email: string | null
-          telefono: string | null
-          origen: string | null
-          estado: string
-          fecha_creacion: string
-          fecha_actualizacion: string | null
-          despacho_id: string
-          asignado_a: string | null
+          ano_fundacion: number | null
+          areas_practica: string[] | null
+          created_at: string | null
+          descripcion: string | null
+          email_contacto: string | null
+          especialidades: string | null
+          estado_registro: string | null
+          estado_verificacion: string | null
+          foto_perfil: string | null
+          id: string | null
+          is_verified: boolean | null
+          nombre: string | null
+          object_id: string | null
+          observaciones: string | null
+          persona_contacto: string | null
+          servicios_especificos: string | null
+          slug: string | null
+          tamano_despacho: string | null
+          telefono_contacto: string | null
+          updated_at: string | null
+          web: string | null
+          wp_metadata: Json | null
         }
         Insert: {
-          id?: string
-          nombre: string
-          apellidos?: string | null
-          email?: string | null
-          telefono?: string | null
-          origen?: string | null
-          estado?: string
-          fecha_creacion?: string
-          fecha_actualizacion?: string | null
-          despacho_id: string
-          asignado_a?: string | null
+          ano_fundacion?: number | null
+          areas_practica?: string[] | null
+          created_at?: string | null
+          descripcion?: string | null
+          email_contacto?: string | null
+          especialidades?: string | null
+          estado_registro?: string | null
+          estado_verificacion?: string | null
+          foto_perfil?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          nombre?: string | null
+          object_id?: string | null
+          observaciones?: string | null
+          persona_contacto?: string | null
+          servicios_especificos?: string | null
+          slug?: string | null
+          tamano_despacho?: string | null
+          telefono_contacto?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_metadata?: Json | null
         }
         Update: {
-          id?: string
-          nombre?: string
-          apellidos?: string | null
-          email?: string | null
-          telefono?: string | null
-          origen?: string | null
-          estado?: string
-          fecha_creacion?: string
-          fecha_actualizacion?: string | null
-          despacho_id?: string
-          asignado_a?: string | null
+          ano_fundacion?: number | null
+          areas_practica?: string[] | null
+          created_at?: string | null
+          descripcion?: string | null
+          email_contacto?: string | null
+          especialidades?: string | null
+          estado_registro?: string | null
+          estado_verificacion?: string | null
+          foto_perfil?: string | null
+          id?: string | null
+          is_verified?: boolean | null
+          nombre?: string | null
+          object_id?: string | null
+          observaciones?: string | null
+          persona_contacto?: string | null
+          servicios_especificos?: string | null
+          slug?: string | null
+          tamano_despacho?: string | null
+          telefono_contacto?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_metadata?: Json | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "leads_asignado_a_fkey"
-            columns: ["asignado_a"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "leads_despacho_id_fkey"
-            columns: ["despacho_id"]
-            referencedRelation: "despachos"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       lead_interactions: {
         Row: {
+          created_at: string | null
+          descripcion: string | null
+          despacho_id: string
+          fecha: string | null
           id: string
           lead_id: string
+          resultado: string | null
           tipo: string
-          descripcion: string | null
-          fecha: string
-          usuario_id: string | null
         }
         Insert: {
+          created_at?: string | null
+          descripcion?: string | null
+          despacho_id: string
+          fecha?: string | null
           id?: string
           lead_id: string
+          resultado?: string | null
           tipo: string
-          descripcion?: string | null
-          fecha?: string
-          usuario_id?: string | null
         }
         Update: {
+          created_at?: string | null
+          descripcion?: string | null
+          despacho_id?: string
+          fecha?: string | null
           id?: string
           lead_id?: string
+          resultado?: string | null
           tipo?: string
-          descripcion?: string | null
-          fecha?: string
-          usuario_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "lead_interactions_lead_id_fkey"
             columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "lead_interactions_usuario_id_fkey"
-            columns: ["usuario_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
+      }
+      leads: {
+        Row: {
+          ciudad: string | null
+          cliente_email: string
+          cliente_nombre: string
+          cliente_telefono: string | null
+          codigo_postal: string | null
+          consulta: string
+          created_at: string | null
+          despacho_id: string
+          especialidad: string
+          estado: string | null
+          fecha_asignacion: string | null
+          fecha_cierre: string | null
+          fecha_creacion: string | null
+          feedback: string | null
+          fuente: string | null
+          id: string
+          notas: string | null
+          presupuesto_estimado: number | null
+          provincia: string | null
+          sede_id: number | null
+          updated_at: string | null
+          urgencia: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          valoracion: number | null
+        }
+        Insert: {
+          ciudad?: string | null
+          cliente_email: string
+          cliente_nombre: string
+          cliente_telefono?: string | null
+          codigo_postal?: string | null
+          consulta: string
+          created_at?: string | null
+          despacho_id: string
+          especialidad: string
+          estado?: string | null
+          fecha_asignacion?: string | null
+          fecha_cierre?: string | null
+          fecha_creacion?: string | null
+          feedback?: string | null
+          fuente?: string | null
+          id?: string
+          notas?: string | null
+          presupuesto_estimado?: number | null
+          provincia?: string | null
+          sede_id?: number | null
+          updated_at?: string | null
+          urgencia?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          valoracion?: number | null
+        }
+        Update: {
+          ciudad?: string | null
+          cliente_email?: string
+          cliente_nombre?: string
+          cliente_telefono?: string | null
+          codigo_postal?: string | null
+          consulta?: string
+          created_at?: string | null
+          despacho_id?: string
+          especialidad?: string
+          estado?: string | null
+          fecha_asignacion?: string | null
+          fecha_cierre?: string | null
+          fecha_creacion?: string | null
+          feedback?: string | null
+          fuente?: string | null
+          id?: string
+          notas?: string | null
+          presupuesto_estimado?: number | null
+          provincia?: string | null
+          sede_id?: number | null
+          updated_at?: string | null
+          urgencia?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          valoracion?: number | null
+        }
+        Relationships: []
+      }
+      notificaciones: {
+        Row: {
+          created_at: string | null
+          id: string
+          leida: boolean | null
+          mensaje: string
+          metadata: Json | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          mensaje: string
+          metadata?: Json | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          leida?: boolean | null
+          mensaje?: string
+          metadata?: Json | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       sedes: {
         Row: {
+          activa: boolean | null
+          ano_fundacion: number | null
+          colegio: string | null
+          created_at: string | null
+          descripcion: string | null
+          despacho_id: string
+          direccion: Json | null
+          email_contacto: string | null
+          es_principal: boolean | null
+          estado_registro: string | null
+          estado_verificacion: string | null
+          experiencia: string | null
+          foto_perfil: string | null
+          horarios: Json | null
           id: string
+          is_verified: boolean | null
           nombre: string
-          direccion: string | null
-          ciudad: string | null
-          codigo_postal: string | null
-          pais: string | null
+          numero_colegiado: string | null
+          observaciones: string | null
+          persona_contacto: string | null
+          redes_sociales: Json | null
           telefono: string | null
-          email: string | null
-          responsable_id: string | null
+          updated_at: string | null
+          web: string | null
+          wp_sede_id: string | null
         }
         Insert: {
+          activa?: boolean | null
+          ano_fundacion?: number | null
+          colegio?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          despacho_id: string
+          direccion?: Json | null
+          email_contacto?: string | null
+          es_principal?: boolean | null
+          estado_registro?: string | null
+          estado_verificacion?: string | null
+          experiencia?: string | null
+          foto_perfil?: string | null
+          horarios?: Json | null
           id?: string
+          is_verified?: boolean | null
           nombre: string
-          direccion?: string | null
-          ciudad?: string | null
-          codigo_postal?: string | null
-          pais?: string | null
+          numero_colegiado?: string | null
+          observaciones?: string | null
+          persona_contacto?: string | null
+          redes_sociales?: Json | null
           telefono?: string | null
-          email?: string | null
-          responsable_id?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_sede_id?: string | null
         }
         Update: {
-          id?: string
-          nombre?: string
-          direccion?: string | null
-          ciudad?: string | null
-          codigo_postal?: string | null
-          pais?: string | null
-          telefono?: string | null
-          email?: string | null
-          responsable_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sedes_responsable_id_fkey"
-            columns: ["responsable_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      user_despachos: {
-        Row: {
-          id: string
-          user_id: string
-          despacho_id: string
-          rol: string
-          fecha_asignacion: string
-          activo: boolean
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          despacho_id: string
-          rol?: string
-          fecha_asignacion?: string
-          activo?: boolean
-        }
-        Update: {
-          id?: string
-          user_id?: string
+          activa?: boolean | null
+          ano_fundacion?: number | null
+          colegio?: string | null
+          created_at?: string | null
+          descripcion?: string | null
           despacho_id?: string
-          rol?: string
-          fecha_asignacion?: string
-          activo?: boolean
+          direccion?: Json | null
+          email_contacto?: string | null
+          es_principal?: boolean | null
+          estado_registro?: string | null
+          estado_verificacion?: string | null
+          experiencia?: string | null
+          foto_perfil?: string | null
+          horarios?: Json | null
+          id?: string
+          is_verified?: boolean | null
+          nombre?: string
+          numero_colegiado?: string | null
+          observaciones?: string | null
+          persona_contacto?: string | null
+          redes_sociales?: Json | null
+          telefono?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_sede_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "user_despachos_despacho_id_fkey"
+            foreignKeyName: "sedes_despacho_id_fkey"
             columns: ["despacho_id"]
+            isOneToOne: false
             referencedRelation: "despachos"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      sedes_areas_practica: {
+        Row: {
+          area_nombre: string
+          created_at: string | null
+          id: number
+          sede_id: string
+        }
+        Insert: {
+          area_nombre: string
+          created_at?: string | null
+          id?: number
+          sede_id: string
+        }
+        Update: {
+          area_nombre?: string
+          created_at?: string | null
+          id?: number
+          sede_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "user_despachos_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "fk_sede"
+            columns: ["sede_id"]
+            isOneToOne: false
+            referencedRelation: "sedes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sedes_backup_20241028: {
+        Row: {
+          activa: boolean | null
+          calle: string | null
+          codigo_postal: string | null
+          colegio: string | null
+          created_at: string | null
+          descripcion: string | null
+          despacho_id: string | null
+          email: string | null
+          es_principal: boolean | null
+          experiencia: string | null
+          foto_perfil: string | null
+          horarios: Json | null
+          id: string | null
+          localidad: string | null
+          nombre: string | null
+          numero: string | null
+          numero_colegiado: string | null
+          observaciones: string | null
+          pais: string | null
+          piso: string | null
+          provincia: string | null
+          redes_sociales: Json | null
+          telefono: string | null
+          updated_at: string | null
+          web: string | null
+          wp_sede_id: string | null
+        }
+        Insert: {
+          activa?: boolean | null
+          calle?: string | null
+          codigo_postal?: string | null
+          colegio?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          despacho_id?: string | null
+          email?: string | null
+          es_principal?: boolean | null
+          experiencia?: string | null
+          foto_perfil?: string | null
+          horarios?: Json | null
+          id?: string | null
+          localidad?: string | null
+          nombre?: string | null
+          numero?: string | null
+          numero_colegiado?: string | null
+          observaciones?: string | null
+          pais?: string | null
+          piso?: string | null
+          provincia?: string | null
+          redes_sociales?: Json | null
+          telefono?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_sede_id?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          calle?: string | null
+          codigo_postal?: string | null
+          colegio?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          despacho_id?: string | null
+          email?: string | null
+          es_principal?: boolean | null
+          experiencia?: string | null
+          foto_perfil?: string | null
+          horarios?: Json | null
+          id?: string | null
+          localidad?: string | null
+          nombre?: string | null
+          numero?: string | null
+          numero_colegiado?: string | null
+          observaciones?: string | null
+          pais?: string | null
+          piso?: string | null
+          provincia?: string | null
+          redes_sociales?: Json | null
+          telefono?: string | null
+          updated_at?: string | null
+          web?: string | null
+          wp_sede_id?: string | null
+        }
+        Relationships: []
+      }
+      solicitudes_despacho: {
+        Row: {
+          despacho_id: string
+          despacho_localidad: string | null
+          despacho_nombre: string | null
+          despacho_provincia: string | null
+          estado: string | null
+          fecha_respuesta: string | null
+          fecha_solicitud: string | null
+          id: string
+          notas_respuesta: string | null
+          respondido_por: string | null
+          user_email: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          despacho_id: string
+          despacho_localidad?: string | null
+          despacho_nombre?: string | null
+          despacho_provincia?: string | null
+          estado?: string | null
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          notas_respuesta?: string | null
+          respondido_por?: string | null
+          user_email?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          despacho_id?: string
+          despacho_localidad?: string | null
+          despacho_nombre?: string | null
+          despacho_provincia?: string | null
+          estado?: string | null
+          fecha_respuesta?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          notas_respuesta?: string | null
+          respondido_por?: string | null
+          user_email?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          accion: string
+          created_at: string | null
+          datos_enviados: Json | null
+          entidad: string
+          entidad_id: string
+          error_mensaje: string | null
+          exitoso: boolean | null
+          fecha_sync: string | null
+          id: string
+          reintentos: number | null
+          respuesta_api: Json | null
+          tipo: string
+        }
+        Insert: {
+          accion: string
+          created_at?: string | null
+          datos_enviados?: Json | null
+          entidad: string
+          entidad_id: string
+          error_mensaje?: string | null
+          exitoso?: boolean | null
+          fecha_sync?: string | null
+          id?: string
+          reintentos?: number | null
+          respuesta_api?: Json | null
+          tipo: string
+        }
+        Update: {
+          accion?: string
+          created_at?: string | null
+          datos_enviados?: Json | null
+          entidad?: string
+          entidad_id?: string
+          error_mensaje?: string | null
+          exitoso?: boolean | null
+          fecha_sync?: string | null
+          id?: string
+          reintentos?: number | null
+          respuesta_api?: Json | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      user_despachos: {
+        Row: {
+          activo: boolean | null
+          asignado_por: string | null
+          created_at: string | null
+          despacho_id: string
+          fecha_asignacion: string | null
+          id: string
+          permisos: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activo?: boolean | null
+          asignado_por?: string | null
+          created_at?: string | null
+          despacho_id: string
+          fecha_asignacion?: string | null
+          id?: string
+          permisos?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activo?: boolean | null
+          asignado_por?: string | null
+          created_at?: string | null
+          despacho_id?: string
+          fecha_asignacion?: string | null
+          id?: string
+          permisos?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_despachos_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       users: {
         Row: {
-          id: string
-          email: string
-          role: string
+          activo: boolean | null
+          apellidos: string
+          aprobado_por: string | null
           created_at: string | null
-          updated_at: string | null
-          full_name: string | null
-          avatar_url: string | null
+          despacho_id: string | null
+          email: string
+          email_verificado: boolean | null
+          estado: string | null
+          fecha_aprobacion: string | null
+          fecha_registro: string | null
+          id: string
+          nombre: string
+          notas_admin: string | null
+          plan: string | null
+          rol: string | null
           telefono: string | null
-          fecha_nacimiento: string | null
-          genero: string | null
-          dni: string | null
-          direccion: string | null
-          ciudad: string | null
-          codigo_postal: string | null
-          pais: string | null
           ultimo_acceso: string | null
-          activo: boolean
+          updated_at: string | null
         }
         Insert: {
-          id: string
-          email: string
-          role?: string
+          activo?: boolean | null
+          apellidos: string
+          aprobado_por?: string | null
           created_at?: string | null
-          updated_at?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
+          despacho_id?: string | null
+          email: string
+          email_verificado?: boolean | null
+          estado?: string | null
+          fecha_aprobacion?: string | null
+          fecha_registro?: string | null
+          id?: string
+          nombre: string
+          notas_admin?: string | null
+          plan?: string | null
+          rol?: string | null
           telefono?: string | null
-          fecha_nacimiento?: string | null
-          genero?: string | null
-          dni?: string | null
-          direccion?: string | null
-          ciudad?: string | null
-          codigo_postal?: string | null
-          pais?: string | null
           ultimo_acceso?: string | null
-          activo?: boolean
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          email?: string
-          role?: string
+          activo?: boolean | null
+          apellidos?: string
+          aprobado_por?: string | null
           created_at?: string | null
-          updated_at?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
+          despacho_id?: string | null
+          email?: string
+          email_verificado?: boolean | null
+          estado?: string | null
+          fecha_aprobacion?: string | null
+          fecha_registro?: string | null
+          id?: string
+          nombre?: string
+          notas_admin?: string | null
+          plan?: string | null
+          rol?: string | null
           telefono?: string | null
-          fecha_nacimiento?: string | null
-          genero?: string | null
-          dni?: string | null
-          direccion?: string | null
-          ciudad?: string | null
-          codigo_postal?: string | null
-          pais?: string | null
           ultimo_acceso?: string | null
-          activo?: boolean
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "users_id_fkey"
-            columns: ["id"]
+            foreignKeyName: "users_aprobado_por_fkey"
+            columns: ["aprobado_por"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
@@ -439,29 +809,25 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      get_user_despacho: {
-        Args: {
-          user_id: string
-        }
-        Returns: string
+      actualizar_areas_sede: {
+        Args: { p_areas_nombres: string[]; p_sede_id: string }
+        Returns: Json
       }
-      is_despacho_owner: {
-        Args: {
-          user_id: string
-          despacho_id: string
-        }
-        Returns: boolean
+      cambiar_sede_principal: {
+        Args: { despacho_id_param: string; nueva_sede_id: string }
+        Returns: undefined
       }
-      get_user_despacho_role: {
+      importar_desde_wordpress: {
         Args: {
-          user_id: string
-          despacho_id: string
+          p_descripcion: string
+          p_imagen_url: string
+          p_nombre: string
+          p_sedes: Json
+          p_slug: string
+          p_status: string
+          p_wordpress_id: number
         }
-        Returns: string
-      }
-      update_modified_column: {
-        Args: Record<PropertyKey, never>
-        Returns: unknown
+        Returns: Json
       }
     }
     Enums: {
@@ -473,7 +839,138 @@ export interface Database {
   }
 }
 
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
-export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
+node.exe : A new version of Supabase CLI is 
+available: v2.54.10 (currently installed v2.53.6)
+En C:\Program Files\nodejs\npx.ps1: 29 Carácter: 3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (A new 
+    version o...talled v2.53.6):String) [], Remot  
+  eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+We recommend updating regularly for new features 
+and bug fixes: https://supabase.com/docs/guides/cli
+/getting-started#updating-the-supabase-cli

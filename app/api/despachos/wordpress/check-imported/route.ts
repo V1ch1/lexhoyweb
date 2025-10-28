@@ -23,11 +23,11 @@ export async function GET(request: Request) {
       );
     }
 
-    // Buscar en la tabla de despachos por object_id (ID de WordPress)
+    // Buscar en la tabla de despachos por wordpress_id (ID de WordPress)
     const { data: despacho, error: despachoError } = await supabase
       .from('despachos')
       .select('id')
-      .eq('object_id', objectId)
+      .eq('wordpress_id', parseInt(objectId))
       .single();
 
     if (despachoError && despachoError.code !== 'PGRST116') { // PGRST116 = no rows returned
