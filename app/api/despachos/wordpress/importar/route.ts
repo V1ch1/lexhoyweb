@@ -163,32 +163,29 @@ export async function POST(request: Request) {
       raw: JSON.stringify(despacho, null, 2) // Agregado para depuración completa
     });
 
-    // Función para limpiar HTML del contenido (solo para logging)
-    type HtmlContent = string | Record<string, unknown> | null | undefined;
+    // Función auxiliar para obtener la descripción de una sede
+    interface SedeConDescripcion {
+      descripcion?: string | { rendered?: string };
+      [key: string]: unknown;
+    }
     
-    const stripHtml = (html: HtmlContent): string => {
-      if (!html) return '';
-      
-      let content = '';
-      
-      // Si es un objeto, intentamos obtener la propiedad 'rendered' si existe
-      if (typeof html === 'object' && html !== null) {
-        if ('rendered' in html && typeof html.rendered === 'string') {
-          content = html.rendered;
-        } else {
-          return JSON.stringify(html);
-        }
-      } else {
-        content = String(html);
+    const obtenerDescripcionSede = (sede: SedeConDescripcion): string => {
+      // Si la descripción es un string, la devolvemos directamente
+      if (typeof sede.descripcion === 'string') {
+        return sede.descripcion;
       }
       
-      // Para propósitos de logging, mostramos el texto limpio
-      return content
-        .replace(/<[^>]*>?/gm, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      // Si la descripción es un objeto con propiedad 'rendered', la extraemos
+      if (sede.descripcion && typeof sede.descripcion === 'object' && sede.descripcion !== null) {
+        const desc = sede.descripcion as { rendered?: string };
+        if (typeof desc.rendered === 'string') {
+          return desc.rendered;
+        }
+      }
+      
+      // Si no hay descripción, devolvemos un string vacío
+      return '';
     };
-    
 
     // Generar slug, usando el de WordPress si existe, o generarlo del título
     const generateSlug = (str: string) => {
@@ -219,57 +216,24 @@ export async function POST(request: Request) {
       slug = `despacho-${despacho.id}`;
     }
 
-    // Obtener la descripción de forma segura
-    const descripcionBruta = (() => {
-      // Primero intentamos con el contenido renderizado
-      if (despacho.content?.rendered && typeof despacho.content.rendered === 'string') {
-        return despacho.content.rendered;
-      }
-      
-      // Luego intentamos con _despacho_descripcion
-      if (Array.isArray(despacho.meta?._despacho_descripcion)) {
-        return despacho.meta._despacho_descripcion[0] || '';
-      }
-      if (typeof despacho.meta?._despacho_descripcion === 'string') {
-        return despacho.meta._despacho_descripcion;
-      }
-      
-      // Finalmente intentamos con descripcion
-      if (typeof despacho.meta?.descripcion === 'string') {
-        return despacho.meta.descripcion;
-      }
-      
-      // Si no hay descripción, devolvemos un string vacío
-      return '';
-    })();
-    // Usar stripHtml solo para el registro, pero guardar el HTML original
-    const descripcionLimpia = stripHtml(descripcionBruta);
-    
-    console.log('📝 [WordPress] Procesando descripción:', {
-      tieneContent: !!despacho.content?.rendered,
-      tieneMetaDescripcion: !!(despacho.meta?._despacho_descripcion || despacho.meta?.descripcion),
-      descripcionBruta: typeof descripcionBruta === 'string' ? descripcionBruta.substring(0, 100) + '...' : descripcionBruta,
-      descripcionLimpia: descripcionLimpia.substring(0, 100) + '...'
-    });
+    // La función obtenerDescripcionSede se usará al procesar las sedes
 
     // Preparar datos del despacho según la estructura real de la tabla
     // IMPORTANTE: No incluir campos que no existan en la tabla despachos
     // Los siguientes campos pertenecen solo a la tabla sedes y no deben incluirse aquí:
     // - foto_perfil
     // - persona_contacto
-    // Asegurarse de que la descripción sea siempre un string
-    const descripcionFinal = typeof descripcionBruta === 'string' ? descripcionBruta : '';
+    // La descripción solo se usará para las sedes, no para el despacho
     
     // Crear un objeto con solo los campos permitidos para el despacho
     const camposPermitidos = [
-      'wordpress_id', 'nombre', 'descripcion', 'slug', 'status', 
+      'wordpress_id', 'nombre', 'slug', 'status', 
       'created_at', 'updated_at', 'featured_media_url'
     ];
     
     interface DespachoData {
       wordpress_id: number;
       nombre: string;
-      descripcion: string;
       slug: string;
       status: string;
       created_at: string;
@@ -280,30 +244,32 @@ export async function POST(request: Request) {
     const despachoData: DespachoData = {
       wordpress_id: despacho.id,
       nombre: despachoNombre,
-      descripcion: descripcionFinal,
       slug: slug,
       status: despacho.status || 'draft',
       created_at: (typeof despacho.date_gmt === 'string' ? despacho.date_gmt : new Date().toISOString()),
       updated_at: (typeof despacho.modified_gmt === 'string' ? despacho.modified_gmt : new Date().toISOString())
     };
     
-    // Filtrar para asegurarnos de que solo incluimos los campos permitidos
-    type DespachoFiltrado = {
-      wordpress_id: number;
-      nombre: string;
-      descripcion: string;
-      slug: string;
-      status: string;
-      created_at: string;
-      updated_at: string;
+    // Definir el tipo DespachoFiltrado sin el campo descripcion
+    type DespachoFiltrado = Omit<DespachoData, 'id' | 'featured_media_url'> & {
       featured_media_url?: string;
     };
+    
+    // Interfaz para el tipo de sede que necesitamos procesar
+    interface SedeProcesada {
+      id?: number;
+      nombre?: string;
+      descripcion?: string | { rendered?: string };
+      // Agregar otros campos necesarios
+      [key: string]: unknown;
+    }
+    
+    // Variable no utilizada intencionalmente
+    const _errorBusquedaNombre = '';
 
-    // Crear objeto con los datos filtrados y asegurar que los campos requeridos tengan valores por defecto
     const despachoFiltrado: DespachoFiltrado = {
       wordpress_id: despacho.id,
       nombre: despachoNombre || `Despacho ${despacho.id}`,
-      descripcion: descripcionFinal || '',
       slug: slug || `despacho-${despacho.id}`,
       status: despacho.status || 'draft',
       created_at: (typeof despacho.date_gmt === 'string' ? despacho.date_gmt : new Date().toISOString()),
@@ -326,16 +292,10 @@ export async function POST(request: Request) {
     }
 
     console.log('📝 [Debug] Datos finales del despacho a guardar:', {
-      ...despachoFiltrado,
-      descripcionLength: despachoFiltrado.descripcion?.length || 0,
-      descripcionPreview: despachoFiltrado.descripcion?.substring(0, 50) + '...' || '...'
+      ...despachoFiltrado
     });
 
-    console.log('📝 [Debug] Datos del despacho a guardar:', {
-      nombre: despachoData.nombre,
-      descripcionLength: descripcionFinal?.length || 0,
-      descripcionPreview: typeof descripcionFinal === 'string' ? descripcionFinal.substring(0, 50) + '...' : 'No es un string'
-    });
+    console.log('📝 [Debug] Datos del despacho a guardar:', despachoFiltrado);
 
     // Solo incluir featured_media_url si existe el campo en la tabla
     if (despacho.featured_media) {
