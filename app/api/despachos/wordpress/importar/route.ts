@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -26,42 +25,7 @@ interface SedeWP {
   [key: string]: unknown; // For any additional fields
 }
 
-/**
- * Represents a filtered version of SedeWP for database operations
- */
-  type SedeWPFiltrado = Partial<{
-  despacho_id: string;
-  wp_sede_id: number;
-  nombre: string;
-  descripcion: string;
-  web: string;
-  telefono: string;
-  numero_colegiado: string;
-  colegio: string;
-  experiencia: string;
-  calle: string;
-  numero: string;
-  piso: string;
-  localidad: string;
-  provincia: string;
-  codigo_postal: string;
-  pais: string;
-  email_contacto: string;
-  persona_contacto: string;
-  foto_perfil: string;
-  ano_fundacion: number;
-  tamano_despacho: string;
-  especialidades: string[];
-  servicios_especificos: string[];
-  estado_verificacion: string;
-  latitud: number;
-  longitud: number;
-  horario: string;
-  es_principal: boolean;
-  created_at: string;
-  updated_at: string;
-  [key: string]: string | number | boolean | string[] | null | undefined; // Tipos específicos para propiedades dinámicas
-}>;
+// SedeWPFiltrado type has been removed as it was not being used
 
 /**
  * Represents a law firm from WordPress
@@ -162,29 +126,7 @@ export async function POST(request: Request) {
       titulo: despacho.title?.rendered,
     });
 
-    // Función auxiliar para obtener la descripción de una sede
-    interface SedeConDescripcion {
-      descripcion?: string | { rendered?: string };
-      [key: string]: unknown;
-    }
-    
-    const obtenerDescripcionSede = (sede: SedeConDescripcion): string => {
-      // Si la descripción es un string, la devolvemos directamente
-      if (typeof sede.descripcion === 'string') {
-        return sede.descripcion;
-      }
-      
-      // Si la descripción es un objeto con propiedad 'rendered', la extraemos
-      if (sede.descripcion && typeof sede.descripcion === 'object' && sede.descripcion !== null) {
-        const desc = sede.descripcion as { rendered?: string };
-        if (typeof desc.rendered === 'string') {
-          return desc.rendered;
-        }
-      }
-      
-      // Si no hay descripción, devolvemos un string vacío
-      return '';
-    };
+    // La función obtenerDescripcionSede ha sido eliminada ya que no se estaba utilizando
 
     // Generar slug, usando el de WordPress si existe, o generarlo del título
     const generateSlug = (str: string) => {
@@ -215,8 +157,6 @@ export async function POST(request: Request) {
       slug = `despacho-${despacho.id}`;
     }
 
-    // La función obtenerDescripcionSede se usará al procesar las sedes
-
     // Preparar datos del despacho según la estructura real de la tabla
     // IMPORTANTE: No incluir campos que no existan en la tabla despachos
     // Los siguientes campos pertenecen solo a la tabla sedes y no deben incluirse aquí:
@@ -224,11 +164,7 @@ export async function POST(request: Request) {
     // - persona_contacto
     // La descripción solo se usará para las sedes, no para el despacho
     
-    // Crear un objeto con solo los campos permitidos para el despacho
-    const camposPermitidos = [
-      'wordpress_id', 'nombre', 'slug', 'status', 
-      'created_at', 'updated_at', 'featured_media_url'
-    ];
+    // Se eliminó la constante camposPermitidos ya que no se estaba utilizando
     
     interface DespachoData {
       wordpress_id: number;
@@ -254,14 +190,7 @@ export async function POST(request: Request) {
       featured_media_url?: string;
     };
     
-    // Interfaz para el tipo de sede que necesitamos procesar
-    interface SedeProcesada {
-      id?: number;
-      nombre?: string;
-      descripcion?: string | { rendered?: string };
-      // Agregar otros campos necesarios
-      [key: string]: unknown;
-    }
+    // La interfaz SedeProcesada ha sido eliminada ya que no se estaba utilizando
     
     const despachoFiltrado: DespachoFiltrado = {
       wordpress_id: despacho.id,
@@ -462,7 +391,7 @@ export async function POST(request: Request) {
             // 1. Primero intentamos encontrar la sede por wp_sede_id si existe un ID válido
             const sedeId = sede && typeof sede === 'object' && 'id' in sede ? String(sede.id) : null;
             if (sedeId) {
-              const { data: existingSede, error: sedeError } = await supabase
+              const { data: existingSede } = await supabase
                 .from("sedes")
                 .select("*")
                 .eq("wp_sede_id", sedeId)
@@ -470,8 +399,8 @@ export async function POST(request: Request) {
 
               if (existingSede) {
                 // Si encontramos por wp_sede_id, actualizamos
-              // Crear un nuevo objeto sin los campos que no queremos actualizar
-              const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
+                // Extraemos solo los campos que necesitamos, ignorando id y created_at
+                const { id: _unusedId, created_at: _unusedCreatedAt, ...datosActualizacion } = sedeData as Record<string, unknown>;
                 
                 // Crear un nuevo objeto sin los campos vacíos o nulos
                 const cleanSedeData: Record<string, unknown> = {};
@@ -497,7 +426,7 @@ export async function POST(request: Request) {
             }
 
             // 2. Si no la encontramos por wp_sede_id, buscamos por nombre y despacho_id
-            const { data: sedePorNombre, error: errorBusquedaNombre } = await supabase
+            const { data: sedePorNombre } = await supabase
               .from('sedes')
               .select('*')
               .eq('nombre', sedeData.nombre)
@@ -505,13 +434,8 @@ export async function POST(request: Request) {
               .maybeSingle();
 
             if (sedePorNombre) {
-              // Usamos el objeto completo de sedeData para la actualización
-              // para asegurar que todos los campos se actualicen correctamente
-              const datosActualizacion = { ...sedeData };
-              
-              // Aseguramos que el ID no se actualice
-              delete datosActualizacion.id;
-              delete datosActualizacion.created_at; // No actualizar la fecha de creación
+              // Extraemos solo los campos que necesitamos, ignorando id y created_at
+              const { id: _unusedId, created_at: _unusedCreatedAt, ...datosActualizacion } = sedeData as Record<string, unknown>;
               
               // Crear un nuevo objeto sin los campos vacíos o nulos
               const cleanSedeData: Record<string, unknown> = {};
