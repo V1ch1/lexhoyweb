@@ -62,20 +62,20 @@ export function ConfirmDialog({
           <h3 className="text-lg font-medium leading-6 text-gray-900">
             {title}
           </h3>
-          <div className="mt-4 space-y-4">
-            <div className="text-sm text-gray-600">
+          <div className="mt-4 space-y-6">
+            <div className="text-sm text-gray-600 leading-relaxed">
               {message}
             </div>
             
             {requireConfirmationText && (
-              <div className="mt-4">
-                <label htmlFor="confirmation" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="mt-6 space-y-2">
+                <label htmlFor="confirmation" className="block text-sm font-medium text-gray-700">
                   Escribe <span className="font-bold">{requireConfirmationText.textToMatch}</span> para confirmar:
                 </label>
                 <input
                   type="text"
                   id="confirmation"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3"
                   placeholder={requireConfirmationText.placeholder}
                   value={confirmationText}
                   onChange={(e) => setConfirmationText(e.target.value)}
@@ -97,7 +97,7 @@ export function ConfirmDialog({
             </button>
             <button
               type="button"
-              className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              className={`inline-flex justify-center items-center rounded-md border border-transparent px-6 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 isConfirmDisabled || isProcessing
                   ? 'bg-red-400 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'

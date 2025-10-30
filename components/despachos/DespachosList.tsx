@@ -41,8 +41,12 @@ export function DespachosList({
   user,
   setAsignarDespachoId,
   setShowAsignarModal,
+  // Estas props no se usan actualmente pero se mantienen para futuras implementaciones
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   solicitudesPendientes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setDespachoSolicitar,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setShowSolicitarModal,
   fetchDespachos,
 }: DespachosListProps) {
@@ -444,7 +448,7 @@ export function DespachosList({
         title={`Eliminar despacho`}
         message={
           <>
-            <p className="mb-2">¿Estás seguro de que quieres eliminar el despacho <span className="font-semibold">"{despachoToDelete?.nombre}"</span> y todas sus sedes?</p>
+            <p className="mb-2">¿Estás seguro de que quieres eliminar el despacho <span className="font-semibold">&quot;{despachoToDelete?.nombre}&quot;</span> y todas sus sedes?</p>
             <p className="text-red-600 font-medium">Esta acción no se puede deshacer.</p>
           </>
         }

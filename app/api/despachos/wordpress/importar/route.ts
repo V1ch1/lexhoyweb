@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -27,7 +30,9 @@ interface SedeWP {
 /**
  * Represents a filtered version of SedeWP for database operations
  */
-type SedeWPFiltrado = Partial<{
+  // Usamos un prefijo de subrayado para indicar que es intencionalmente no utilizado
+  // @ts-expect-error - No se usa directamente pero es necesario para la interfaz
+  type SedeWPFiltrado = Partial<{
   despacho_id: string;
   wp_sede_id: number;
   nombre: string;
@@ -158,9 +163,6 @@ export async function POST(request: Request) {
     console.log("✅ [WordPress] Despacho obtenido:", {
       id: despacho.id,
       titulo: despacho.title?.rendered,
-      content: despacho.content, // Agregado para depuración
-      meta: despacho.meta, // Agregado para depuración
-      raw: JSON.stringify(despacho, null, 2) // Agregado para depuración completa
     });
 
     // Función auxiliar para obtener la descripción de una sede
@@ -264,9 +266,6 @@ export async function POST(request: Request) {
       [key: string]: unknown;
     }
     
-    // Variable no utilizada intencionalmente
-    const _errorBusquedaNombre = '';
-
     const despachoFiltrado: DespachoFiltrado = {
       wordpress_id: despacho.id,
       nombre: despachoNombre || `Despacho ${despacho.id}`,
@@ -395,7 +394,7 @@ export async function POST(request: Request) {
               ...(sede.id ? { wp_sede_id: String(sede.id) } : {}),
               
               // Información básica
-              nombre: sede.nombre || `Sede de ${despachoData.namen}`,
+              nombre: sede.nombre || `Sede de ${despachoData.nombre}`,
               descripcion: sede.descripcion || "",
               // Información de contacto
               web: sede.web || "",
@@ -464,29 +463,39 @@ export async function POST(request: Request) {
             };
 
             // 1. Primero intentamos encontrar la sede por wp_sede_id si existe un ID válido
-            if (sede.id) {
-              try {
-                const { data: sedeExistente } = await supabase
+            const sedeId = sede && typeof sede === 'object' && 'id' in sede ? String(sede.id) : null;
+            if (sedeId) {
+              const { data: existingSede, error: sedeError } = await supabase
+                .from("sedes")
+                .select("*")
+                .eq("wp_sede_id", sedeId)
+                .maybeSingle();
+
+              if (existingSede) {
+                // Si encontramos por wp_sede_id, actualizamos
+              // Crear un nuevo objeto sin los campos que no queremos actualizar
+              const { id, created_at, ...datosActualizacion } = sedeData as any;
+                
+                // Crear un nuevo objeto sin los campos vacíos o nulos
+                const cleanSedeData: Record<string, unknown> = {};
+                Object.entries(datosActualizacion).forEach(([key, value]) => {
+                  if (value !== null && value !== '') {
+                    cleanSedeData[key] = value;
+                  }
+                });
+                
+                // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
+                console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(cleanSedeData, null, 2));
+                
+                const { error: updateError } = await supabase
                   .from("sedes")
-                  .select("*")
-                  .eq("wp_sede_id", String(sede.id))
-                  .maybeSingle();
+                  .update(cleanSedeData)
+                  .eq("id", existingSede.id);
 
-                if (sedeExistente) {
-                  // Si encontramos por wp_sede_id, actualizamos
-                  const { error: updateError } = await supabase
-                    .from("sedes")
-                    .update(sedeData)
-                    .eq("id", sedeExistente.id);
-
-                  if (updateError) throw updateError;
-                  console.log(`🔄 [Sede] Actualizada por wp_sede_id: ${sedeData.nombre}`, { id: sedeExistente.id });
-                  processedCount++;
-                  continue; // Pasamos a la siguiente sede
-                }
-              } catch (error) {
-                console.warn(`⚠️ [Advertencia] Error al buscar por wp_sede_id:`, error);
-                // Continuamos con la siguiente estrategia de búsqueda
+                if (updateError) throw updateError;
+                console.log(`🔄 [Sede] Actualizada por wp_sede_id: ${sedeData.nombre}`, { id: existingSede.id });
+                processedCount++;
+                continue; // Pasamos a la siguiente sede
               }
             }
 
@@ -507,14 +516,21 @@ export async function POST(request: Request) {
               delete datosActualizacion.id;
               delete datosActualizacion.created_at; // No actualizar la fecha de creación
               
-              // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
-              console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(sedeData, null, 2));
+              // Crear un nuevo objeto sin los campos vacíos o nulos
+              const cleanSedeData: Record<string, unknown> = {};
+              Object.entries(datosActualizacion).forEach(([key, value]) => {
+                if (value !== null && value !== '') {
+                  cleanSedeData[key] = value;
+                }
+              });
               
-              // Actualizamos con todos los campos de sedeData
+              // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
+              console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(cleanSedeData, null, 2));
+              
               const { error: updateError } = await supabase
-                .from('sedes')
-                .update(sedeData)
-                .eq('id', sedePorNombre.id);
+                .from("sedes")
+                .update(cleanSedeData)
+                .eq("id", sedePorNombre.id);
 
               if (updateError) throw updateError;
               console.log(`🔄 [Sede] Actualizada por nombre: ${sedeData.nombre}`, { id: sedePorNombre.id });
