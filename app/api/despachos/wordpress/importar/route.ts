@@ -386,9 +386,8 @@ export async function POST(request: Request) {
 
         for (const sede of sedesData) {
           try {
-            // Preparar datos de la sede
-            // Mapeo de campos de la sede según la estructura de la base de datos
-            // Aquí sí incluimos foto_perfil ya que pertenece a la tabla sedes
+            // Preparar datos completos de la sede según la estructura de la tabla 'sedes'
+            // Incluyendo todos los campos necesarios
             const sedeData = {
               // Identificación
               despacho_id: result.data[0].id,
@@ -396,15 +395,20 @@ export async function POST(request: Request) {
               ...(sede.id ? { wp_sede_id: String(sede.id) } : {}),
               
               // Información básica
-              nombre: sede.nombre || `Sede de ${despachoData.nombre}`,
+              nombre: sede.nombre || `Sede de ${despachoData.namen}`,
               descripcion: sede.descripcion || "",
+              // Información de contacto
               web: sede.web || "",
               telefono: sede.telefono || "",
+              email_contacto: sede.email_contacto || "",
+              persona_contacto: sede.persona_contacto || "",
+              
+              // Información profesional
               numero_colegiado: sede.numero_colegiado || "",
               colegio: sede.colegio || "",
               experiencia: sede.experiencia || "",
               
-              // Ubicación
+              // Ubicación - Campos individuales
               calle: sede.calle || "",
               numero: sede.numero || "",
               piso: sede.piso || "",
@@ -413,20 +417,21 @@ export async function POST(request: Request) {
               codigo_postal: sede.codigo_postal || "",
               pais: sede.pais || "España",
               
-              // Información de contacto
-              email_contacto: sede.email_contacto || "",
-              persona_contacto: sede.persona_contacto || "",
-              
-              // Configuración - foto_perfil solo para la tabla sedes
-              // Este campo debe existir en la tabla sedes
-              foto_perfil: sede.foto_perfil || null,
               // Detalles del despacho
               ano_fundacion: sede.ano_fundacion ? parseInt(String(sede.ano_fundacion)) : null,
               tamano_despacho: sede.tamano_despacho || "",
-              especialidades: sede.especialidades || "",
-              servicios_especificos: sede.servicios_especificos || "",
               
-              // Estado - Aseguramos que los valores sean válidos
+              // Servicios y especialidades
+              especialidades: typeof sede.especialidades === 'string' ? sede.especialidades : "",
+              servicios_especificos: typeof sede.servicios_especificos === 'string' ? sede.servicios_especificos : "",
+              areas_practica: Array.isArray(sede.areas_practica) 
+                ? sede.areas_practica.map(String).filter(Boolean) 
+                : [],
+              
+              // Multimedia
+              foto_perfil: sede.foto_perfil || null,
+              
+              // Estado
               estado_verificacion: ['verificado', 'pendiente', 'rechazado'].includes(String(sede.estado_verificacion)) 
                 ? String(sede.estado_verificacion)
                 : "pendiente",
@@ -437,7 +442,7 @@ export async function POST(request: Request) {
               es_principal: Boolean(sede.es_principal),
               activa: sede.activa !== false, // Por defecto true si no está definido o es true
               
-              // Datos estructurados - Aseguramos que sean objetos
+              // Datos estructurados
               horarios: sede.horarios && typeof sede.horarios === 'object' ? sede.horarios : {},
               redes_sociales: sede.redes_sociales && typeof sede.redes_sociales === 'object' 
                 ? sede.redes_sociales 
@@ -451,11 +456,8 @@ export async function POST(request: Request) {
                 provincia: String(sede.provincia || ""),
                 pais: String(sede.pais || "España")
               },
-              areas_practica: Array.isArray(sede.areas_practica) 
-                ? sede.areas_practica.map(String).filter(Boolean) 
-                : [],
               
-              // Observaciones - Aseguramos que sea un string
+              // Observaciones
               observaciones: String(sede.observaciones || ''),
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -497,21 +499,21 @@ export async function POST(request: Request) {
               .maybeSingle();
 
             if (sedePorNombre) {
-              // Solo actualizar los campos necesarios
-              const datosActualizacion = {
-                nombre: sedeData.nombre,
-                descripcion: sedeData.descripcion,
-                web: sedeData.web,
-                telefono: sedeData.telefono,
-                email_contacto: sedeData.email_contacto,
-                // Solo incluir wp_sede_id si tiene valor
-                ...(sede.id ? { wp_sede_id: String(sede.id) } : {})
-              };
+              // Usamos el objeto completo de sedeData para la actualización
+              // para asegurar que todos los campos se actualicen correctamente
+              const datosActualizacion = { ...sedeData };
               
-              // Si encontramos por nombre y despacho_id, actualizamos
+              // Aseguramos que el ID no se actualice
+              delete datosActualizacion.id;
+              delete datosActualizacion.created_at; // No actualizar la fecha de creación
+              
+              // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
+              console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(sedeData, null, 2));
+              
+              // Actualizamos con todos los campos de sedeData
               const { error: updateError } = await supabase
                 .from('sedes')
-                .update(datosActualizacion)
+                .update(sedeData)
                 .eq('id', sedePorNombre.id);
 
               if (updateError) throw updateError;
@@ -520,23 +522,13 @@ export async function POST(request: Request) {
               continue; // Pasamos a la siguiente sede
             }
 
-            // 3. Si no existe, la creamos
-            // Definir explícitamente los campos permitidos para la inserción
-            const datosSede = {
-              despacho_id: sedeData.despacho_id,
-              nombre: sedeData.nombre,
-              descripcion: sedeData.descripcion,
-              web: sedeData.web,
-              telefono: sedeData.telefono,
-              email_contacto: sedeData.email_contacto,
-              // Solo incluir wp_sede_id si tiene valor
-              ...(sede.id ? { wp_sede_id: String(sede.id) } : {})
-              // No incluir foto_perfil ni otros campos que no existan en la tabla
-            };
+            // 3. Si no existe, la creamos con todos los campos necesarios
+            // Usamos el objeto completo de sedeData que ya tiene todos los campos mapeados correctamente
+            console.log('📝 [Debug] Insertando nueva sede con datos:', JSON.stringify(sedeData, null, 2));
             
             const { data: nuevaSede, error: insertError } = await supabase
               .from('sedes')
-              .insert(datosSede)
+              .insert(sedeData)
               .select()
               .single();
 
