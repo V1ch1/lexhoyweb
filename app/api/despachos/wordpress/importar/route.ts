@@ -400,7 +400,9 @@ export async function POST(request: Request) {
               if (existingSede) {
                 // Si encontramos por wp_sede_id, actualizamos
                 // Extraemos solo los campos que necesitamos, ignorando id y created_at
-                const { id: _unusedId, created_at: _unusedCreatedAt, ...datosActualizacion } = sedeData as Record<string, unknown>;
+                const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
+                // Indicamos que estas variables son intencionalmente no utilizadas
+                void (id && created_at && 0);
                 
                 // Crear un nuevo objeto sin los campos vacíos o nulos
                 const cleanSedeData: Record<string, unknown> = {};
@@ -435,7 +437,9 @@ export async function POST(request: Request) {
 
             if (sedePorNombre) {
               // Extraemos solo los campos que necesitamos, ignorando id y created_at
-              const { id: _unusedId, created_at: _unusedCreatedAt, ...datosActualizacion } = sedeData as Record<string, unknown>;
+              const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
+              // Indicamos que estas variables son intencionalmente no utilizadas
+              void (id && created_at && 0);
               
               // Crear un nuevo objeto sin los campos vacíos o nulos
               const cleanSedeData: Record<string, unknown> = {};
