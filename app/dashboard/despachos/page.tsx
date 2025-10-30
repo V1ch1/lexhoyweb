@@ -199,9 +199,6 @@ const DespachosPage = () => {
     setError(null);
     
     try {
-      // Actualizar el conteo de sedes para todos los despachos
-      await supabase.rpc('actualizar_conteo_sedes');
-      
       // Obtener los despachos con el conteo actualizado
       let query = supabase
         .from("despachos")
@@ -558,6 +555,7 @@ const DespachosPage = () => {
           setPage={setPage}
           totalPages={totalPages}
           loadingDespachos={loadingDespachos}
+          fetchDespachos={fetchDespachos}
           error={error}
           despachos={despachos}
           user={user}

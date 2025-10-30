@@ -4,6 +4,7 @@ import { DespachosListSkeleton } from "./skeletons";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { DespachoSummary } from "@/types/despachos";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface DespachosListProps {
   search: string;
@@ -21,8 +22,11 @@ interface DespachosListProps {
   setAsignarDespachoId: (id: string) => void;
   setShowAsignarModal: (show: boolean) => void;
   solicitudesPendientes: Set<string>;
-  setDespachoSolicitar: React.Dispatch<React.SetStateAction<DespachoSummary | null>>;
+  setDespachoSolicitar: React.Dispatch<
+    React.SetStateAction<DespachoSummary | null>
+  >;
   setShowSolicitarModal: (show: boolean) => void;
+  fetchDespachos: () => Promise<void>;
 }
 
 export function DespachosList({
@@ -40,7 +44,12 @@ export function DespachosList({
   solicitudesPendientes,
   setDespachoSolicitar,
   setShowSolicitarModal,
+  fetchDespachos,
 }: DespachosListProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [despachoToDelete, setDespachoToDelete] =
+    useState<DespachoSummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const [localSearch, setLocalSearch] = useState(search);
 
@@ -49,13 +58,72 @@ export function DespachosList({
     setPage(1);
   };
 
+  const handleDeleteClick = (despacho: DespachoSummary) => {
+    setDespachoToDelete(despacho);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!despachoToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Usamos la función RPC segura
+      const { data, error } = await supabase
+        .rpc('eliminar_despacho_seguro', { 
+          despacho_id_param: despachoToDelete.id 
+        });
+
+      if (error) {
+        console.error('Error al llamar a la función de eliminación segura:', error);
+        throw new Error('No se pudo completar la eliminación.');
+      }
+
+      if (data && !data.success) {
+        console.error('Error en la función de eliminación segura:', data.error);
+        throw new Error(data.error || 'Error al eliminar el despacho.');
+      }
+
+      // 4. Actualizamos la lista
+      await fetchDespachos();
+      setShowDeleteConfirm(false);
+      
+    } catch (error: unknown) {
+      console.error('Error al eliminar el despacho:', error);
+      
+      // Mensaje de error más específico
+      let errorMessage = 'No se pudo eliminar el despacho. ';
+      
+      if (error && typeof error === 'object') {
+        const errorObj = error as { message?: string; code?: string };
+        
+        if (errorObj.message) {
+          errorMessage = errorObj.message;
+        }
+        
+        if (errorObj.code === '23503') { // Violación de clave foránea
+          errorMessage = 'No se puede eliminar porque hay registros relacionados.';
+        } else if (errorObj.code === '42703') { // Columna no existe
+          errorMessage = 'Error en la base de datos. Contacta al administrador.';
+        } else {
+          errorMessage = errorObj.message || errorMessage;
+        }
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setIsDeleting(false);
+      setDespachoToDelete(null);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
 
-  // Si está cargando, mostrar el skeleton independientemente de si hay búsqueda o no
+  // Si está cargando, mostrar el skeleton
   if (loadingDespachos) {
     return <DespachosListSkeleton />;
   }
@@ -78,6 +146,7 @@ export function DespachosList({
             </p>
           </div>
         </div>
+
         <div className="mb-4 flex flex-col sm:flex-row gap-2 items-center justify-between">
           <div className="flex w-full max-w-2xl">
             <input
@@ -92,8 +161,19 @@ export function DespachosList({
               onClick={handleSearch}
               className="px-4 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <span className="ml-1 hidden sm:inline">Buscar</span>
             </button>
@@ -118,6 +198,7 @@ export function DespachosList({
             </button>
           </div>
         </div>
+
         {error ? (
           <div className="text-center py-8 text-red-500">{error}</div>
         ) : despachos.length === 0 ? (
@@ -196,12 +277,13 @@ export function DespachosList({
                       {d.num_sedes}
                     </td>
                     <td className="px-4 py-2 text-sm">
-                      {user?.role === "super_admin" || d.owner_email === user?.email ? (
+                      {user?.role === "super_admin" ||
+                      d.owner_email === user?.email ? (
                         d.owner_email ? (
                           <button
                             onClick={async () => {
                               if (!d.owner_email) return;
-                              
+
                               try {
                                 const { data: userData, error } = await supabase
                                   .from("users")
@@ -215,7 +297,10 @@ export function DespachosList({
                                   router.push(`/admin/users/${userData.id}`);
                                 }
                               } catch (error) {
-                                console.error("Error fetching user data:", error);
+                                console.error(
+                                  "Error fetching user data:",
+                                  error
+                                );
                               }
                             }}
                             className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2"
@@ -268,71 +353,78 @@ export function DespachosList({
                         )
                       ) : (
                         <span className="text-gray-400 text-xs italic">
-                          {d.owner_email ? 'Asignado' : 'Sin asignar'}
+                          {d.owner_email ? "Asignado" : "Sin asignar"}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-2 text-sm">
-                      {user?.role === "super_admin" ||
-                      d.owner_email === user?.email ? (
-                        <button
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                          onClick={() => {
-                            const slug = d.slug || slugify(d.nombre);
-                            router.push(`/dashboard/despachos/${slug}`);
-                          }}
-                        >
-                          Ver/Editar
-                        </button>
-                      ) : !d.owner_email ? (
-                        solicitudesPendientes.has(d.id) ? (
-                          <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Pendiente
-                          </span>
-                        ) : (
+                      <div className="flex items-center gap-2">
+                        {(user?.role === "super_admin" ||
+                          d.owner_email === user?.email) && (
                           <button
-                            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-xs font-semibold flex items-center gap-1"
+                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
                             onClick={() => {
-                              setDespachoSolicitar(d);
-                              setShowSolicitarModal(true);
+                              const slug = d.slug || slugify(d.nombre);
+                              router.push(`/dashboard/despachos/${slug}`);
                             }}
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Solicitar Propiedad
+                            Ver/Editar
                           </button>
-                        )
-                      ) : (
-                        <span className="text-gray-400 text-xs italic">
-                          Sin permisos
-                        </span>
-                      )}
+                        )}
+
+                        {user?.role === "super_admin" && (
+                          <button
+                            onClick={() => handleDeleteClick(d)}
+                            disabled={isDeleting}
+                            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs flex items-center gap-1"
+                            title="Eliminar despacho y todas sus sedes"
+                          >
+                            {isDeleting && despachoToDelete?.id === d.id ? (
+                              <>
+                                <svg
+                                  className="animate-spin h-3 w-3 text-white"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Eliminando...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3 w-3"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                                Eliminar
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -341,6 +433,28 @@ export function DespachosList({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDespachoToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={`Eliminar despacho`}
+        message={
+          <>
+            <p className="mb-2">¿Estás seguro de que quieres eliminar el despacho <span className="font-semibold">"{despachoToDelete?.nombre}"</span> y todas sus sedes?</p>
+            <p className="text-red-600 font-medium">Esta acción no se puede deshacer.</p>
+          </>
+        }
+        confirmText="Eliminar"
+        isProcessing={isDeleting}
+        requireConfirmationText={{
+          textToMatch: 'ELIMINAR',
+          placeholder: 'Escribe ELIMINAR para confirmar'
+        }}
+      />
     </div>
   );
 }
