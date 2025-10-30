@@ -197,68 +197,100 @@ const DespachosPage = () => {
   const fetchDespachos = async () => {
     setLoadingDespachos(true);
     setError(null);
-    let query = supabase
-      .from("despachos")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-    if (search) {
-      query = query.ilike("nombre", `%${search}%`);
-    }
-    const { data, error, count } = await query;
-    if (error) {
-      console.error("Supabase error al cargar despachos:", error);
-      setError("Error al cargar los despachos: " + JSON.stringify(error));
-      setDespachos([]);
-      setTotal(0);
-      setLoadingDespachos(false);
-      return;
-    }
-    // Mostrar el objeto recibido en consola para análisis
+    
+    try {
+      // Actualizar el conteo de sedes para todos los despachos
+      await supabase.rpc('actualizar_conteo_sedes');
+      
+      // Obtener los despachos con el conteo actualizado
+      let query = supabase
+        .from("despachos")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+        
+      if (search) {
+        query = query.ilike("nombre", `%${search}%`);
+      }
+      
+      const { data, error, count } = await query;
+      
+      if (error) {
+        console.error("Error al cargar despachos:", error);
+        setError("Error al cargar los despachos: " + error.message);
+        setDespachos([]);
+        setTotal(0);
+        setLoadingDespachos(false);
+        return;
+      }
 
-    // Para cada despacho, obtener la sede principal y el propietario (usuario con ese despacho_id)
-    const mapped = await Promise.all(
-      (data || []).map(async (d: any) => {
-        let sedePrincipal = null;
-        let ownerEmail = null;
-        if (d.id) {
-          // Sede principal - con manejo de errores
-          const { data: sedes, error: sedeError } = await supabase
-            .from("sedes")
-            .select("*")
-            .eq("despacho_id", d.id)
-            .eq("es_principal", true)
-            .maybeSingle();
+      // Mapear los datos de los despachos
+      const mapped = await Promise.all(
+        (data || []).map(async (d: any) => {
+          try {
+            // Obtener el conteo real de sedes para este despacho
+            const { count: conteoSedes } = await supabase
+              .from('sedes')
+              .select('*', { count: 'exact', head: true })
+              .eq('despacho_id', d.id);
 
-          if (sedeError) {
-            console.warn(
-              `⚠️ No se pudo obtener sede para despacho ${d.id}:`,
-              sedeError.message
-            );
+            const numSedes = conteoSedes || 0;
+            
+            // Si el conteo es diferente, actualizar el campo en la base de datos
+            if (numSedes !== d.num_sedes) {
+              await supabase
+                .from('despachos')
+                .update({ num_sedes: numSedes })
+                .eq('id', d.id);
+            }
+
+            // Obtener la sede principal
+            const { data: sedePrincipal } = await supabase
+              .from("sedes")
+              .select("*")
+              .eq("despacho_id", d.id)
+              .eq("es_principal", true)
+              .maybeSingle();
+
+            return {
+              id: d.id,
+              object_id: d.object_id,
+              nombre: decodeHtmlEntities(d.nombre),
+              num_sedes: numSedes,
+              created_at: d.created_at,
+              estado: d.estado,
+              localidad: sedePrincipal?.localidad || "",
+              provincia: sedePrincipal?.provincia || "",
+              telefono: sedePrincipal?.telefono || "",
+              email: sedePrincipal?.email_contacto || "",
+              owner_email: d.owner_email || null,
+            };
+          } catch (error) {
+            console.error(`Error procesando despacho ${d.id}:`, error);
+            return {
+              id: d.id,
+              object_id: d.object_id,
+              nombre: decodeHtmlEntities(d.nombre),
+              num_sedes: d.num_sedes || 0,
+              created_at: d.created_at,
+              estado: d.estado,
+              localidad: "",
+              provincia: "",
+              telefono: "",
+              email: "",
+              owner_email: d.owner_email || null,
+            };
           }
-
-          sedePrincipal = sedes || null;
-          // Obtener owner_email directamente del despacho
-          ownerEmail = d.owner_email || null;
-        }
-        return {
-          id: d.id,
-          object_id: d.object_id,
-          nombre: decodeHtmlEntities(d.nombre),
-          num_sedes: d.num_sedes,
-          created_at: d.created_at,
-          estado: d.estado,
-          localidad: sedePrincipal?.localidad || "",
-          provincia: sedePrincipal?.provincia || "",
-          telefono: sedePrincipal?.telefono || "",
-          email: sedePrincipal?.email_contacto || "",
-          owner_email: ownerEmail,
-        };
       })
     );
-    setDespachos(mapped);
-    setTotal(count || 0);
-    setLoadingDespachos(false);
+      setDespachos(mapped);
+      setTotal(count || 0);
+    } catch (error) {
+      console.error("Error al cargar despachos:", error);
+      setError("Error al cargar los despachos. Por favor, intente de nuevo.");
+    } finally {
+      setLoadingDespachos(false);
+    }
   };
 
   // useEffect: llama a fetchDespachos cuando user está cargado y cambia page/search
