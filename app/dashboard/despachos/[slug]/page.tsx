@@ -545,14 +545,29 @@ export default function DespachoPage() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {decodeHtmlEntities(formData.nombre)}
-              </h1>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {decodeHtmlEntities(formData.nombre)}
+                </h1>
+              </div>
+              <div className="text-sm text-gray-600">
                 <span>Creado el {new Date(despacho?.created_at || '').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
               </div>
             </div>
-            <EstadoIcon estado={despacho?.estado || (despacho?.activo ? 'activo' : 'pendiente')} />
+            <div className="flex items-center gap-3">
+              <EstadoIcon estado={despacho?.estado || 'activo'} />
+              {despacho?.verificado || sedes?.some(sede => sede.es_principal && sede.is_verified) ? (
+                <div className="flex items-center text-sm text-green-600">
+                  <CheckCircleIcon className="h-4 w-4 mr-1" />
+                  <span>Verificado</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-sm text-gray-500">
+                  <ClockIcon className="h-4 w-4 mr-1" />
+                  <span>No verificado</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
