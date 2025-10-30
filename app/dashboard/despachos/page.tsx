@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
@@ -223,7 +222,7 @@ const DespachosPage = () => {
 
       // Mapear los datos de los despachos
       const mapped = await Promise.all(
-        (data || []).map(async (d: any) => {
+        (data || []).map(async (d: DespachoSummary) => {
           try {
             // Obtener el conteo real de sedes para este despacho
             const { count: conteoSedes } = await supabase

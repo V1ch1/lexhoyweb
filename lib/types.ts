@@ -43,7 +43,7 @@ export interface UserDespacho {
   id: string;
   userId: string;
   despachoId: string;
-  fechaAsignacion: Date;
+  fechaAsignacion: string | Date;
   asignadoPor?: string;
   activo: boolean;
   permisos: {

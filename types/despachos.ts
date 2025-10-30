@@ -15,9 +15,9 @@ export interface DespachoSummary {
   provincia?: string;
   telefono?: string;
   email?: string;
-  owner_nombre?: string;
-  owner_apellidos?: string;
-  owner_email?: string;
+  owner_nombre?: string | null;
+  owner_apellidos?: string | null;
+  owner_email?: string | null;
 }
 
 import { SedeWP, DespachoWP as BaseDespachoWP } from './wordpress';

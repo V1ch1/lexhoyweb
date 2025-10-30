@@ -527,7 +527,7 @@ export class UserService {
         id: `owned-${d.id}`, // ID único para evitar conflictos
         userId,
         despachoId: d.id.toString(),
-        fechaAsignacion: new Date(),
+fechaAsignacion: new Date().toISOString(),
         activo: true,
         permisos: { leer: true, escribir: true, eliminar: true }, // Propietario tiene todos los permisos
         asignadoPor: "owner", // Indicador de que es propietario

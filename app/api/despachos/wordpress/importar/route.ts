@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -30,8 +29,6 @@ interface SedeWP {
 /**
  * Represents a filtered version of SedeWP for database operations
  */
-  // Usamos un prefijo de subrayado para indicar que es intencionalmente no utilizado
-  // @ts-expect-error - No se usa directamente pero es necesario para la interfaz
   type SedeWPFiltrado = Partial<{
   despacho_id: string;
   wp_sede_id: number;
@@ -63,7 +60,7 @@ interface SedeWP {
   es_principal: boolean;
   created_at: string;
   updated_at: string;
-  [key: string]: any; // For any additional dynamic properties
+  [key: string]: string | number | boolean | string[] | null | undefined; // Tipos específicos para propiedades dinámicas
 }>;
 
 /**
@@ -474,7 +471,7 @@ export async function POST(request: Request) {
               if (existingSede) {
                 // Si encontramos por wp_sede_id, actualizamos
               // Crear un nuevo objeto sin los campos que no queremos actualizar
-              const { id, created_at, ...datosActualizacion } = sedeData as any;
+              const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
                 
                 // Crear un nuevo objeto sin los campos vacíos o nulos
                 const cleanSedeData: Record<string, unknown> = {};

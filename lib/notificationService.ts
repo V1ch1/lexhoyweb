@@ -55,7 +55,7 @@ export class NotificationService {
   /**
    * Crear una notificación para un usuario
    */
-  static async create(data: CreateNotificationData): Promise<Notification | null> {
+  static async create(data: CreateNotificationData): Promise<{ notification: Notification | null; error: Error | null }> {
     try {
       console.log("📬 Creando notificación:", data.titulo);
       
@@ -82,10 +82,13 @@ export class NotificationService {
       }
 
       console.log("✅ Notificación creada:", notification.id);
-      return notification;
+      return { notification, error: null };
     } catch (error) {
       console.error("💥 Error en NotificationService.create:", error);
-      return null;
+      return { 
+        notification: null, 
+        error: error instanceof Error ? error : new Error('Error desconocido al crear notificación') 
+      };
     }
   }
 

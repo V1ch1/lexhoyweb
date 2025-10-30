@@ -103,9 +103,20 @@ export class AuthRegisterService {
     nombre: string,
     apellidos: string,
     telefono?: string
-  ): Promise<{ user: Record<string, unknown> | null; error: string | null }> {
+  ): Promise<{ 
+    user: { 
+      id: string; 
+      email: string; 
+      nombre: string; 
+      apellidos: string; 
+      telefono?: string; 
+      rol: string;
+      ultimo_acceso: string;
+    } | null; 
+    error: string | null 
+  }> {
     try {
-      const { data: user, error } = await supabase
+      const { data: userData, error } = await supabase
         .from('users')
         .insert([
           {
@@ -121,10 +132,20 @@ export class AuthRegisterService {
         .select()
         .single();
 
-      return { user, error: error?.message || null };
+      if (error) {
+        throw error;
+      }
+
+      return { 
+        user: userData, 
+        error: null 
+      };
     } catch (error) {
       console.error('Error al crear registro de usuario:', error);
-      return { user: null, error: 'Error al crear el registro del usuario' };
+      return { 
+        user: null, 
+        error: error instanceof Error ? error.message : 'Error al crear el registro del usuario' 
+      };
     }
   }
 

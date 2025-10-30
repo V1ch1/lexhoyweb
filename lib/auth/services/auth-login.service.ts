@@ -197,7 +197,7 @@ export class AuthLoginService {
     nombre: string,
     apellidos: string,
     telefono?: string
-  ) {
+  ): Promise<{ id: string; email: string; nombre: string; apellidos: string; telefono?: string; rol: string } | null> {
     try {
       const { data: user, error } = await supabase
         .from('users')
