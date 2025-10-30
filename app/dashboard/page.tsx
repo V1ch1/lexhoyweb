@@ -264,7 +264,7 @@ const DashboardPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-gray-900">{statsLoading ? "..." : value}</p>
+            <p className="text-3xl font-bold text-gray-900 font-playfair">{statsLoading ? "..." : value}</p>
             {trend && (
               <p className="text-sm text-green-600 mt-2 flex items-center">
                 <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />

@@ -7,12 +7,12 @@ export default function SectionTitle() {
     <section className="w-full py-32 flex bg-black flex-col items-center text-center">
       <div className="container">
         {/* Texto Principal */}
-        <h2 className="text-4xl font-bold text-white font-bigShouldersText">
+        <h2 className="text-4xl font-bold text-white font-playfair">
           ¿Por qué elegir nuestra plataforma?
         </h2>
 
         {/* Subtítulo */}
-        <p className="text-lg text-white font-workSans mt-4">
+        <p className="text-lg text-white mt-4">
           Descubre cómo nuestra plataforma te ayuda a conseguir leads de alta
           calidad y mejorar tus conversiones.
         </p>

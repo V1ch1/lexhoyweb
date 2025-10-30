@@ -1,17 +1,49 @@
-/* Importa la fuente Big Shoulders Inline Text desde Google Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Big+Shoulders+Inline+Text:wght@400;700&display=swap");
+/* Importar fuentes de Google */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair font-bold tracking-tight text-gray-900;
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  .font-playfair {
+    font-family: var(--font-playfair);
+  }
+  
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+}
 
 /* globals.css */
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-big-shoulders-inline-text: "Big Shoulders Inline Text", sans-serif; /* Variable CSS para la fuente */
-  --font-big-shoulders-text: "BigShouldersText", sans-serif;
-  --font-work-sans: "WorkSans", sans-serif;
+  --font-playfair: "Playfair Display", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,7 +56,8 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-big-shoulders-text), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  @apply antialiased font-sans;
 }
 
 /* Asegurar que los inputs, textareas y selects tengan texto negro */

@@ -10,9 +10,9 @@ const config: Config = {
         text: "#000000", // Texto negro
       },
       fontFamily: {
-        bigShouldersInlineText: "var(--font-big-shoulders-inline-text)", // Fuente Big Shoulders Inline Text
-        bigShouldersText: "var(--font-big-shoulders-text)", // Fuente para textos principales
-        workSans: "var(--font-work-sans)", // Fuente para botones
+        sans: ['var(--font-sans)'],
+        playfair: ['var(--font-playfair)'],
+        inter: ['var(--font-sans)'],
       },
     },
   },

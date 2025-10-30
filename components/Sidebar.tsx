@@ -25,9 +25,9 @@ const Sidebar = () => {
   }
 
   return (
-    <div className="w-64 bg-gray-800 text-white h-full flex flex-col">
+    <div className="w-64 bg-gray-800 text-white h-full flex flex-col font-sans">
       <div className="flex-1 p-6">
-        <h2 className="text-2xl font-semibold mb-6">LexHoy Leads</h2>
+        <h2 className="text-2xl font-playfair font-semibold mb-6 text-white">LexHoy</h2>
         <nav>
           <ul className="space-y-1">
             {/* Dashboard - Visible para todos */}
@@ -41,7 +41,7 @@ const Sidebar = () => {
                 }`}
               >
                 <HomeIcon className="h-5 w-5" />
-                <span>Dashboard</span>
+                <span className="font-playfair">Dashboard</span>
               </button>
             </li>
 
@@ -56,7 +56,7 @@ const Sidebar = () => {
                 }`}
               >
                 <BuildingOfficeIcon className="h-5 w-5" />
-                <span>Despachos</span>
+                <span className="font-playfair">Despachos</span>
               </button>
             </li>
 
@@ -72,7 +72,7 @@ const Sidebar = () => {
                   }`}
                 >
                   <ClipboardIcon className="h-5 w-5" />
-                  <span>Leads</span>
+                  <span className="font-playfair">Leads</span>
                 </button>
               </li>
             )}
@@ -89,7 +89,7 @@ const Sidebar = () => {
                   }`}
                 >
                   <UserGroupIcon className="h-5 w-5" />
-                  <span>Usuarios</span>
+                  <span className="font-playfair">Usuarios</span>
                 </button>
               </li>
             )}
@@ -105,7 +105,7 @@ const Sidebar = () => {
                 }`}
               >
                 <CogIcon className="h-5 w-5" />
-                <span>Configuración</span>
+                <span className="font-playfair">Configuración</span>
               </button>
             </li>
           </ul>

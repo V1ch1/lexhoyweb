@@ -4,10 +4,10 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-md h-20 px-6 flex justify-between items-center">
       {/* Logo */}
-      <Link href="/" className="cursor-pointer no-underline" prefetch={false}>
-        <h1 className="text-3xl font-bold text-text font-bigShouldersInlineText">
-          Lexhoy Portal
-        </h1>
+      <Link href="/" className="flex items-center">
+        <span className="text-2xl font-bold text-white font-playfair">
+          LexHoy
+        </span>
       </Link>
 
       {/* Navegación central */}

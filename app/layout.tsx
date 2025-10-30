@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation"; // Importamos el hook de Next.js 
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
 import { AuthProvider } from "@/lib/authContext"; // Contexto de autenticación
-import { Inter, Work_Sans } from "next/font/google";
+import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
 import { Toaster } from 'sonner';
 import "./globals.css";
 
@@ -21,6 +21,13 @@ const workSans = Work_Sans({
   variable: "--font-work-sans",
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-playfair",
+  style: ["normal", "italic"],
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -33,16 +40,16 @@ export default function RootLayout({
     pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   return (
-    <html lang="es">
+    <html lang="es" className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}>
       <body
         suppressHydrationWarning={true}
-        className={`${inter.variable} ${workSans.variable} font-sans bg-gray-50`}
+        className={`${inter.className} font-sans bg-gray-50`}
       >
         <AuthProvider>
           {/* Solo mostramos el Navbar genérico si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Navbar />}
 
-          <main className="w-full">{children}</main>
+          <main className="w-full min-h-screen">{children}</main>
 
           {/* Solo mostramos el Footer si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Footer />}

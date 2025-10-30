@@ -6,7 +6,7 @@ export default function Hero() {
     <section className="w-full h-screen flex">
       {/* Bloque Izquierdo - Texto centrado */}
       <div className="w-1/2 flex flex-col justify-center items-center p-10">
-        <h1 className="text-5xl font-bold text-text font-bigShouldersText text-center">
+        <h1 className="text-5xl font-bold text-text font-playfair text-center">
           Portal Exclusivo para Despachos de Abogados
         </h1>
         <p className="text-lg text-gray-600 text-center mt-4 max-w-lg">
@@ -17,13 +17,13 @@ export default function Hero() {
         <div className="flex space-x-4 mt-6">
           <Link
             href="/register"
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 font-workSans transition-colors"
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
           >
             Registrar Despacho
           </Link>
           <Link
             href="/login"
-            className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
+            className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition-colors"
           >
             Acceder al Portal
           </Link>
