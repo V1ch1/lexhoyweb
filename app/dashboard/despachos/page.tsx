@@ -147,76 +147,98 @@ const DespachosPage = () => {
 
   // Solicitar propiedad del despacho
   const handleSolicitarPropiedad = async () => {
-    if (!despachoSolicitar || !user?.email || !user?.id) return;
+    if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad) return;
+    
     setSolicitandoPropiedad(true);
     setMensajePropiedad(null);
 
-    // Obtener datos completos del usuario
-    const { data: userData } = await supabase
-      .from("users")
-      .select("nombre, apellidos")
-      .eq("id", user.id)
-      .single();
+    try {
+      // Obtener datos completos del usuario
+      const { data: userData } = await supabase
+        .from("users")
+        .select("nombre, apellidos")
+        .eq("id", user.id)
+        .single();
 
-    // Crear solicitud pendiente de aprobación
-    const { data: solicitudCreada, error } = await supabase
-      .from("solicitudes_despacho")
-      .insert({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: userData
-          ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
-          : user.email,
-        despacho_id: despachoSolicitar.object_id || despachoSolicitar.id, // Usar object_id (WordPress ID)
-        despacho_nombre: despachoSolicitar.nombre,
-        despacho_localidad: despachoSolicitar.localidad,
-        despacho_provincia: despachoSolicitar.provincia,
-        estado: "pendiente",
-      })
-      .select()
-      .single();
+      // Verificar si ya existe una solicitud pendiente para este despacho y usuario
+      const { data: solicitudExistente } = await supabase
+        .from("solicitudes_despacho")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("despacho_id", despachoSolicitar.object_id || despachoSolicitar.id)
+        .eq("estado", "pendiente")
+        .single();
 
-    console.log("✅ Solicitud creada:", solicitudCreada);
-
-    if (error) {
-      setMensajePropiedad({
-        tipo: "error",
-        texto: "Error al enviar solicitud: " + error.message,
-      });
-    } else {
-      // Enviar notificación y email al super_admin
-      try {
-        await fetch("/api/notificar-solicitud", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            solicitudId: solicitudCreada.id,
-            userName: solicitudCreada.user_name,
-            userEmail: solicitudCreada.user_email,
-            despachoNombre: solicitudCreada.despacho_nombre,
-            despachoLocalidad: solicitudCreada.despacho_localidad,
-            despachoProvincia: solicitudCreada.despacho_provincia,
-          }),
+      if (solicitudExistente) {
+        setMensajePropiedad({
+          tipo: "error",
+          texto: "Ya tienes una solicitud pendiente para este despacho.",
         });
-      } catch (err) {
-        console.error("Error enviando notificación:", err);
+        setSolicitandoPropiedad(false);
+        return;
       }
 
+      // Crear solicitud pendiente de aprobación
+      const { data: solicitudCreada, error } = await supabase
+        .from("solicitudes_despacho")
+        .insert({
+          user_id: user.id,
+          user_email: user.email,
+          user_name: userData
+            ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
+            : user.email,
+          despacho_id: despachoSolicitar.object_id || despachoSolicitar.id,
+          despacho_nombre: despachoSolicitar.nombre,
+          despacho_localidad: despachoSolicitar.localidad,
+          despacho_provincia: despachoSolicitar.provincia,
+          estado: "pendiente",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log("✅ Solicitud creada:", solicitudCreada);
+
+      // Actualizar el estado de solicitudes pendientes
+      actualizarSolicitudesPendientes(despachoSolicitar.id);
+      
+      // Mostrar mensaje de éxito
       setMensajePropiedad({
         tipo: "success",
-        texto: "✅ Solicitud enviada. Un administrador la revisará pronto.",
+        texto: "Solicitud enviada correctamente. Te notificaremos cuando sea revisada.",
       });
-      // Agregar a la lista de solicitudes pendientes
-      setSolicitudesPendientes((prev) =>
-        new Set(prev).add(despachoSolicitar.id)
-      );
+
+      // Enviar notificación y email al super_admin
+      await fetch("/api/notificar-solicitud", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          solicitudId: solicitudCreada.id,
+          userName: solicitudCreada.user_name,
+          userEmail: solicitudCreada.user_email,
+          despachoNombre: solicitudCreada.despacho_nombre,
+          despachoLocalidad: solicitudCreada.despacho_localidad,
+          despachoProvincia: solicitudCreada.despacho_provincia,
+        }),
+      });
+
+      // Cerrar el modal después de 2 segundos
       setTimeout(() => {
         setShowSolicitarModal(false);
         setDespachoSolicitar(null);
         setMensajePropiedad(null);
-      }, 3000);
+        setSolicitandoPropiedad(false);
+      }, 2000);
+      
+    } catch (err) {
+      console.error("Error al enviar la solicitud:", err);
+      setMensajePropiedad({
+        tipo: "error",
+        texto: "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
+      });
+      setSolicitandoPropiedad(false);
     }
-    setSolicitandoPropiedad(false);
   };
   const PAGE_SIZE = 20;
   const [loadingDespachos, setLoadingDespachos] = useState(true);
