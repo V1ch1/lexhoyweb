@@ -237,6 +237,7 @@
 ### 🔗 Relaciones
 
 - **despacho_id** → despachos.id
+- **user_id** → auth.users(id)
 
 ### 📊 Índices
 

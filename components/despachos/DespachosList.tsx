@@ -233,28 +233,30 @@ export function DespachosList({
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 min-w-[180px]">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                     Localidad
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                     Provincia
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                     Teléfono
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 min-w-[200px]">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Nº Sedes
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                    Propietario
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                  {user?.role === 'super_admin' && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      Propietario
+                    </th>
+                  )}
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Acciones
                   </th>
                 </tr>
@@ -263,13 +265,13 @@ export function DespachosList({
                 {despachos.map((d) => (
                   <tr key={d.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{d.nombre}</div>
+                      <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{d.nombre}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{d.localidad || "-"}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[100px]">{d.localidad || "-"}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{d.provincia || "-"}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[100px]">{d.provincia || "-"}</div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-700">{d.telefono || "-"}</div>
@@ -277,45 +279,84 @@ export function DespachosList({
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-700 truncate max-w-[180px]">{d.email || "-"}</div>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-center">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {d.num_sedes}
-                      </span>
-                    </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      {user?.role === "super_admin" ||
-                      d.owner_email === user?.email ? (
-                        d.owner_email ? (
-                          <button
-                            onClick={async () => {
-                              if (!d.owner_email) return;
+                      <div className="flex justify-center">
+                        <span className="px-2 inline-flex items-center text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 h-5">
+                          {d.num_sedes}
+                        </span>
+                      </div>
+                    </td>
 
-                              try {
-                                const { data: userData, error } = await supabase
-                                  .from("users")
-                                  .select("id")
-                                  .eq("email", d.owner_email)
-                                  .single();
+                    {user?.role === 'super_admin' && (
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {d.owner_email ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const { data: userData, error } = await supabase
+                                      .from("users")
+                                      .select("id")
+                                      .eq("email", d.owner_email)
+                                      .single();
 
-                                if (error) throw error;
+                                    if (error) throw error;
 
-                                if (userData?.id) {
-                                  router.push(`/admin/users/${userData.id}`);
-                                }
-                              } catch (error) {
-                                console.error(
-                                  "Error fetching user data:",
-                                  error
-                                );
-                              }
-                            }}
-                            className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1.5 group"
-                            title={`Ir a ficha de propietario (${d.owner_email})`}
-                          >
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                    if (userData?.id) {
+                                      router.push(`/admin/users/${userData.id}`);
+                                    }
+                                  } catch (error) {
+                                    console.error("Error fetching user data:", error);
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1.5 group"
+                                title={`Ir a ficha de propietario (${d.owner_email})`}
+                              >
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-blue-600"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  </svg>
+                                </div>
+                                <span className="truncate max-w-[120px]">
+                                  {d.owner_email}
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setAsignarDespachoId(d.id);
+                                  setShowAsignarModal(true);
+                                }}
+                                className="text-yellow-600 hover:text-yellow-800"
+                                title="Cambiar propietario"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setAsignarDespachoId(d.id);
+                                setShowAsignarModal(true);
+                              }}
+                              className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 text-blue-600"
+                                className="h-3.5 w-3.5 mr-1"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -324,95 +365,19 @@ export function DespachosList({
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                   strokeWidth={2}
-                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  d="M12 4v16m8-8H4"
                                 />
                               </svg>
-                            </div>
-                            <span className="truncate max-w-[120px]">
-                              {d.owner_email}
-                            </span>
-                          </button>
-                        ) : user?.role === "super_admin" ? (
-                          <button
-                            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                            onClick={() => {
-                              setAsignarDespachoId(d.id);
-                              setShowAsignarModal(true);
-                            }}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-3.5 w-3.5 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
-                            Añadir propietario
-                          </button>
-                        ) : (
-                          <span className="text-gray-500 text-sm">
-                            Sin propietario
-                          </span>
-                        )
-                      ) : d.owner_email ? (
-                        <span className="text-gray-500 text-sm">Asignado</span>
-                      ) : solicitudesPendientes.has(d.id) ? (
-                        <span className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md text-yellow-700 bg-yellow-100">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-3.5 w-3.5 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          Solicitud pendiente
-                        </span>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDespachoSolicitar(d);
-                            setShowSolicitarModal(true);
-                          }}
-                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          title="Solicitar propiedad de este despacho"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-3.5 w-3.5 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                            />
-                          </svg>
-                          Solicitar propiedad
-                        </button>
-                      )}
-                    </td>
+                              Asignar dueño
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex justify-end pr-2">
                         {(user?.role === "super_admin" || d.owner_email === user?.email) && (
-                          <div className="flex justify-end space-x-3">
+                          <div className="flex space-x-3">
                             <button
                               className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
                               onClick={() => {

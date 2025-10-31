@@ -230,7 +230,10 @@ const DespachosPage = () => {
       // Obtener los despachos con el conteo actualizado
       let query = supabase
         .from("despachos")
-        .select("*", { count: "exact" })
+        .select(`
+          *,
+          owner_email
+        `, { count: "exact" })
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
         

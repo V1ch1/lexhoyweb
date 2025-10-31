@@ -1223,12 +1223,12 @@ fechaAsignacion: new Date().toISOString(),
     const objectId = solicitud.despacho_id;
     console.log("📋 Despacho solicitado - object_id:", objectId);
 
-    // Obtener el ID numérico del despacho en Supabase usando el object_id
-    console.log("🔍 Buscando despacho en Supabase con object_id:", objectId);
+    // Obtener el despacho por su ID
+    console.log("🔍 Buscando despacho en Supabase con ID:", objectId);
     const { data: despachoData, error: despachoError } = await supabase
       .from("despachos")
       .select("id")
-      .eq("object_id", objectId)
+      .eq("id", objectId)
       .single();
 
     let despacho = despachoData;
