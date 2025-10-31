@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify";
+import { UserDespachoWithDetails } from "@/lib/types/dashboard";
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -405,8 +406,11 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Mis Despachos (para despacho_admin) */}
-      {user.role === "despacho_admin" && userDespachos.length > 0 && (
+      {/* Solo mostrar Mis Despachos si hay al menos un despacho con nombre */}
+      {user.role === "despacho_admin" && userDespachos.some(d => 
+        (d.nombre && d.nombre !== 'Sin nombre') || 
+        (d.despachos && d.despachos.nombre && d.despachos.nombre !== 'Sin nombre')
+      ) && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
@@ -435,28 +439,49 @@ const DashboardPage = () => {
                 </div>
               ))
             ) : userDespachos.length > 0 ? (
-              userDespachos.map((despacho) => (
-                <div
-                  key={despacho.id}
-                  className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => router.push(`/dashboard/despachos/${slugify(despacho.nombre)}`)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
-                    <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
-                      Activo
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {decodeHtmlEntities(despacho.nombre)}
-                  </h3>
-                  {(despacho.localidad || despacho.provincia) && (
-                    <p className="text-sm text-gray-600">
-                      {despacho.localidad}{despacho.provincia && `, ${despacho.provincia}`}
-                    </p>
-                  )}
-                </div>
-              ))
+              userDespachos
+                .filter(despacho => {
+                  const nombre = despacho.nombre || (despacho.despachos?.nombre || '');
+                  return nombre && nombre !== 'Sin nombre';
+                })
+                .map((despacho) => {
+                  // Obtener el nombre del despacho, probando ambas ubicaciones posibles
+                  const nombreDespacho = decodeHtmlEntities(
+                    despacho.nombre || 
+                    (despacho.despachos?.nombre) || 
+                    'Sin nombre'
+                  );
+                  
+                  // Generar el slug para la URL
+                  const despachoSlug = slugify(nombreDespacho);
+                  
+                  // Obtener localidad y provincia, probando ambas ubicaciones posibles
+                  const localidad = despacho.localidad || despacho.despachos?.localidad || '';
+                  const provincia = despacho.provincia || despacho.despachos?.provincia || '';
+                  
+                  return (
+                    <div
+                      key={despacho.id}
+                      className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/dashboard/despachos/${despachoSlug}`)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
+                        <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">
+                          Activo
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {nombreDespacho}
+                      </h3>
+                      {(localidad || provincia) && (
+                        <p className="text-sm text-gray-600">
+                          {localidad}{provincia ? `, ${provincia}` : ''}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
             ) : (
               <div className="col-span-3 text-center py-8 bg-white rounded-lg border border-gray-100">
                 <BuildingOfficeIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
