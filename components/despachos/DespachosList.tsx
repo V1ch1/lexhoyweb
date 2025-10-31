@@ -229,58 +229,60 @@ export function DespachosList({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead>
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                     Nombre
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Localidad
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Provincia
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                     Teléfono
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                     Email
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                     Nº Sedes
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                     Propietario
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                     Acciones
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {despachos.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-4 py-2 text-sm font-semibold text-gray-900">
-                      {d.nombre}
+                  <tr key={d.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{d.nombre}</div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {d.localidad || "-"}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700">{d.localidad || "-"}</div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {d.provincia || "-"}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700">{d.provincia || "-"}</div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {d.telefono || "-"}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700">{d.telefono || "-"}</div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {d.email || "-"}
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-700 truncate max-w-[180px]">{d.email || "-"}</div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-700 text-center">
-                      {d.num_sedes}
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {d.num_sedes}
+                      </span>
                     </td>
-                    <td className="px-4 py-2 text-sm">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       {user?.role === "super_admin" ||
                       d.owner_email === user?.email ? (
                         d.owner_email ? (
@@ -307,28 +309,32 @@ export function DespachosList({
                                 );
                               }
                             }}
-                            className="text-blue-600 underline hover:text-blue-800 font-semibold flex items-center gap-2"
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1.5 group"
                             title={`Ir a ficha de propietario (${d.owner_email})`}
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 inline"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                              />
-                            </svg>
-                            {d.owner_email}
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 text-blue-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                              </svg>
+                            </div>
+                            <span className="truncate max-w-[120px]">
+                              {d.owner_email}
+                            </span>
                           </button>
                         ) : user?.role === "super_admin" ? (
                           <button
-                            className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600 font-semibold flex items-center gap-1"
+                            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                             onClick={() => {
                               setAsignarDespachoId(d.id);
                               setShowAsignarModal(true);
@@ -336,7 +342,7 @@ export function DespachosList({
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
+                              className="h-3.5 w-3.5 mr-1"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -348,70 +354,99 @@ export function DespachosList({
                                 d="M12 4v16m8-8H4"
                               />
                             </svg>
-                            Añadir
+                            Añadir propietario
                           </button>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">
+                          <span className="text-gray-500 text-sm">
                             Sin propietario
                           </span>
                         )
-                      ) : (
-                        <span className="text-gray-400 text-xs italic">
-                          {d.owner_email ? "Asignado" : "Sin asignar"}
+                      ) : d.owner_email ? (
+                        <span className="text-gray-500 text-sm">Asignado</span>
+                      ) : solicitudesPendientes.has(d.id) ? (
+                        <span className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md text-yellow-700 bg-yellow-100">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3.5 w-3.5 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          Solicitud pendiente
                         </span>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDespachoSolicitar(d);
+                            setShowSolicitarModal(true);
+                          }}
+                          className="inline-flex items-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          title="Solicitar propiedad de este despacho"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3.5 w-3.5 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                            />
+                          </svg>
+                          Solicitar propiedad
+                        </button>
                       )}
                     </td>
-                    <td className="px-4 py-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        {(user?.role === "super_admin" ||
-                          d.owner_email === user?.email) && (
-                          <button
-                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                            onClick={() => {
-                              const slug = d.slug || slugify(d.nombre);
-                              router.push(`/dashboard/despachos/${slug}`);
-                            }}
-                          >
-                            Ver/Editar
-                          </button>
-                        )}
-
-                        {user?.role === "super_admin" && (
-                          <button
-                            onClick={() => handleDeleteClick(d)}
-                            disabled={isDeleting}
-                            className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs flex items-center gap-1"
-                            title="Eliminar despacho y todas sus sedes"
-                          >
-                            {isDeleting && despachoToDelete?.id === d.id ? (
-                              <>
-                                <svg
-                                  className="animate-spin h-3 w-3 text-white"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                                Eliminando...
-                              </>
-                            ) : (
-                              <>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex flex-col space-y-2">
+                        {(user?.role === "super_admin" || d.owner_email === user?.email) && (
+                          <div className="flex justify-end space-x-3">
+                            <button
+                              className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
+                              onClick={() => {
+                                const slug = d.slug || slugify(d.nombre);
+                                router.push(`/dashboard/despachos/${slug}?edit=true`);
+                              }}
+                              title="Editar despacho"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                />
+                              </svg>
+                              Editar
+                            </button>
+                            {user?.role === "super_admin" && (
+                              <button
+                                onClick={() => handleDeleteClick(d)}
+                                disabled={isDeleting}
+                                className="text-red-600 hover:text-white hover:bg-red-600 p-1.5 rounded-md transition-colors text-sm flex items-center border border-red-200 hover:border-transparent"
+                                title="Eliminar despacho"
+                              >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3"
+                                  className="h-4 w-4 mr-1"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -424,9 +459,9 @@ export function DespachosList({
                                   />
                                 </svg>
                                 Eliminar
-                              </>
+                              </button>
                             )}
-                          </button>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -437,26 +472,25 @@ export function DespachosList({
           </div>
         )}
       </div>
-
+      
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        onClose={() => {
-          setShowDeleteConfirm(false);
-          setDespachoToDelete(null);
-        }}
+        onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDelete}
-        title={`Eliminar despacho`}
+        title="¿Eliminar despacho?"
         message={
-          <>
-            <p className="mb-2">¿Estás seguro de que quieres eliminar el despacho <span className="font-semibold">&quot;{despachoToDelete?.nombre}&quot;</span> y todas sus sedes?</p>
-            <p className="text-red-600 font-medium">Esta acción no se puede deshacer.</p>
-          </>
+          <div className="space-y-2">
+            <p>¿Estás seguro de que deseas eliminar el despacho <span className="font-semibold">{despachoToDelete?.nombre}</span>?</p>
+            <p className="text-red-600 text-sm">Esta acción no se puede deshacer y eliminará todas las sedes asociadas.</p>
+            <p className="text-sm text-gray-600 mt-2">Escribe <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">Eliminar</span> para confirmar la eliminación.</p>
+          </div>
         }
-        confirmText="Eliminar"
+        confirmText={isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
+        cancelText="Cancelar"
         isProcessing={isDeleting}
         requireConfirmationText={{
-          textToMatch: 'ELIMINAR',
-          placeholder: 'Escribe ELIMINAR para confirmar'
+          textToMatch: 'Eliminar',
+          placeholder: 'Escribe "Eliminar" para confirmar'
         }}
       />
     </div>

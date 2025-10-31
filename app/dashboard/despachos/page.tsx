@@ -40,11 +40,18 @@ import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress"
 
 
 const DespachosPage = () => {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  
+  // Estados principales
+  const [despachos, setDespachos] = useState<DespachoSummary[]>([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  
   // Estado para búsqueda de usuario
   const [showAsignarModal, setShowAsignarModal] = useState(false);
-  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(
-    null
-  );
+  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState<string>("");
   const [userResults, setUserResults] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState<boolean>(false);
@@ -53,16 +60,44 @@ const DespachosPage = () => {
 
   // Estado para modal de solicitar propiedad
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
-  const [despachoSolicitar, setDespachoSolicitar] =
-    useState<DespachoSummary | null>(null);
+  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
   const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
   const [mensajePropiedad, setMensajePropiedad] = useState<{
     tipo: "success" | "error";
     texto: string;
   } | null>(null);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<
-    Set<string>
-  >(new Set());
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Set<string>>(new Set());
+  
+  // Cargar solicitudes pendientes del usuario actual
+  useEffect(() => {
+    const fetchSolicitudesPendientes = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('solicitudes_despacho')
+          .select('despacho_id')
+          .eq('user_id', user.id)
+          .eq('estado', 'pendiente');
+          
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const despachosIds = data.map(s => s.despacho_id);
+          setSolicitudesPendientes(new Set(despachosIds));
+        }
+      } catch (error) {
+        console.error('Error al cargar solicitudes pendientes:', error);
+      }
+    };
+    
+    fetchSolicitudesPendientes();
+  }, [user?.id]);
+  
+  // Función para actualizar las solicitudes pendientes
+  const actualizarSolicitudesPendientes = (despachoId: string) => {
+    setSolicitudesPendientes(prev => new Set(prev).add(despachoId));
+  };
 
   // Buscar usuarios en tiempo real por email o nombre de despacho
   useEffect(() => {
@@ -183,12 +218,6 @@ const DespachosPage = () => {
     }
     setSolicitandoPropiedad(false);
   };
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-  const [despachos, setDespachos] = useState<DespachoSummary[]>([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const PAGE_SIZE = 20;
   const [loadingDespachos, setLoadingDespachos] = useState(true);
   const [error, setError] = useState<string | null>(null);
