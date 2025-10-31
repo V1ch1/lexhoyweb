@@ -376,7 +376,7 @@ export function DespachosList({
                     )}
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex justify-end pr-2">
-                        {(user?.role === "super_admin" || d.owner_email === user?.email) && (
+                        {user?.role === "super_admin" || d.owner_email === user?.email ? (
                           <div className="flex space-x-3">
                             <button
                               className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
@@ -427,6 +427,48 @@ export function DespachosList({
                               </button>
                             )}
                           </div>
+                        ) : !d.owner_email ? (
+                          <button
+                            onClick={() => {
+                              setDespachoSolicitar(d);
+                              setShowSolicitarModal(true);
+                            }}
+                            disabled={solicitudesPendientes.has(d.id)}
+                            className={`text-sm ${
+                              solicitudesPendientes.has(d.id)
+                                ? "text-gray-500 cursor-not-allowed"
+                                : "text-blue-600 hover:text-blue-800"
+                            }`}
+                            title={
+                              solicitudesPendientes.has(d.id)
+                                ? "Solicitud de propiedad ya enviada"
+                                : "Solicitar propiedad de este despacho"
+                            }
+                          >
+                            {solicitudesPendientes.has(d.id) ? (
+                              <span className="flex items-center">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4 mr-1 text-green-500"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                                Solicitud enviada
+                              </span>
+                            ) : (
+                              "Solicitar propiedad"
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-sm text-gray-500">Contactar al administrador</span>
                         )}
                       </div>
                     </td>
