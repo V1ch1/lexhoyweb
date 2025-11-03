@@ -1,480 +1,959 @@
 # Documentación de la Base de Datos
 
-> Generado el: 2025-10-30T10:19:23.964Z
-
-## Tabla: `despacho_ownership_requests`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **user_id** → users.id
-
-### 📊 Índices
-
-- **despacho_ownership_requests_user_id_despacho_id_key** (user_id, despacho_id) 🔒 Único
-
-### ⚠️ Restricciones
-
-- **despacho_ownership_requests_user_id_despacho_id_key**: UNIQUE (user_id, despacho_id)
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| user_id | uuid | No | Ninguno |
-| despacho_id | uuid | No | Ninguno |
-| status | text | No | 'pending'::text |
-| message | text | Sí | Ninguno |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `despacho_propiedad_historial`
-
-> Historial de cambios de propiedad
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **realizado_por** → users.id
-- **user_id** → users.id
-- **usuario_anterior** → users.id
-
-### 📊 Índices
-
-- **idx_historial_despacho** (despacho_id) 
-- **idx_historial_usuario** (user_id) 
-- **idx_historial_fecha** (created_at) 
-- **idx_historial_accion** (accion) 
-
-### ⚠️ Restricciones
-
-- **despacho_propiedad_historial_accion_check**: CHECK ((accion = ANY (ARRAY['asignado'::text, 'transferido'::text, 'revocado'::text, 'colaborador_añadido'::text, 'colaborador_removido'::text])))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | gen_random_uuid() |
-| despacho_id | uuid | No | Ninguno |
-| user_id | uuid | Sí | Ninguno |
-| accion | text | No | Ninguno |
-| realizado_por | uuid | Sí | Ninguno |
-| usuario_anterior | uuid | Sí | Ninguno |
-| notas | text | Sí | Ninguno |
-| metadata | jsonb | Sí | '{}'::jsonb |
-| created_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `despachos`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 📊 Índices
-
-- **idx_despachos_slug** (slug) 
-- **idx_despachos_wordpress_id** (wordpress_id) 
-- **despachos_slug_key** (slug) 🔒 Único
-- **despachos_wordpress_id_key** (wordpress_id) 🔒 Único
-
-### ⚠️ Restricciones
-
-- **despachos_slug_key**: UNIQUE (slug)
-- **despachos_wordpress_id_key**: UNIQUE (wordpress_id)
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | gen_random_uuid() |
-| slug | text | No | Ninguno |
-| nombre | text | No | Ninguno |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-| wordpress_id | int4 | Sí | Ninguno |
-| featured_media_url | text | Sí | Ninguno |
-| status | text | Sí | 'active'::text |
-
----
-
-## Tabla: `lead_interactions`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **lead_id** → leads.id
-
-### 📊 Índices
-
-- **idx_lead_interactions_lead_id** (lead_id) 
-
-### ⚠️ Restricciones
-
-- **lead_interactions_resultado_check**: CHECK (((resultado)::text = ANY ((ARRAY['exitoso'::character varying, 'sin_respuesta'::character varying, 'reagendar'::character varying, 'no_interesado'::character varying, 'convertido'::character varying])::text[])))
-- **lead_interactions_tipo_check**: CHECK (((tipo)::text = ANY ((ARRAY['llamada'::character varying, 'email'::character varying, 'reunion'::character varying, 'propuesta'::character varying, 'contrato'::character varying, 'nota'::character varying])::text[])))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| lead_id | uuid | No | Ninguno |
-| despacho_id | uuid | No | Ninguno |
-| tipo | varchar | No | Ninguno |
-| descripcion | text | Sí | Ninguno |
-| fecha | timestamptz | Sí | now() |
-| resultado | varchar | Sí | Ninguno |
-| created_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `leads`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 📊 Índices
-
-- **idx_leads_despacho_id** (despacho_id) 
-- **idx_leads_estado** (estado) 
-- **idx_leads_especialidad** (especialidad) 
-- **idx_leads_fecha_creacion** (fecha_creacion) 
-
-### ⚠️ Restricciones
-
-- **leads_estado_check**: CHECK (((estado)::text = ANY ((ARRAY['nuevo'::character varying, 'contactado'::character varying, 'cerrado'::character varying])::text[])))
-- **leads_urgencia_check**: CHECK (((urgencia)::text = ANY ((ARRAY['baja'::character varying, 'media'::character varying, 'alta'::character varying, 'urgente'::character varying])::text[])))
-- **leads_valoracion_check**: CHECK (((valoracion >= 1) AND (valoracion <= 5)))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| despacho_id | uuid | No | Ninguno |
-| sede_id | int4 | Sí | Ninguno |
-| cliente_nombre | varchar | No | Ninguno |
-| cliente_email | varchar | No | Ninguno |
-| cliente_telefono | varchar | Sí | Ninguno |
-| consulta | text | No | Ninguno |
-| especialidad | varchar | No | Ninguno |
-| urgencia | varchar | Sí | 'media'::character varying |
-| presupuesto_estimado | numeric | Sí | Ninguno |
-| provincia | varchar | Sí | Ninguno |
-| ciudad | varchar | Sí | Ninguno |
-| codigo_postal | varchar | Sí | Ninguno |
-| estado | varchar | Sí | 'nuevo'::character varying |
-| fecha_creacion | timestamptz | Sí | now() |
-| fecha_asignacion | timestamptz | Sí | Ninguno |
-| fecha_cierre | timestamptz | Sí | Ninguno |
-| fuente | varchar | Sí | 'web'::character varying |
-| utm_source | varchar | Sí | Ninguno |
-| utm_medium | varchar | Sí | Ninguno |
-| utm_campaign | varchar | Sí | Ninguno |
-| notas | text | Sí | Ninguno |
-| valoracion | int4 | Sí | Ninguno |
-| feedback | text | Sí | Ninguno |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `notificaciones`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 📊 Índices
-
-- **idx_notificaciones_user_id** (user_id) 
-- **idx_notificaciones_leida** (leida) 
-- **idx_notificaciones_created_at** (created_at) 
-- **idx_notificaciones_user_leida** (user_id, leida) 
-
-### ⚠️ Restricciones
-
-- **notificaciones_tipo_check**: CHECK ((tipo = ANY (ARRAY['solicitud_recibida'::text, 'solicitud_aprobada'::text, 'solicitud_rechazada'::text, 'solicitud_despacho'::text, 'despacho_asignado'::text, 'despacho_desasignado'::text, 'usuario_nuevo'::text, 'mensaje_sistema'::text])))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | gen_random_uuid() |
-| user_id | text | No | Ninguno |
-| tipo | text | No | Ninguno |
-| titulo | text | No | Ninguno |
-| mensaje | text | No | Ninguno |
-| leida | bool | Sí | false |
-| url | text | Sí | Ninguno |
-| metadata | jsonb | Sí | '{}'::jsonb |
-| created_at | timestamp | Sí | now() |
-| updated_at | timestamp | Sí | now() |
-
----
-
-## Tabla: `sedes`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **despacho_id** → despachos.id
-- **user_id** → auth.users(id)
-
-### 📊 Índices
-
-- **sedes_wp_sede_id_key** (wp_sede_id) 🔒 Único
-- **idx_sedes_despacho_id** (despacho_id) 
-- **idx_sedes_es_principal** (es_principal) 
-- **idx_sedes_activa** (activa) 
-- **idx_sedes_unica_principal** (despacho_id) 🔒 Único
-- **idx_sedes_wp_sede_id** (wp_sede_id) 
-
-### ⚠️ Restricciones
-
-- **sedes_wp_sede_id_key**: UNIQUE (wp_sede_id)
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | gen_random_uuid() |
-| despacho_id | uuid | No | Ninguno |
-| wp_sede_id | text | Sí | Ninguno |
-| nombre | text | No | Ninguno |
-| descripcion | text | Sí | Ninguno |
-| web | text | Sí | Ninguno |
-| telefono | text | Sí | Ninguno |
-| numero_colegiado | text | Sí | Ninguno |
-| colegio | text | Sí | Ninguno |
-| experiencia | text | Sí | Ninguno |
-| es_principal | bool | Sí | false |
-| activa | bool | Sí | true |
-| foto_perfil | text | Sí | Ninguno |
-| horarios | jsonb | Sí | '{}'::jsonb |
-| redes_sociales | jsonb | Sí | '{}'::jsonb |
-| observaciones | text | Sí | Ninguno |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-| ano_fundacion | int4 | Sí | Ninguno |
-| persona_contacto | text | Sí | Ninguno |
-| email_contacto | text | Sí | Ninguno |
-| estado_verificacion | text | Sí | 'pendiente'::text |
-| estado_registro | text | Sí | 'activo'::text |
-| is_verified | bool | Sí | false |
-| direccion | jsonb | Sí | '{}'::jsonb |
-| localidad | text | Sí | Ninguno |
-| provincia | text | Sí | Ninguno |
-| codigo_postal | text | Sí | Ninguno |
-| tamano_despacho | text | Sí | Ninguno |
-| calle | text | Sí | Ninguno |
-| numero | text | Sí | Ninguno |
-| piso | text | Sí | Ninguno |
-| pais | text | Sí | Ninguno |
-| especialidades | text | Sí | Ninguno |
-| servicios_especificos | text | Sí | Ninguno |
-| areas_practica | _text | Sí | '{}'::text[] |
-
----
-
-## Tabla: `sedes_areas_practica`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **sede_id** → sedes.id
-
-### 📊 Índices
-
-- **idx_sedes_areas_practica_sede_id** (sede_id) 
-- **idx_sedes_areas_practica_area_nombre** (area_nombre) 
-- **unique_sede_area** (sede_id, area_nombre) 🔒 Único
-- **idx_sedes_areas_practica_sede** (sede_id) 
-- **idx_sedes_areas_practica_area** (area_nombre) 
-
-### ⚠️ Restricciones
-
-- **unique_sede_area**: UNIQUE (sede_id, area_nombre)
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | int4 | No | nextval('sedes_areas_practica_id_seq'::regclass) |
-| sede_id | uuid | No | Ninguno |
-| area_nombre | text | No | Ninguno |
-| created_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `solicitudes_despacho`
-
-### 🔑 Claves Primarias
-
-- id
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | gen_random_uuid() |
-| user_id | uuid | No | Ninguno |
-| user_email | text | Sí | Ninguno |
-| user_name | text | Sí | Ninguno |
-| despacho_id | text | No | Ninguno |
-| despacho_nombre | text | Sí | Ninguno |
-| despacho_localidad | text | Sí | Ninguno |
-| despacho_provincia | text | Sí | Ninguno |
-| estado | text | Sí | 'pendiente'::text |
-| fecha_solicitud | timestamp | Sí | now() |
-| fecha_respuesta | timestamptz | Sí | Ninguno |
-| respondido_por | text | Sí | Ninguno |
-| notas_respuesta | text | Sí | Ninguno |
-
----
-
-## Tabla: `sync_logs`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 📊 Índices
-
-- **idx_sync_logs_tipo_fecha** (tipo, fecha_sync) 
-
-### ⚠️ Restricciones
-
-- **sync_logs_accion_check**: CHECK (((accion)::text = ANY ((ARRAY['create'::character varying, 'update'::character varying, 'delete'::character varying])::text[])))
-- **sync_logs_entidad_check**: CHECK (((entidad)::text = ANY ((ARRAY['despacho'::character varying, 'sede'::character varying, 'user'::character varying])::text[])))
-- **sync_logs_tipo_check**: CHECK (((tipo)::text = ANY ((ARRAY['algolia'::character varying, 'wordpress'::character varying])::text[])))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| tipo | varchar | No | Ninguno |
-| accion | varchar | No | Ninguno |
-| entidad | varchar | No | Ninguno |
-| entidad_id | uuid | No | Ninguno |
-| datos_enviados | jsonb | Sí | Ninguno |
-| respuesta_api | jsonb | Sí | Ninguno |
-| exitoso | bool | Sí | false |
-| error_mensaje | text | Sí | Ninguno |
-| fecha_sync | timestamptz | Sí | now() |
-| reintentos | int4 | Sí | 0 |
-| created_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `user_despachos`
-
-> Tabla de asignación de despachos a usuarios con RLS habilitado
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **asignado_por** → users.id
-
-### 📊 Índices
-
-- **user_despachos_user_id_despacho_id_key** (user_id, despacho_id) 🔒 Único
-- **idx_user_despachos_user_id** (user_id) 
-- **idx_user_despachos_despacho_id** (despacho_id) 
-- **idx_user_despachos_activo** (activo) 
-- **unique_user_despacho** (user_id, despacho_id) 🔒 Único
-
-### ⚠️ Restricciones
-
-- **unique_user_despacho**: UNIQUE (user_id, despacho_id)
-- **user_despachos_user_id_despacho_id_key**: UNIQUE (user_id, despacho_id)
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| user_id | uuid | No | Ninguno |
-| despacho_id | uuid | No | Ninguno |
-| fecha_asignacion | timestamptz | Sí | now() |
-| asignado_por | uuid | Sí | Ninguno |
-| activo | bool | Sí | true |
-| permisos | jsonb | Sí | '{"leer": true, "eliminar": false, "escribir": true}'::jsonb |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-
----
-
-## Tabla: `users`
-
-### 🔑 Claves Primarias
-
-- id
-
-### 🔗 Relaciones
-
-- **aprobado_por** → users.id
-
-### 📊 Índices
-
-- **users_email_key** (email) 🔒 Único
-- **idx_users_rol** (rol) 
-- **idx_users_estado** (estado) 
-
-### ⚠️ Restricciones
-
-- **users_email_key**: UNIQUE (email)
-- **users_estado_check**: CHECK (((estado)::text = ANY ((ARRAY['pendiente'::character varying, 'activo'::character varying, 'inactivo'::character varying, 'suspendido'::character varying])::text[])))
-- **users_plan_check**: CHECK (((plan)::text = ANY ((ARRAY['basico'::character varying, 'profesional'::character varying, 'enterprise'::character varying])::text[])))
-- **users_rol_check**: CHECK (((rol)::text = ANY ((ARRAY['super_admin'::character varying, 'despacho_admin'::character varying, 'usuario'::character varying])::text[])))
-
-### Columnas
-
-| Nombre | Tipo | ¿Nulo? | Valor por defecto |
-|--------|------|--------|-------------------|
-| id | uuid | No | uuid_generate_v4() |
-| email | varchar | No | Ninguno |
-| nombre | varchar | No | Ninguno |
-| apellidos | varchar | No | Ninguno |
-| telefono | varchar | Sí | Ninguno |
-| fecha_registro | timestamptz | Sí | now() |
-| ultimo_acceso | timestamptz | Sí | Ninguno |
-| activo | bool | Sí | true |
-| email_verificado | bool | Sí | false |
-| plan | varchar | Sí | 'basico'::character varying |
-| despacho_id | uuid | Sí | Ninguno |
-| created_at | timestamptz | Sí | now() |
-| updated_at | timestamptz | Sí | now() |
-| rol | varchar | Sí | 'usuario'::character varying |
-| estado | varchar | Sí | 'pendiente'::character varying |
-| fecha_aprobacion | timestamptz | Sí | Ninguno |
-| aprobado_por | uuid | Sí | Ninguno |
-| notas_admin | text | Sí | Ninguno |
-
----
-
+## Diagrama de Relaciones
+
+\`\`\`mermaid
+erDiagram
+USERS ||--o{ USER_DESPACHOS : tiene
+USERS ||--o{ DESPACHOS : "aprobado_por"
+USERS ||--o{ DESPACHO_PROP_HIST : "realizado_por"
+USERS ||--o{ DESPACHO_OWNERSHIP_REQ : "solicita"
+DESPACHOS ||--o{ SEDES : tiene
+DESPACHOS ||--o{ LEADS : recibe
+DESPACHOS ||--o{ USER_DESPACHOS : "asignado_a"
+DESPACHOS ||--o{ DESPACHO_PROP_HIST : "historial"
+DESPACHOS ||--o{ DESPACHO_OWNERSHIP_REQ : "solicitudes"
+LEADS ||--o{ LEAD_INTERACTIONS : "tiene"
+SEDES }o--|| DESPACHOS : "pertenece_a"
+\`\`\`
+
+## Tablas
+
+### despacho_ownership_requests
+
+Solicitudes de propiedad de despachos
+
+- **id**: uuid (PK, NOT NULL, default: uuid_generate_v4())
+- **user_id**: uuid (FK a users.id, NOT NULL)
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **status**: text (NOT NULL, default: 'pending')
+- **message**: text (NULLABLE)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+- **updated_at**: timestamp with time zone (NULLABLE, default: now())
+
+### despacho_propiedad_historial
+
+Historial de cambios de propiedad de despachos
+
+- **id**: uuid (PK, NOT NULL, default: gen_random_uuid())
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **user_id**: uuid (FK a users.id, NULLABLE)
+- **accion**: text (NOT NULL)
+- **realizado_por**: uuid (FK a users.id, NULLABLE)
+- **usuario_anterior**: uuid (FK a users.id, NULLABLE)
+- **notas**: text (NULLABLE)
+- **metadata**: jsonb (NULLABLE, default: '{}'::jsonb)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+
+### despachos
+
+Información principal de los despachos
+
+- **id**: uuid (PK, NOT NULL, default: uuid_generate_v4())
+- **object_id**: character varying (NOT NULL)
+- **nombre**: character varying (NOT NULL)
+- **descripcion**: text (NULLABLE)
+- **num_sedes**: integer (NULLABLE, default: 1)
+- **areas_practica**: ARRAY (NULLABLE, default: '{}'::text[])
+- **ultima_actualizacion**: timestamp with time zone (NULLABLE, default: now())
+- **slug**: character varying (NOT NULL)
+- **fecha_creacion**: timestamp with time zone (NULLABLE, default: now())
+- **fecha_actualizacion**: timestamp with time zone (NULLABLE, default: now())
+- **verificado**: boolean (NULLABLE, default: false)
+- **activo**: boolean (NULLABLE, default: true)
+- **estado_registro**: character varying (NULLABLE, default: 'borrador')
+- **fecha_solicitud**: timestamp with time zone (NULLABLE)
+- **fecha_aprobacion**: timestamp with time zone (NULLABLE)
+- **aprobado_por**: uuid (FK a users.id, NULLABLE)
+- **notas_aprobacion**: text (NULLABLE)
+- **sincronizado_algolia**: boolean (NULLABLE, default: false)
+- **sincronizado_wordpress**: boolean (NULLABLE, default: false)
+- **fecha_sync_algolia**: timestamp with time zone (NULLABLE)
+- **fecha_sync_wordpress**: timestamp with time zone (NULLABLE)
+- **owner_email**: text (NULLABLE)
+- **direccion**: text (NULLABLE)
+- **telefono**: text (NULLABLE)
+- **email**: text (NULLABLE)
+- **web**: text (NULLABLE)
+- **wp_post_id**: integer (NULLABLE)
+- **sincronizado_wp**: boolean (NULLABLE, default: false)
+- **ultima_sincronizacion**: timestamp without time zone (NULLABLE)
+
+### leads
+
+Gestión de leads/clientes potenciales
+
+- **id**: uuid (PK, NOT NULL, default: uuid_generate_v4())
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **sede_id**: integer (FK a sedes.id, NULLABLE)
+- **cliente_nombre**: character varying (NOT NULL)
+- **cliente_email**: character varying (NOT NULL)
+- **cliente_telefono**: character varying (NULLABLE)
+- **consulta**: text (NOT NULL)
+- **especialidad**: character varying (NOT NULL)
+- **urgencia**: character varying (NULLABLE, default: 'media')
+- **presupuesto_estimado**: numeric (NULLABLE)
+- **provincia**: character varying (NULLABLE)
+- **ciudad**: character varying (NULLABLE)
+- **codigo_postal**: character varying (NULLABLE)
+- **estado**: character varying (NULLABLE, default: 'nuevo')
+- **fecha_creacion**: timestamp with time zone (NULLABLE, default: now())
+- **fecha_asignacion**: timestamp with time zone (NULLABLE)
+- **fecha_cierre**: timestamp with time zone (NULLABLE)
+- **fuente**: character varying (NULLABLE, default: 'web')
+- **utm_source**: character varying (NULLABLE)
+- **utm_medium**: character varying (NULLABLE)
+- **utm_campaign**: character varying (NULLABLE)
+- **notas**: text (NULLABLE)
+- **valoracion**: integer (NULLABLE)
+- **feedback**: text (NULLABLE)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+- **updated_at**: timestamp with time zone (NULLABLE, default: now())
+
+### lead_interactions
+
+Interacciones con los leads
+
+- **id**: uuid (PK, NOT NULL, default: uuid_generate_v4())
+- **lead_id**: uuid (FK a leads.id, NOT NULL)
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **tipo**: character varying (NOT NULL)
+- **descripcion**: text (NULLABLE)
+- **fecha**: timestamp with time zone (NULLABLE, default: now())
+- **resultado**: character varying (NULLABLE)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+
+### notificaciones
+
+Sistema de notificaciones
+
+- **id**: uuid (PK, NOT NULL, default: gen_random_uuid())
+- **user_id**: text (NOT NULL)
+- **tipo**: text (NOT NULL)
+- **titulo**: text (NOT NULL)
+- **mensaje**: text (NOT NULL)
+- **leida**: boolean (NULLABLE, default: false)
+- **url**: text (NULLABLE)
+- **metadata**: jsonb (NULLABLE, default: '{}'::jsonb)
+- **created_at**: timestamp without time zone (NULLABLE, default: now())
+- **updated_at**: timestamp without time zone (NULLABLE, default: now())
+
+### sedes
+
+Sedes de los despachos
+
+- **id**: integer (PK, NOT NULL, default: nextval('sedes_id_seq'::regclass))
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **nombre**: character varying (NOT NULL)
+- **descripcion**: text (NULLABLE)
+- **web**: character varying (NULLABLE)
+- **ano_fundacion**: character varying (NULLABLE)
+- **tamano_despacho**: character varying (NULLABLE)
+- **persona_contacto**: character varying (NULLABLE)
+- **email_contacto**: character varying (NULLABLE)
+
+### users
+
+Usuarios del sistema
+
+- **id**: uuid (PK, NOT NULL)
+- **despacho_id**: uuid (FK a despachos.id, NULLABLE)
+- **aprobado_por**: uuid (FK a users.id, NULLABLE)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+- **updated_at**: timestamp with time zone (NULLABLE, default: now())
+
+### user_despachos
+
+Relación muchos a muchos entre usuarios y despachos
+
+- **id**: uuid (PK, NOT NULL, default: uuid_generate_v4())
+- **user_id**: uuid (FK a users.id, NOT NULL)
+- **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **asignado_por**: uuid (FK a users.id, NULLABLE)
+- **rol**: text (NULLABLE)
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+- **updated_at**: timestamp with time zone (NULLABLE, default: now())
+
+## Índices Recomendados
+
+1. **despacho_ownership_requests**:
+   - Índice en (user_id, status) para búsquedas de solicitudes por usuario
+   - Índice en (despacho_id, status) para búsquedas por despacho
+
+2. **despachos**:
+   - Índice en (slug) para búsquedas por URL
+   - Índice en (estado_registro) para filtrar por estado
+   - Índice en (owner_email) para búsquedas por email
+   - Índice en (aprobado_por) para búsquedas por aprobador
+
+3. **leads**:
+   - Índice en (despacho_id, estado) para consultas de panel
+   - Índice en (fecha_creacion) para análisis temporales
+   - Índice en (cliente_email) para búsquedas por email
+   - Índice en (sede_id) para consultas por sede
+
+4. **sedes**:
+   - Índice en (despacho_id) para consultas de sedes por despacho
+
+5. **users**:
+   - Índice en (despacho_id) para consultas de usuarios por despacho
+   - Índice en (aprobado_por) para seguimiento de aprobaciones
+
+6. **user_despachos**:
+   - Índice único en (user_id, despacho_id) para evitar duplicados
+   - Índice en (despacho_id) para búsquedas por despacho
+   - Índice en (asignado_por) para seguimiento de asignaciones
+
+## Políticas RLS Recomendadas
+
+1. **despachos**:
+   - Los usuarios solo pueden ver/editar despachos donde son propietarios o están asignados
+   - Solo administradores pueden ver todos los despachos
+
+2. **leads**:
+   - Los usuarios solo pueden ver/editar leads de sus despachos asignados
+   - Restringir acceso a información sensible según el rol
+
+3. **user_despachos**:
+   - Los usuarios solo pueden ver sus propias asignaciones
+   - Solo administradores pueden gestionar asignaciones
+
+4. **despacho_ownership_requests**:
+   - Los usuarios solo pueden ver sus propias solicitudes
+   - Los administradores pueden ver todas las solicitudes
+
+## Scripts Útiles
+
+### Crear índices
+
+\`\`\`sql
+-- Índices para despachos
+CREATE INDEX idx_despachos_slug ON public.despachos(slug);
+CREATE INDEX idx_despachos_estado ON public.despachos(estado_registro);
+CREATE INDEX idx_despachos_aprobado_por ON public.despachos(aprobado_por);
+
+-- Índices para leads
+CREATE INDEX idx_leads_despacho_estado ON public.leads(despacho_id, estado);
+CREATE INDEX idx_leads_fecha_creacion ON public.leads(fecha_creacion);
+CREATE INDEX idx_leads_sede ON public.leads(sede_id);
+
+-- Índices para user_despachos
+CREATE UNIQUE INDEX idx_user_despachos_unique ON public.user_despachos(user_id, despacho_id);
+CREATE INDEX idx_user_despachos_despacho ON public.user_despachos(despacho_id);
+\`\`\`
+
+### Políticas de Seguridad Básicas
+
+\`\`\`sql
+-- Políticas para despachos
+CREATE POLICY "Los usuarios pueden ver sus despachos"
+ON public.despachos FOR SELECT
+USING (
+id IN (
+SELECT despacho_id
+FROM public.user_despachos
+WHERE user_id = auth.uid()
+)
+OR id IN (
+SELECT id
+FROM public.despachos
+WHERE aprobado_por = auth.uid()
+)
+);
+
+-- Políticas para leads
+CREATE POLICY "Los usuarios pueden ver leads de sus despachos"
+ON public.leads FOR SELECT
+USING (
+despacho_id IN (
+SELECT despacho_id
+FROM public.user_despachos
+WHERE user_id = auth.uid()
+)
+);
+\`\`\`
+
+## Flujos Importantes
+
+1. **Solicitud de Propiedad**:
+   - Usuario crea una solicitud en `despacho_ownership_requests`
+   - Se registra el evento en `despacho_propiedad_historial`
+   - Administrador aprueba/rechaza la solicitud
+   - Si se aprueba, se actualiza `despachos.aprobado_por` y se crea registro en `user_despachos`
+
+2. **Gestión de Leads**:
+   - Se crea un nuevo lead en `leads`
+   - Se registran interacciones en `lead_interactions`
+   - Se actualiza el estado del lead según avanza el proceso
+
+3. **Notificaciones**:
+   - Se generan notificaciones para eventos importantes
+   - Las notificaciones pueden incluir enlaces a la acción correspondiente
+     `;
+
+// Creando el archivo de tipos TypeScript
+const typesFile = `// types/supabase.ts
+export type Json =
+| string
+| number
+| boolean
+| null
+| { [key: string]: Json | undefined }
+| Json[];
+
+export interface Database {
+public: {
+Tables: {
+despacho_ownership_requests: {
+Row: {
+id: string;
+user_id: string;
+despacho_id: string;
+status: string;
+message: string | null;
+created_at: string | null;
+updated_at: string | null;
+};
+Insert: {
+id?: string;
+user_id: string;
+despacho_id: string;
+status?: string;
+message?: string | null;
+created_at?: string | null;
+updated_at?: string | null;
+};
+Update: {
+id?: string;
+user_id?: string;
+despacho_id?: string;
+status?: string;
+message?: string | null;
+created_at?: string | null;
+updated_at?: string | null;
+};
+Relationships: [
+{
+foreignKeyName: "despacho_ownership_requests_despacho_id_fkey";
+columns: ["despacho_id"];
+referencedRelation: "despachos";
+referencedColumns: ["id"];
+},
+{
+foreignKeyName: "despacho_ownership_requests_user_id_fkey";
+columns: ["user_id"];
+referencedRelation: "users";
+referencedColumns: ["id"];
+}
+];
+};
+
+      despacho_propiedad_historial: {
+        Row: {
+          id: string;
+          despacho_id: string;
+          user_id: string | null;
+          accion: string;
+          realizado_por: string | null;
+          usuario_anterior: string | null;
+          notas: string | null;
+          metadata: Json | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          despacho_id: string;
+          user_id?: string | null;
+          accion: string;
+          realizado_por?: string | null;
+          usuario_anterior?: string | null;
+          notas?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          despacho_id?: string;
+          user_id?: string | null;
+          accion?: string;
+          realizado_por?: string | null;
+          usuario_anterior?: string | null;
+          notas?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "despacho_propiedad_historial_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "despacho_propiedad_historial_realizado_por_fkey";
+            columns: ["realizado_por"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "despacho_propiedad_historial_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "despacho_propiedad_historial_usuario_anterior_fkey";
+            columns: ["usuario_anterior"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      despachos: {
+        Row: {
+          id: string;
+          object_id: string;
+          nombre: string;
+          descripcion: string | null;
+          num_sedes: number | null;
+          areas_practica: string[] | null;
+          ultima_actualizacion: string | null;
+          slug: string;
+          fecha_creacion: string | null;
+          fecha_actualizacion: string | null;
+          verificado: boolean | null;
+          activo: boolean | null;
+          created_at: string | null;
+          updated_at: string | null;
+          estado_registro: string | null;
+          fecha_solicitud: string | null;
+          fecha_aprobacion: string | null;
+          aprobado_por: string | null;
+          notas_aprobacion: string | null;
+          sincronizado_algolia: boolean | null;
+          sincronizado_wordpress: boolean | null;
+          fecha_sync_algolia: string | null;
+          fecha_sync_wordpress: string | null;
+          owner_email: string | null;
+          direccion: string | null;
+          telefono: string | null;
+          email: string | null;
+          web: string | null;
+          wp_post_id: number | null;
+          sincronizado_wp: boolean | null;
+          ultima_sincronizacion: string | null;
+        };
+        Insert: {
+          id?: string;
+          object_id: string;
+          nombre: string;
+          descripcion?: string | null;
+          num_sedes?: number | null;
+          areas_practica?: string[] | null;
+          ultima_actualizacion?: string | null;
+          slug: string;
+          fecha_creacion?: string | null;
+          fecha_actualizacion?: string | null;
+          verificado?: boolean | null;
+          activo?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          estado_registro?: string | null;
+          fecha_solicitud?: string | null;
+          fecha_aprobacion?: string | null;
+          aprobado_por?: string | null;
+          notas_aprobacion?: string | null;
+          sincronizado_algolia?: boolean | null;
+          sincronizado_wordpress?: boolean | null;
+          fecha_sync_algolia?: string | null;
+          fecha_sync_wordpress?: string | null;
+          owner_email?: string | null;
+          direccion?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          web?: string | null;
+          wp_post_id?: number | null;
+          sincronizado_wp?: boolean | null;
+          ultima_sincronizacion?: string | null;
+        };
+        Update: {
+          id?: string;
+          object_id?: string;
+          nombre?: string;
+          descripcion?: string | null;
+          num_sedes?: number | null;
+          areas_practica?: string[] | null;
+          ultima_actualizacion?: string | null;
+          slug?: string;
+          fecha_creacion?: string | null;
+          fecha_actualizacion?: string | null;
+          verificado?: boolean | null;
+          activo?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          estado_registro?: string | null;
+          fecha_solicitud?: string | null;
+          fecha_aprobacion?: string | null;
+          aprobado_por?: string | null;
+          notas_aprobacion?: string | null;
+          sincronizado_algolia?: boolean | null;
+          sincronizado_wordpress?: boolean | null;
+          fecha_sync_algolia?: string | null;
+          fecha_sync_wordpress?: string | null;
+          owner_email?: string | null;
+          direccion?: string | null;
+          telefono?: string | null;
+          email?: string | null;
+          web?: string | null;
+          wp_post_id?: number | null;
+          sincronizado_wp?: boolean | null;
+          ultima_sincronizacion?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "despachos_aprobado_por_fkey";
+            columns: ["aprobado_por"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      leads: {
+        Row: {
+          id: string;
+          despacho_id: string;
+          sede_id: number | null;
+          cliente_nombre: string;
+          cliente_email: string;
+          cliente_telefono: string | null;
+          consulta: string;
+          especialidad: string;
+          urgencia: string | null;
+          presupuesto_estimado: number | null;
+          provincia: string | null;
+          ciudad: string | null;
+          codigo_postal: string | null;
+          estado: string | null;
+          fecha_creacion: string | null;
+          fecha_asignacion: string | null;
+          fecha_cierre: string | null;
+          fuente: string | null;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          notas: string | null;
+          valoracion: number | null;
+          feedback: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          despacho_id: string;
+          sede_id?: number | null;
+          cliente_nombre: string;
+          cliente_email: string;
+          cliente_telefono?: string | null;
+          consulta: string;
+          especialidad: string;
+          urgencia?: string | null;
+          presupuesto_estimado?: number | null;
+          provincia?: string | null;
+          ciudad?: string | null;
+          codigo_postal?: string | null;
+          estado?: string | null;
+          fecha_creacion?: string | null;
+          fecha_asignacion?: string | null;
+          fecha_cierre?: string | null;
+          fuente?: string | null;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          notas?: string | null;
+          valoracion?: number | null;
+          feedback?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          despacho_id?: string;
+          sede_id?: number | null;
+          cliente_nombre?: string;
+          cliente_email?: string;
+          cliente_telefono?: string | null;
+          consulta?: string;
+          especialidad?: string;
+          urgencia?: string | null;
+          presupuesto_estimado?: number | null;
+          provincia?: string | null;
+          ciudad?: string | null;
+          codigo_postal?: string | null;
+          estado?: string | null;
+          fecha_creacion?: string | null;
+          fecha_asignacion?: string | null;
+          fecha_cierre?: string | null;
+          fuente?: string | null;
+          utm_source?: string | null;
+          utm_medium?: string | null;
+          utm_campaign?: string | null;
+          notas?: string | null;
+          valoracion?: number | null;
+          feedback?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "leads_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "leads_sede_id_fkey";
+            columns: ["sede_id"];
+            referencedRelation: "sedes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      lead_interactions: {
+        Row: {
+          id: string;
+          lead_id: string;
+          despacho_id: string;
+          tipo: string;
+          descripcion: string | null;
+          fecha: string | null;
+          resultado: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          lead_id: string;
+          despacho_id: string;
+          tipo: string;
+          descripcion?: string | null;
+          fecha?: string | null;
+          resultado?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          lead_id?: string;
+          despacho_id?: string;
+          tipo?: string;
+          descripcion?: string | null;
+          fecha?: string | null;
+          resultado?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey";
+            columns: ["lead_id"];
+            referencedRelation: "leads";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      notificaciones: {
+        Row: {
+          id: string;
+          user_id: string;
+          tipo: string;
+          titulo: string;
+          mensaje: string;
+          leida: boolean | null;
+          url: string | null;
+          metadata: Json | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tipo: string;
+          titulo: string;
+          mensaje: string;
+          leida?: boolean | null;
+          url?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          tipo?: string;
+          titulo?: string;
+          mensaje?: string;
+          leida?: boolean | null;
+          url?: string | null;
+          metadata?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+      };
+
+      sedes: {
+        Row: {
+          id: number;
+          despacho_id: string;
+          nombre: string;
+          descripcion: string | null;
+          web: string | null;
+          ano_fundacion: string | null;
+          tamano_despacho: string | null;
+          persona_contacto: string | null;
+          email_contacto: string | null;
+        };
+        Insert: {
+          id?: number;
+          despacho_id: string;
+          nombre: string;
+          descripcion?: string | null;
+          web?: string | null;
+          ano_fundacion?: string | null;
+          tamano_despacho?: string | null;
+          persona_contacto?: string | null;
+          email_contacto?: string | null;
+        };
+        Update: {
+          id?: number;
+          despacho_id?: string;
+          nombre?: string;
+          descripcion?: string | null;
+          web?: string | null;
+          ano_fundacion?: string | null;
+          tamano_despacho?: string | null;
+          persona_contacto?: string | null;
+          email_contacto?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sedes_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      users: {
+        Row: {
+          id: string;
+          despacho_id: string | null;
+          aprobado_por: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id: string;
+          despacho_id?: string | null;
+          aprobado_por?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          despacho_id?: string | null;
+          aprobado_por?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "users_aprobado_por_fkey";
+            columns: ["aprobado_por"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "users_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+
+      user_despachos: {
+        Row: {
+          id: string;
+          user_id: string;
+          despacho_id: string;
+          asignado_por: string | null;
+          rol: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          despacho_id: string;
+          asignado_por?: string | null;
+          rol?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          despacho_id?: string;
+          asignado_por?: string | null;
+          rol?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_despachos_asignado_por_fkey";
+            columns: ["asignado_por"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_despachos_despacho_id_fkey";
+            columns: ["despacho_id"];
+            referencedRelation: "despachos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_despachos_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+## Funciones
+
+```sql
+-- Función para obtener el despacho actual de un usuario
+CREATE OR REPLACE FUNCTION public.get_user_despacho(user_id uuid)
+RETURNS uuid AS $$
+  SELECT despacho_id 
+  FROM public.user_despachos 
+  WHERE user_id = $1 
+  AND activo = true 
+  LIMIT 1;
+$$ LANGUAGE sql STABLE;
+
+-- Función para verificar si un usuario es propietario de un despacho
+CREATE OR REPLACE FUNCTION public.is_despacho_owner(user_id uuid, despacho_id uuid)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.despachos 
+    WHERE id = $2 
+    AND propietario_id = $1
+  );
+$$ LANGUAGE sql STABLE;
+
+-- Función para obtener el rol de un usuario en un despacho
+CREATE OR REPLACE FUNCTION public.get_user_despacho_role(user_id uuid, despacho_id uuid)
+RETURNS text AS $$
+  SELECT rol 
+  FROM public.user_despachos 
+  WHERE user_id = $1 
+  AND despacho_id = $2 
+  AND activo = true 
+  LIMIT 1;
+$$ LANGUAGE sql STABLE;
+```
+
+## Triggers
+
+```sql
+-- Trigger para actualizar automáticamente el campo updated_at
+CREATE OR REPLACE FUNCTION public.update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Aplicar el trigger a las tablas que lo necesiten
+CREATE TRIGGER update_users_updated_at
+BEFORE UPDATE ON public.users
+FOR EACH ROW EXECUTE FUNCTION public.update_modified_column();
+
+CREATE TRIGGER update_despachos_updated_at
+BEFORE UPDATE ON public.despachos
+FOR EACH ROW EXECUTE FUNCTION public.update_modified_column();
+
+CREATE TRIGGER update_leads_updated_at
+BEFORE UPDATE ON public.leads
+FOR EACH ROW EXECUTE FUNCTION public.update_modified_column();
+```
+
+## Vistas útiles
+
+```sql
+-- Vista para ver los despachos con información de propietario
+CREATE OR REPLACE VIEW public.despachos_con_propietario AS
+SELECT 
+  d.*,
+  u.email as propietario_email,
+  u.full_name as propietario_nombre
+FROM 
+  public.despachos d
+  LEFT JOIN public.users u ON d.propietario_id = u.id;
+
+-- Vista para ver los leads con información de asignación
+CREATE OR REPLACE VIEW public.leads_con_asignacion AS
+SELECT 
+  l.*,
+  u.email as asignado_email,
+  u.full_name as asignado_nombre,
+  d.nombre as despacho_nombre
+FROM 
+  public.leads l
+  LEFT JOIN public.users u ON l.asignado_a = u.id
+  LEFT JOIN public.despachos d ON l.despacho_id = d.id;
+```
+
+## Consideraciones de rendimiento
+
+1. **Índices**: Se han definido índices para las columnas más utilizadas en las cláusulas WHERE y JOIN.
+
+2. **Particionamiento**: Para tablas muy grandes como `lead_interactions`, considera particionar por rango de fechas.
+
+3. **Mantenimiento**: Programa tareas de mantenimiento periódicas para VACUUM y ANALYZE.
+
+4. **Backup**: Configura copias de seguridad regulares de la base de datos.
+
+5. **Monitoreo**: Monitorea el rendimiento de las consultas más frecuentes.
+
+## Migraciones
+
+Para realizar cambios en la estructura de la base de datos, utiliza migraciones. Aquí hay un ejemplo de cómo crear una migración para agregar una nueva columna:
+
+```sql
+-- migrations/20231022_add_campo_nuevo.sql
+BEGIN;
+
+-- Asegúrate de que la transacción sea atómica
+ALTER TABLE public.despachos 
+ADD COLUMN IF NOT EXISTS nuevo_campo text;
+
+-- Actualiza los registros existentes si es necesario
+-- UPDATE public.despachos SET nuevo_campo = 'valor_predeterminado' WHERE nuevo_campo IS NULL;
+
+-- Si necesitas un valor por defecto
+-- ALTER TABLE public.despachos ALTER COLUMN nuevo_campo SET DEFAULT 'valor_predeterminado';
+
+-- Si necesitas hacer que la columna sea NOT NULL después de la migración inicial
+-- ALTER TABLE public.despachos ALTER COLUMN nuevo_campo SET NOT NULL;
+
+COMMIT;
+```

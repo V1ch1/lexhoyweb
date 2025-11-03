@@ -4,24 +4,19 @@ Esta carpeta contiene toda la documentación del proyecto organizada por categor
 
 ---
 
-## 📂 Estructura de Documentación
+## 📂 Estructura de Carpetas
 
 ```
 docs/
 ├── README.md                    # Este archivo
 ├── CONTEXTO_PROYECTO.md         # Contexto general del proyecto
 ├── DATABASE_SCHEMA.md           # Esquema de base de datos
+├── API.md                       # Documentación de API (22 endpoints)
 │
 ├── analisis/                    # Análisis y auditorías
 │   └── ANALISIS_PROYECTO_COMPLETO.md
 │
-├── fases/                       # Fases de mejora completadas
-│   ├── TAREAS_MEJORA.md        # Plan maestro de tareas
-│   ├── FASE_1_COMPLETADA.md    # Limpieza de archivos
-│   ├── FASE_2_COMPLETADA.md    # Corrección de configuración
-│   └── FASE_3_COMPLETADA.md    # Seguridad básica
-│
-└── implementacion/              # Documentación de implementación
+└── implementacion/              # Documentación técnica
     ├── FLUJO_COMPLETO_DESPACHOS.md
     ├── PLAN_IMPLANTACION_SUPABASE.md
     ├── RESUMEN.md

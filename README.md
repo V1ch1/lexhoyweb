@@ -249,9 +249,9 @@ La documentación completa del proyecto está organizada en la carpeta `docs/`:
 - **[Contexto del Proyecto](docs/CONTEXTO_PROYECTO.md)** - Arquitectura y decisiones técnicas
 - **[Esquema de Base de Datos](docs/DATABASE_SCHEMA.md)** - Tablas, relaciones y políticas RLS
 
-### 📊 Análisis y Mejoras
+### 📊 Análisis y Tareas
 - **[Análisis Completo](docs/analisis/ANALISIS_PROYECTO_COMPLETO.md)** - Auditoría del proyecto
-- **[Plan de Tareas](docs/fases/TAREAS_MEJORA.md)** - Roadmap de mejoras (67% completado)
+- **[Tareas Pendientes](TAREAS_PENDIENTES.md)** - Roadmap de nuevas funcionalidades
 
 ### 🚀 Implementación
 - **[Flujo de Despachos](docs/implementacion/FLUJO_COMPLETO_DESPACHOS.md)** - Sistema completo de gestión
