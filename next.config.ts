@@ -2,18 +2,21 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Configuración para producción
-  output: 'standalone',
+  // output: 'standalone', // Comentado temporalmente por problemas de permisos en Windows
   
-  // Ignorar errores de TypeScript durante la compilación
+  // Verificar errores de TypeScript durante la compilación
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  // Ignorar errores de ESLint durante la compilación
+  // Verificar errores de ESLint durante la compilación
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
-    domains: ['oepcitgbnqylfpdryffx.supabase.co'], // Tu dominio de Supabase
+    domains: [
+      'oepcitgbnqylfpdryffx.supabase.co', // Supabase storage
+      'lexhoy.com', // WordPress images
+    ],
   },
   async headers() {
     return [
@@ -35,6 +38,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://lexhoy.com;",
           },
         ],
       },

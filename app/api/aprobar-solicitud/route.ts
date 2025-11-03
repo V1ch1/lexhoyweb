@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { UserService } from "@/lib/userService";
+import { validateUUID, ValidationError, sanitizeString } from "@/lib/validation";
+import { getRequiredEnvVar } from "@/lib/env";
 
 const userService = new UserService();
 
@@ -15,8 +17,8 @@ export async function POST(request: Request) {
     }
 
     // Crear cliente Supabase con el token del usuario
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const SUPABASE_URL = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL');
+    const SUPABASE_ANON_KEY = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
@@ -47,18 +49,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { solicitudId, notas } = body;
 
-    if (!solicitudId) {
-      return NextResponse.json(
-        { error: "Falta el ID de la solicitud" },
-        { status: 400 }
-      );
+    // Validar solicitudId
+    if (!solicitudId || !validateUUID(solicitudId)) {
+      throw new ValidationError("ID de solicitud inválido", "solicitudId");
     }
+
+    // Sanitizar notas si existen
+    const notasSanitizadas = notas ? sanitizeString(notas) : "Solicitud aprobada";
 
     // Aprobar la solicitud usando el servicio
     await userService.approveSolicitudDespacho(
       solicitudId,
       user.id,
-      notas || "Solicitud aprobada"
+      notasSanitizadas
     );
 
     return NextResponse.json({
@@ -68,6 +71,15 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("💥 Error completo al aprobar solicitud:", error);
     console.error("💥 Stack trace:", error instanceof Error ? error.stack : "No stack");
+    
+    // Manejo especial para errores de validación
+    if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { error: error.message, field: error.field },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: "Error al aprobar solicitud",

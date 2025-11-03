@@ -41,12 +41,8 @@ export function DespachosList({
   user,
   setAsignarDespachoId,
   setShowAsignarModal,
-  // Estas props no se usan actualmente pero se mantienen para futuras implementaciones
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   solicitudesPendientes,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setDespachoSolicitar,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setShowSolicitarModal,
   fetchDespachos,
 }: DespachosListProps) {

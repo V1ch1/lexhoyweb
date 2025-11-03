@@ -164,8 +164,8 @@ export async function POST(request: Request) {
     // Enviar email a super admins
     try {
       const { EmailService } = await import("@/lib/emailService");
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      // Usar siempre URL de producción en emails
+      const baseUrl = "https://despachos.lexhoy.com";
 
       await EmailService.sendToSuperAdmins({
         subject: `Nueva solicitud de despacho - ${userName}`,

@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify";
-import { UserDespachoWithDetails } from "@/lib/types/dashboard";
+import { UserDespacho } from "@/lib/types";
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -47,12 +47,7 @@ interface RecentLead {
   estado: 'nuevo' | 'contactado' | 'cerrado';
 }
 
-interface UserDespacho {
-  id: string;
-  nombre: string;
-  localidad?: string;
-  provincia?: string;
-}
+// Usando la interfaz UserDespacho de los tipos globales
 
 // Función para decodificar entidades HTML
 function decodeHtmlEntities(text: string): string {
@@ -408,8 +403,7 @@ const DashboardPage = () => {
 
       {/* Solo mostrar Mis Despachos si hay al menos un despacho con nombre */}
       {user.role === "despacho_admin" && userDespachos.some(d => 
-        (d.nombre && d.nombre !== 'Sin nombre') || 
-        (d.despachos && d.despachos.nombre && d.despachos.nombre !== 'Sin nombre')
+        (d.nombre && d.nombre !== 'Sin nombre' && d.nombre.trim() !== '')
       ) && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

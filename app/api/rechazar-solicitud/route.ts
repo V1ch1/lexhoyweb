@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { UserService } from "@/lib/userService";
+import { validateUUID, ValidationError, sanitizeString, validateNotEmpty } from "@/lib/validation";
+import { getRequiredEnvVar } from "@/lib/env";
 
 const userService = new UserService();
 
@@ -15,8 +17,8 @@ export async function POST(request: Request) {
     }
 
     // Crear cliente Supabase con el token del usuario
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const SUPABASE_URL = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL');
+    const SUPABASE_ANON_KEY = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
@@ -47,25 +49,23 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { solicitudId, notas } = body;
 
-    if (!solicitudId) {
-      return NextResponse.json(
-        { error: "Falta el ID de la solicitud" },
-        { status: 400 }
-      );
+    // Validar solicitudId
+    if (!solicitudId || !validateUUID(solicitudId)) {
+      throw new ValidationError("ID de solicitud inválido", "solicitudId");
     }
 
-    if (!notas || notas.trim() === "") {
-      return NextResponse.json(
-        { error: "Debes proporcionar un motivo de rechazo" },
-        { status: 400 }
-      );
+    // Validar y sanitizar notas (requeridas para rechazo)
+    if (!notas || !validateNotEmpty(notas)) {
+      throw new ValidationError("Debes proporcionar un motivo de rechazo", "notas");
     }
+    
+    const notasSanitizadas = sanitizeString(notas);
 
     // Rechazar la solicitud usando el servicio
     await userService.rejectSolicitudDespacho(
       solicitudId,
       user.id,
-      notas
+      notasSanitizadas
     );
 
     return NextResponse.json({
@@ -73,7 +73,16 @@ export async function POST(request: Request) {
       message: "Solicitud rechazada correctamente",
     });
   } catch (error) {
-    console.error("Error al rechazar solicitud:", error);
+    console.error("💥 Error al rechazar solicitud:", error);
+    
+    // Manejo especial para errores de validación
+    if (error instanceof ValidationError) {
+      return NextResponse.json(
+        { error: error.message, field: error.field },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       {
         error: "Error al rechazar solicitud",

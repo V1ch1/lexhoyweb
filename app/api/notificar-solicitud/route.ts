@@ -75,7 +75,7 @@ export async function POST(request: Request) {
             month: "long",
             day: "numeric",
           }),
-          url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/admin/users?tab=solicitudes`,
+          url: "https://despachos.lexhoy.com/admin/users?tab=solicitudes",
         }),
       })
     );

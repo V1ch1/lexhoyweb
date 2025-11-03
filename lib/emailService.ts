@@ -162,7 +162,7 @@ export class EmailService {
 
               <p>Puedes revisar y aprobar esta solicitud desde el panel de administración.</p>
               
-              <a href="${data.url || (process.env.NEXT_PUBLIC_BASE_URL || 'https://despachos.lexhoy.com') + "/admin/users?tab=solicitudes"}" class="button">
+              <a href="${data.url || 'https://despachos.lexhoy.com/admin/users?tab=solicitudes'}" class="button">
                 Ver Solicitud
               </a>
 
@@ -213,7 +213,7 @@ export class EmailService {
 
               <p>Ya puedes acceder y gestionar tu despacho desde el panel de control.</p>
               
-              <a href="${data.url || process.env.NEXT_PUBLIC_BASE_URL + "/dashboard/settings?tab=mis-despachos"}" class="button">
+              <a href="${data.url || 'https://despachos.lexhoy.com/dashboard/settings?tab=mis-despachos'}" class="button">
                 Ir a Mis Despachos
               </a>
 
@@ -296,8 +296,8 @@ export class EmailService {
     try {
       console.log(`📨 Notificando registro de nuevo usuario: ${userData.email}`);
       
-      const userProfileUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/users/${userData.id}`;
-      const adminPanelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/users`;
+      const userProfileUrl = `https://despachos.lexhoy.com/admin/users/${userData.id}`;
+      const adminPanelUrl = `https://despachos.lexhoy.com/admin/users`;
       
       const fecha = new Date().toLocaleString('es-ES', {
         day: '2-digit',
@@ -450,7 +450,7 @@ export class EmailService {
 
                 <div class="footer">
                   <p style="margin: 5px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="color: #4f46e5; text-decoration: none;">
+                    <a href="https://despachos.lexhoy.com" style="color: #4f46e5; text-decoration: none;">
                       <strong>LexHoy</strong> - Sistema de Gestión de Despachos
                     </a>
                   </p>

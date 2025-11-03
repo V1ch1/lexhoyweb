@@ -43,6 +43,9 @@ export interface UserDespacho {
   id: string;
   userId: string;
   despachoId: string;
+  nombre: string;
+  localidad?: string;
+  provincia?: string;
   fechaAsignacion: string | Date;
   asignadoPor?: string;
   activo: boolean;
@@ -55,6 +58,8 @@ export interface UserDespacho {
     nombre: string;
     object_id?: string;
     slug?: string;
+    localidad?: string;
+    provincia?: string;
   };
 }
 

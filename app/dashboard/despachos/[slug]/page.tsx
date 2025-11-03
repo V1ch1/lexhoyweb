@@ -121,6 +121,8 @@ interface FormData {
 // Función para decodificar entidades HTML
 const decodeHtmlEntities = (text: string): string => {
   if (typeof text !== 'string') return '';
+  // Solo ejecutar en el cliente
+  if (typeof window === 'undefined') return text;
   const textarea = document.createElement('textarea');
   textarea.innerHTML = text;
   return textarea.value;
@@ -668,7 +670,7 @@ export default function DespachoPage() {
                           if (!file) return;
                           
                           // Validar dimensiones
-                          const img = new window.Image();
+                          const img = document.createElement('img');
                           img.onload = function() {
                             if (img.width !== 500 || img.height !== 500) {
                               alert('La imagen debe ser exactamente 500x500 píxeles');

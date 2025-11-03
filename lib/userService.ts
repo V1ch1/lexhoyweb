@@ -527,11 +527,18 @@ export class UserService {
         id: `owned-${d.id}`, // ID único para evitar conflictos
         userId,
         despachoId: d.id.toString(),
-fechaAsignacion: new Date().toISOString(),
+        nombre: d.nombre || 'Sin nombre', // Asegurar que siempre haya un nombre
+        fechaAsignacion: new Date().toISOString(),
         activo: true,
         permisos: { leer: true, escribir: true, eliminar: true }, // Propietario tiene todos los permisos
         asignadoPor: "owner", // Indicador de que es propietario
-        despachos: d, // Todos los datos del despacho
+        despachos: {
+          nombre: d.nombre || 'Sin nombre',
+          object_id: d.object_id,
+          slug: d.slug,
+          localidad: d.localidad,
+          provincia: d.provincia
+        }
       }));
 
       // 5. Combinar ambas listas (evitando duplicados)

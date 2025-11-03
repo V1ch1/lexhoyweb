@@ -241,6 +241,24 @@ npm start
 
 La aplicación estará disponible en [http://localhost:3000](http://localhost:3000)
 
+## 📚 Documentación
+
+La documentación completa del proyecto está organizada en la carpeta `docs/`:
+
+- **[Índice de Documentación](docs/README.md)** - Guía completa de toda la documentación
+- **[Contexto del Proyecto](docs/CONTEXTO_PROYECTO.md)** - Arquitectura y decisiones técnicas
+- **[Esquema de Base de Datos](docs/DATABASE_SCHEMA.md)** - Tablas, relaciones y políticas RLS
+
+### 📊 Análisis y Mejoras
+- **[Análisis Completo](docs/analisis/ANALISIS_PROYECTO_COMPLETO.md)** - Auditoría del proyecto
+- **[Plan de Tareas](docs/fases/TAREAS_MEJORA.md)** - Roadmap de mejoras (67% completado)
+
+### 🚀 Implementación
+- **[Flujo de Despachos](docs/implementacion/FLUJO_COMPLETO_DESPACHOS.md)** - Sistema completo de gestión
+- **[Resumen de Estado](docs/implementacion/RESUMEN.md)** - Estado actual del proyecto
+
+---
+
 ## 📞 Contacto Técnico
 
 Para consultas sobre desarrollo e implementación:
@@ -250,4 +268,5 @@ Para consultas sobre desarrollo e implementación:
 
 ---
 
-*Este documento será actualizado conforme avance el desarrollo del proyecto.*
+**Última actualización:** 3 de noviembre de 2025  
+*Documentación organizada y actualizada*
