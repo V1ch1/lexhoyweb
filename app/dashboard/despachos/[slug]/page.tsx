@@ -499,8 +499,21 @@ export default function DespachoPage() {
       experiencia: '',
       especialidades: '',
       servicios_especificos: '',
-      horarios: {},
-      redes_sociales: {},
+      horarios: {
+        lunes: '',
+        martes: '',
+        miercoles: '',
+        jueves: '',
+        viernes: '',
+        sabado: '',
+        domingo: ''
+      },
+      redes_sociales: {
+        facebook: '',
+        twitter: '',
+        linkedin: '',
+        instagram: ''
+      },
       observaciones: '',
       foto_perfil: '',
       areas_practica: [],
@@ -528,11 +541,31 @@ export default function DespachoPage() {
           despacho_id: despacho.id,
           nombre: newSedeData.nombre,
           descripcion: newSedeData.descripcion,
-          web: newSedeData.web,
+          telefono: newSedeData.telefono,
           email_contacto: newSedeData.email_contacto,
+          web: newSedeData.web,
           persona_contacto: newSedeData.persona_contacto,
+          calle: newSedeData.calle,
+          numero: newSedeData.numero,
+          piso: newSedeData.piso,
+          codigo_postal: newSedeData.codigo_postal,
+          localidad: newSedeData.localidad,
+          provincia: newSedeData.provincia,
+          pais: newSedeData.pais,
           ano_fundacion: newSedeData.ano_fundacion,
           tamano_despacho: newSedeData.tamano_despacho,
+          numero_colegiado: newSedeData.numero_colegiado,
+          colegio: newSedeData.colegio,
+          experiencia: newSedeData.experiencia,
+          especialidades: newSedeData.especialidades,
+          servicios_especificos: newSedeData.servicios_especificos,
+          horarios: newSedeData.horarios,
+          redes_sociales: newSedeData.redes_sociales,
+          observaciones: newSedeData.observaciones,
+          foto_perfil: newSedeData.foto_perfil,
+          areas_practica: newSedeData.areas_practica,
+          es_principal: newSedeData.es_principal,
+          activa: true,
         })
         .select()
         .single();
@@ -832,6 +865,277 @@ export default function DespachoPage() {
                       placeholder="Descripción de la sede"
                     />
                   </div>
+                </div>
+
+                {/* Ubicación */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Ubicación</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-gray-500 mb-1">Calle</label>
+                      <input
+                        type="text"
+                        value={newSedeData.calle || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, calle: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Calle Principal"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Número</label>
+                      <input
+                        type="text"
+                        value={newSedeData.numero || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, numero: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="123"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Piso</label>
+                      <input
+                        type="text"
+                        value={newSedeData.piso || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, piso: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="3º A"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Código Postal</label>
+                      <input
+                        type="text"
+                        value={newSedeData.codigo_postal || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, codigo_postal: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="28001"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Localidad</label>
+                      <input
+                        type="text"
+                        value={newSedeData.localidad || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, localidad: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Madrid"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Provincia</label>
+                      <input
+                        type="text"
+                        value={newSedeData.provincia || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, provincia: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Madrid"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">País</label>
+                      <input
+                        type="text"
+                        value={newSedeData.pais || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, pais: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="España"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
+                      <input
+                        type="tel"
+                        value={newSedeData.telefono || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, telefono: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="+34 123 456 789"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información Profesional */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Información Profesional</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Nº Colegiado</label>
+                      <input
+                        type="text"
+                        value={newSedeData.numero_colegiado || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, numero_colegiado: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="12345"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Colegio</label>
+                      <input
+                        type="text"
+                        value={newSedeData.colegio || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, colegio: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ilustre Colegio de Abogados de..."
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-gray-500 mb-1">Experiencia</label>
+                      <textarea
+                        value={newSedeData.experiencia || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, experiencia: e.target.value} : null)}
+                        rows={2}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Años de experiencia y especialización..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Áreas de Práctica */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Áreas de Práctica</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {AREAS_PRACTICA_DISPONIBLES.map(area => (
+                      <button
+                        key={area}
+                        type="button"
+                        onClick={() => {
+                          const current = newSedeData.areas_practica || [];
+                          const updated = current.includes(area)
+                            ? current.filter(a => a !== area)
+                            : [...current, area];
+                          setNewSedeData(prev => prev ? {...prev, areas_practica: updated} : null);
+                        }}
+                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${
+                          (newSedeData.areas_practica || []).includes(area)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Especialidades y Servicios */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Especialidades y Servicios</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Especialidades</label>
+                      <textarea
+                        value={newSedeData.especialidades || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, especialidades: e.target.value} : null)}
+                        rows={2}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Especialidades específicas..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Servicios Específicos</label>
+                      <textarea
+                        value={newSedeData.servicios_especificos || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, servicios_especificos: e.target.value} : null)}
+                        rows={2}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Servicios que ofrece..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Horarios */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Horarios</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map(dia => (
+                      <div key={dia}>
+                        <label className="block text-xs text-gray-500 mb-1 capitalize">{dia}:</label>
+                        <input
+                          type="text"
+                          value={(newSedeData.horarios as Record<string, string>)?.[dia] || ''}
+                          onChange={(e) => setNewSedeData(prev => prev ? {
+                            ...prev,
+                            horarios: {...(prev.horarios as Record<string, string>), [dia]: e.target.value}
+                          } : null)}
+                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="9:00-14:00, 16:00-19:00"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Redes Sociales */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Redes Sociales</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Facebook</label>
+                      <input
+                        type="url"
+                        value={(newSedeData.redes_sociales as Record<string, string>)?.facebook || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {
+                          ...prev,
+                          redes_sociales: {...(prev.redes_sociales as Record<string, string>), facebook: e.target.value}
+                        } : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://facebook.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Twitter</label>
+                      <input
+                        type="url"
+                        value={(newSedeData.redes_sociales as Record<string, string>)?.twitter || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {
+                          ...prev,
+                          redes_sociales: {...(prev.redes_sociales as Record<string, string>), twitter: e.target.value}
+                        } : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://twitter.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">LinkedIn</label>
+                      <input
+                        type="url"
+                        value={(newSedeData.redes_sociales as Record<string, string>)?.linkedin || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {
+                          ...prev,
+                          redes_sociales: {...(prev.redes_sociales as Record<string, string>), linkedin: e.target.value}
+                        } : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://linkedin.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Instagram</label>
+                      <input
+                        type="url"
+                        value={(newSedeData.redes_sociales as Record<string, string>)?.instagram || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {
+                          ...prev,
+                          redes_sociales: {...(prev.redes_sociales as Record<string, string>), instagram: e.target.value}
+                        } : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://instagram.com/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observaciones */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Observaciones</h4>
+                  <textarea
+                    value={newSedeData.observaciones || ''}
+                    onChange={(e) => setNewSedeData(prev => prev ? {...prev, observaciones: e.target.value} : null)}
+                    rows={3}
+                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Notas adicionales..."
+                  />
                 </div>
               </div>
             )}
