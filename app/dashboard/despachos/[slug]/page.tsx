@@ -513,8 +513,8 @@ export default function DespachoPage() {
     if (!newSedeData || !despacho) return;
     
     // Validaciones básicas
-    if (!newSedeData.nombre || !newSedeData.localidad) {
-      setError('El nombre y la localidad son obligatorios');
+    if (!newSedeData.nombre) {
+      setError('El nombre de la sede es obligatorio');
       return;
     }
     
@@ -528,33 +528,11 @@ export default function DespachoPage() {
           despacho_id: despacho.id,
           nombre: newSedeData.nombre,
           descripcion: newSedeData.descripcion,
-          telefono: newSedeData.telefono,
-          email_contacto: newSedeData.email_contacto,
           web: newSedeData.web,
+          email_contacto: newSedeData.email_contacto,
           persona_contacto: newSedeData.persona_contacto,
-          calle: newSedeData.calle,
-          numero: newSedeData.numero,
-          piso: newSedeData.piso,
-          codigo_postal: newSedeData.codigo_postal,
-          localidad: newSedeData.localidad,
-          provincia: newSedeData.provincia,
-          pais: newSedeData.pais,
           ano_fundacion: newSedeData.ano_fundacion,
           tamano_despacho: newSedeData.tamano_despacho,
-          numero_colegiado: newSedeData.numero_colegiado,
-          colegio: newSedeData.colegio,
-          experiencia: newSedeData.experiencia,
-          especialidades: newSedeData.especialidades,
-          servicios_especificos: newSedeData.servicios_especificos,
-          horarios: newSedeData.horarios,
-          redes_sociales: newSedeData.redes_sociales,
-          observaciones: newSedeData.observaciones,
-          foto_perfil: newSedeData.foto_perfil,
-          areas_practica: newSedeData.areas_practica,
-          es_principal: newSedeData.es_principal,
-          activa: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
         })
         .select()
         .single();
@@ -770,7 +748,7 @@ export default function DespachoPage() {
                 {/* Campos obligatorios */}
                 <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
                   <p className="text-sm text-yellow-800">
-                    <strong>Campos obligatorios:</strong> Nombre de la sede y Localidad
+                    <strong>Campo obligatorio:</strong> Nombre de la sede
                   </p>
                 </div>
 
@@ -789,120 +767,13 @@ export default function DespachoPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
-                      <input
-                        type="tel"
-                        value={newSedeData.telefono || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, telefono: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="+34 123 456 789"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Email</label>
+                      <label className="block text-xs text-gray-500 mb-1">Email de Contacto</label>
                       <input
                         type="email"
                         value={newSedeData.email_contacto || ''}
                         onChange={(e) => setNewSedeData(prev => prev ? {...prev, email_contacto: e.target.value} : null)}
                         className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="contacto@despacho.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Web</label>
-                      <input
-                        type="url"
-                        value={newSedeData.web || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, web: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="https://..."
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-xs text-gray-500 mb-1">Descripción</label>
-                    <textarea
-                      value={newSedeData.descripcion || ''}
-                      onChange={(e) => setNewSedeData(prev => prev ? {...prev, descripcion: e.target.value} : null)}
-                      rows={3}
-                      className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Descripción de la sede"
-                    />
-                  </div>
-                </div>
-
-                {/* Dirección */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Dirección</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs text-gray-500 mb-1">Calle</label>
-                      <input
-                        type="text"
-                        value={newSedeData.calle || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, calle: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Calle Principal"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Número</label>
-                      <input
-                        type="text"
-                        value={newSedeData.numero || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, numero: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="123"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Piso</label>
-                      <input
-                        type="text"
-                        value={newSedeData.piso || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, piso: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="3º A"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Código Postal</label>
-                      <input
-                        type="text"
-                        value={newSedeData.codigo_postal || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, codigo_postal: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="28001"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Localidad *</label>
-                      <input
-                        type="text"
-                        value={newSedeData.localidad || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, localidad: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Madrid"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Provincia</label>
-                      <input
-                        type="text"
-                        value={newSedeData.provincia || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, provincia: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Madrid"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">País</label>
-                      <input
-                        type="text"
-                        value={newSedeData.pais || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, pais: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="España"
                       />
                     </div>
                     <div>
@@ -915,6 +786,51 @@ export default function DespachoPage() {
                         placeholder="Nombre del responsable"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Web</label>
+                      <input
+                        type="url"
+                        value={newSedeData.web || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, web: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Año de Fundación</label>
+                      <input
+                        type="text"
+                        value={newSedeData.ano_fundacion || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, ano_fundacion: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="2020"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Tamaño del Despacho</label>
+                      <select
+                        value={newSedeData.tamano_despacho || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, tamano_despacho: e.target.value} : null)}
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="1-5">1-5 abogados</option>
+                        <option value="6-10">6-10 abogados</option>
+                        <option value="11-25">11-25 abogados</option>
+                        <option value="26-50">26-50 abogados</option>
+                        <option value="51+">Más de 50 abogados</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-xs text-gray-500 mb-1">Descripción</label>
+                    <textarea
+                      value={newSedeData.descripcion || ''}
+                      onChange={(e) => setNewSedeData(prev => prev ? {...prev, descripcion: e.target.value} : null)}
+                      rows={3}
+                      className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Descripción de la sede"
+                    />
                   </div>
                 </div>
               </div>
