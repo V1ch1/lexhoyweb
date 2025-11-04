@@ -11,10 +11,10 @@ const supabase = createClient(
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string; sedeId: string } }
+  context: { params: Promise<{ id: string; sedeId: string }> }
 ) {
   try {
-    const { id: despachoId, sedeId } = params;
+    const { id: despachoId, sedeId } = await context.params;
 
     console.log('📖 Obteniendo sede:', sedeId, 'del despacho:', despachoId);
 
@@ -51,10 +51,10 @@ export async function GET(
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string; sedeId: string } }
+  context: { params: Promise<{ id: string; sedeId: string }> }
 ) {
   try {
-    const { id: despachoId, sedeId } = params;
+    const { id: despachoId, sedeId } = await context.params;
     const body = await request.json();
 
     console.log('✏️ Actualizando sede:', sedeId);
@@ -107,10 +107,10 @@ export async function PUT(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; sedeId: string } }
+  context: { params: Promise<{ id: string; sedeId: string }> }
 ) {
   try {
-    const { id: despachoId, sedeId } = params;
+    const { id: despachoId, sedeId } = await context.params;
 
     console.log('🗑️ Eliminando sede:', sedeId, 'del despacho:', despachoId);
 
@@ -135,26 +135,46 @@ export async function DELETE(
       );
     }
 
+    console.log('👤 Usuario autenticado:', user.email);
+
     // Verificar que la sede existe y pertenece al despacho
     const { data: sede, error: sedeError } = await supabase
       .from('sedes')
-      .select('*, despacho:despachos(*)')
+      .select('*')
       .eq('id', sedeId)
       .eq('despacho_id', despachoId)
       .single();
 
     if (sedeError || !sede) {
+      console.error('❌ Sede no encontrada:', sedeError);
       return NextResponse.json(
         { error: 'Sede no encontrada' },
         { status: 404 }
       );
     }
 
-    // Verificar permisos (propietario del despacho o super_admin)
-    const isSuperAdmin = user.user_metadata?.role === 'super_admin';
-    const isOwner = sede.despacho?.owner_user_id === user.id;
+    console.log('📍 Sede encontrada:', sede.nombre);
 
-    if (!isSuperAdmin && !isOwner) {
+    // Verificar permisos: usuario debe estar en user_despachos o ser super_admin
+    const isSuperAdmin = user.user_metadata?.role === 'super_admin';
+    
+    // Verificar si el usuario tiene relación con este despacho
+    const { data: userDespacho, error: userDespachoError } = await supabase
+      .from('user_despachos')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('despacho_id', despachoId)
+      .maybeSingle();
+
+    const hasAccess = isSuperAdmin || !!userDespacho;
+
+    console.log('🔐 Verificación de permisos:', {
+      isSuperAdmin,
+      hasUserDespacho: !!userDespacho,
+      hasAccess
+    });
+
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'No tienes permisos para eliminar esta sede' },
         { status: 403 }

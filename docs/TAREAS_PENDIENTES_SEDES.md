@@ -53,32 +53,133 @@ UPDATE sedes SET es_principal = true WHERE id = (SELECT id FROM sedes WHERE desp
 
 ## 🔴 PENDIENTE - ALTA PRIORIDAD
 
-### 1. ✅ Corregir Funcionalidad "Eliminar" en Mis Despachos (COMPLETADO)
-**Problema**: En `/dashboard/settings` al eliminar un despacho:
-- ❌ Se elimina de la pantalla temporalmente
-- ❌ Pero sigue apareciendo en `/dashboard` y `/dashboard/despachos`
-- ❌ Al volver a `/dashboard/settings`, sigue en la lista
+### 1. ✅ Gestión Completa de Despachos (COMPLETADO)
 
-**Solución Implementada**:
-- ✅ "Eliminar" ahora **desasigna** al usuario del despacho correctamente
-- ✅ El despacho vuelve a estar disponible para otros usuarios
-- ✅ El despacho NO se elimina de la BD (solo super_admin puede eliminarlo)
-- ✅ Desaparece de todas las vistas del usuario
+#### 1.1 Desasignación de Usuarios ✅
+**Funcionalidad**: Usuario puede desasignarse de un despacho
+- ✅ Endpoint: `DELETE /api/user/despachos/[id]`
+- ✅ Elimina relación en `user_despachos`
+- ✅ Limpia `owner_email` si era propietario
+- ✅ Modal de confirmación mejorado
+- ✅ Despacho vuelve a estar disponible para otros
+
+#### 1.2 Asignación de Propietario (Super Admin) ✅
+**Funcionalidad**: Super admin puede asignar cualquier usuario a cualquier despacho
+- ✅ Modal "Asignar dueño" con búsqueda de usuarios
+- ✅ Búsqueda con debounce (300ms) - no pierde foco
+- ✅ Verifica si usuario ya administra ESTE despacho específico
+- ✅ Crea relación en `user_despachos`
+- ✅ Actualiza `owner_email` en `despachos`
+- ✅ **Email de notificación** al usuario asignado
+  - Asunto: "🎉 Te han asignado un despacho en LexHoy"
+  - Saludo personalizado
+  - Lista de funcionalidades disponibles
+  - Botón "Ir a Mis Despachos"
+  - Diseño profesional
+
+#### 1.3 Importación de Despachos ✅
+**Funcionalidad**: Usuario importa despacho desde WordPress
+- ✅ Endpoint actualizado: `POST /api/importar-despacho`
+- ✅ Crea relación automática en `user_despachos`
+- ✅ Usuario queda como propietario automáticamente
+
+#### 1.4 Listado de Despachos ✅
+**Funcionalidad**: Muestra todos los despachos con botones contextuales
+- ✅ Muestra TODOS los despachos (no solo los del usuario)
+- ✅ Marca cuáles pertenecen al usuario (`isOwner`)
+- ✅ Botón "Editar" para propietarios
+- ✅ Botón "Solicitar propiedad" para otros
+- ✅ Botón "Asignar dueño" para super admin
 
 **Archivos modificados**:
-- ✅ `app/dashboard/settings/page.tsx` - Actualizado handleDeleteDespacho
-- ✅ `app/api/user/despachos/[id]/route.ts` - Endpoint DELETE creado
-- ✅ `components/settings/MisDespachosTab.tsx` - Modal mejorado
-- ✅ `app/dashboard/despachos/page.tsx` - Filtrado por user_despachos
-
-**Validaciones implementadas**:
-- ✅ Modal con mensaje claro: "¿Desasignarte de este despacho?"
-- ✅ Advertencia sobre propietario único
-- ✅ Actualización automática de todas las vistas
+- ✅ `app/api/user/despachos/[id]/route.ts`
+- ✅ `app/api/importar-despacho/route.ts`
+- ✅ `app/dashboard/despachos/page.tsx`
+- ✅ `app/dashboard/settings/page.tsx`
+- ✅ `components/ModalAsignarPropietario.tsx`
+- ✅ `components/settings/MisDespachosTab.tsx`
+- ✅ `components/despachos/DespachosList.tsx`
+- ✅ `types/despachos.ts`
 
 ---
 
-### 2. Separar "Eliminar Despacho" (Solo Super Admin)
+## 🟡 SIGUIENTE - GESTIÓN DE SEDES
+
+### 2. Selector de Sede Principal (Con 2+ Sedes)
+**Funcionalidad**: Permitir cambiar la sede principal cuando hay múltiples sedes
+- ✅ Selector dropdown visible solo si `num_sedes >= 2`
+- ✅ Trigger SQL para garantizar única sede principal
+- [ ] **PENDIENTE**: Probar cambio de sede principal
+- [ ] **PENDIENTE**: Verificar que trigger funciona correctamente
+
+**Archivos**:
+- ✅ `app/dashboard/despachos/[slug]/page.tsx` - Selector implementado
+- ✅ `database/migrations/trigger_sede_principal.sql` - Trigger creado
+
+**SQL Trigger**:
+```sql
+CREATE OR REPLACE FUNCTION validar_sede_principal()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.es_principal = true THEN
+    UPDATE sedes 
+    SET es_principal = false 
+    WHERE despacho_id = NEW.despacho_id 
+      AND id != NEW.id 
+      AND es_principal = true;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+### 3. Crear Nueva Sede
+**Funcionalidad**: Formulario para agregar sedes adicionales al despacho
+- ✅ Página: `/dashboard/despachos/[slug]/sedes/crear`
+- ✅ Formulario completo con todos los campos
+- ✅ Endpoint: `POST /api/despachos/[id]/sedes`
+- [ ] **PENDIENTE**: Botón "Nueva Sede" en página del despacho
+- [ ] **PENDIENTE**: Navegación desde listado de sedes
+- [ ] **PENDIENTE**: Probar creación completa
+
+**Campos del formulario**:
+- Información básica: nombre, descripción
+- Ubicación: calle, número, piso, localidad, provincia, CP
+- Contacto: teléfono, email, persona contacto, web
+- Adicional: año fundación, tamaño despacho
+- Checkbox: "Marcar como sede principal"
+
+---
+
+### 4. Eliminar Sede
+**Funcionalidad**: Permitir eliminar sedes (excepto si es la única)
+- ✅ Endpoint: `DELETE /api/despachos/[id]/sedes/[sedeId]`
+- ✅ Soft delete (marca como inactiva)
+- [ ] **PENDIENTE**: Botón "Eliminar" en listado de sedes
+- [ ] **PENDIENTE**: Modal de confirmación
+- [ ] **PENDIENTE**: Validación: no permitir eliminar si es única sede
+- [ ] **PENDIENTE**: Validación: no permitir eliminar sede principal
+
+**Validaciones**:
+- ❌ No se puede eliminar si `num_sedes === 1`
+- ❌ No se puede eliminar si `es_principal === true` (primero cambiar principal)
+- ✅ Soft delete: `activo = false`
+
+---
+
+### 5. Listado de Sedes del Despacho
+**Funcionalidad**: Ver todas las sedes de un despacho
+- [ ] Página: `/dashboard/despachos/[slug]/sedes`
+- [ ] Mostrar todas las sedes con información clave
+- [ ] Indicar cuál es la principal
+- [ ] Botones: "Editar", "Eliminar", "Marcar como principal"
+- [ ] Botón destacado: "+ Nueva Sede"
+
+---
+
+### 6. Separar "Eliminar Despacho" (Solo Super Admin)
 **Problema**: No existe funcionalidad para eliminar permanentemente un despacho
 
 **Comportamiento Esperado**:

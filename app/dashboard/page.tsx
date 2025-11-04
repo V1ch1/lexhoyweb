@@ -401,10 +401,8 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Solo mostrar Mis Despachos si hay al menos un despacho con nombre */}
-      {user.role === "despacho_admin" && userDespachos.some(d => 
-        (d.nombre && d.nombre !== 'Sin nombre' && d.nombre.trim() !== '')
-      ) && (
+      {/* Mostrar Mis Despachos para despacho_admin (con skeleton mientras carga) */}
+      {user.role === "despacho_admin" && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
@@ -418,21 +416,25 @@ const DashboardPage = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {despachosLoading ? (
-              // Loading skeleton
+              // Loading skeleton - Muestra mientras carga
               Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 animate-pulse"
+                  className="bg-white rounded-lg shadow-sm p-5 border border-gray-100"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="h-6 w-6 bg-gray-200 rounded"></div>
-                    <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                  <div className="animate-pulse">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-6 w-6 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="h-6 bg-gray-200 rounded mb-2 w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                   </div>
-                  <div className="h-6 bg-gray-200 rounded mb-2 w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 </div>
               ))
-            ) : userDespachos.length > 0 ? (
+            ) : userDespachos.length > 0 && userDespachos.some(d => 
+                (d.nombre && d.nombre !== 'Sin nombre' && d.nombre.trim() !== '')
+              ) ? (
               userDespachos
                 .filter(despacho => {
                   const nombre = despacho.nombre || (despacho.despachos?.nombre || '');

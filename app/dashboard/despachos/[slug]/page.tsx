@@ -22,7 +22,7 @@ const AREAS_PRACTICA_DISPONIBLES = [
 ];
 
 interface Sede {
-  id: number;
+  id: string; // UUID
   nombre: string;
   descripcion?: string;
   web?: string;
@@ -222,11 +222,14 @@ export default function DespachoPage() {
   const [activeSedeTab, setActiveSedeTab] = useState(0);
   const [success, setSuccess] = useState(false);
   const [savingSede, setSavingSede] = useState(false);
-  const [editingSedeId, setEditingSedeId] = useState<number | null>(null);
+  const [editingSedeId, setEditingSedeId] = useState<string | null>(null); // UUID
   const [editSedeData, setEditSedeData] = useState<Sede | null>(null);
   const [isCreatingNewSede, setIsCreatingNewSede] = useState(false);
   const [newSedeData, setNewSedeData] = useState<Partial<Sede> | null>(null);
   const [formError, setFormError] = useState<string | null>(null); // Error específico del formulario
+  const [showDeleteSedeModal, setShowDeleteSedeModal] = useState(false);
+  const [sedeToDelete, setSedeToDelete] = useState<Sede | null>(null);
+  const [deletingSede, setDeletingSede] = useState(false);
 
   useEffect(() => {
     const fetchDespachoData = async () => {
@@ -628,6 +631,79 @@ export default function DespachoPage() {
     }
   };
 
+  const handleDeleteSede = async () => {
+    if (!sedeToDelete || !despacho) return;
+
+    // Validaciones
+    if (sedes.length === 1) {
+      setFormError('No puedes eliminar la única sede del despacho');
+      setShowDeleteSedeModal(false);
+      return;
+    }
+
+    if (sedeToDelete.es_principal) {
+      setFormError('No puedes eliminar la sede principal. Primero cambia la sede principal a otra.');
+      setShowDeleteSedeModal(false);
+      return;
+    }
+
+    try {
+      setDeletingSede(true);
+      setFormError(null);
+
+      console.log('🗑️ Eliminando sede:', sedeToDelete.nombre);
+
+      // Obtener token de sesión
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No hay sesión activa');
+      }
+
+      // Llamar al endpoint DELETE con token de autenticación
+      const response = await fetch(`/api/despachos/${despacho.id}/sedes/${sedeToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
+        throw new Error(errorData.error || 'Error al eliminar la sede');
+      }
+
+      console.log('✅ Sede eliminada exitosamente');
+
+      // Actualizar estado local
+      const sedesActualizadas = sedes.filter(s => s.id !== sedeToDelete.id);
+      setSedes(sedesActualizadas);
+
+      // Actualizar contador de sedes
+      await supabase
+        .from('despachos')
+        .update({ num_sedes: sedesActualizadas.length })
+        .eq('id', despacho.id);
+
+      // Si estábamos en la sede eliminada, ir a la primera
+      if (activeSedeTab >= sedesActualizadas.length) {
+        setActiveSedeTab(0);
+      }
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error al eliminar sede:', error);
+      setFormError(error instanceof Error ? error.message : 'Error al eliminar la sede');
+    } finally {
+      setDeletingSede(false);
+      setShowDeleteSedeModal(false);
+      setSedeToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -784,27 +860,40 @@ export default function DespachoPage() {
                     id="sede-principal-select"
                     value={sedes.find(s => s.es_principal)?.id || sedes[0]?.id || ''}
                     onChange={async (e) => {
-                      const nuevaSedeId = parseInt(e.target.value);
+                      const nuevaSedeId = e.target.value; // UUID es string, no número
                       try {
+                        console.log('🔄 Cambiando sede principal a:', nuevaSedeId);
+                        
                         // Actualizar en la base de datos
                         const { error } = await supabase
                           .from('sedes')
                           .update({ es_principal: true })
                           .eq('id', nuevaSedeId);
 
-                        if (error) throw error;
+                        if (error) {
+                          console.error('❌ Error al actualizar sede principal:', error);
+                          throw error;
+                        }
 
-                        // Actualizar estado local
+                        console.log('✅ Sede principal actualizada en BD');
+
+                        // Actualizar estado local y reordenar (principal primero)
                         const sedesActualizadas = sedes.map(sede => ({
                           ...sede,
                           es_principal: sede.id === nuevaSedeId
-                        }));
+                        })).sort((a, b) => {
+                          if (a.es_principal) return -1;
+                          if (b.es_principal) return 1;
+                          return 0;
+                        });
+                        
                         setSedes(sedesActualizadas);
+                        setActiveSedeTab(0); // Ir a la primera sede (la nueva principal)
                         
                         setSuccess(true);
                         setTimeout(() => setSuccess(false), 2000);
                       } catch (error) {
-                        console.error('Error al cambiar sede principal:', error);
+                        console.error('❌ Error al cambiar sede principal:', error);
                         setFormError('Error al cambiar la sede principal. Por favor, intenta de nuevo.');
                       }
                     }}
@@ -1306,7 +1395,7 @@ export default function DespachoPage() {
             {/* Contenido de la sede activa - Versión compacta */}
             {!isCreatingNewSede && sedes[activeSedeTab] && (
               <div className="space-y-4">
-                {/* Botón de edición */}
+                {/* Botones de acción */}
                 <div className="flex justify-end gap-2">
                   {editingSedeId === sedes[activeSedeTab].id && (
                     <button
@@ -1333,6 +1422,21 @@ export default function DespachoPage() {
                     <PencilIcon className="h-4 w-4" />
                     {editingSedeId === sedes[activeSedeTab].id ? 'Cancelar Edición' : 'Editar Sede'}
                   </button>
+                  {sedes.length > 1 && !sedes[activeSedeTab].es_principal && (
+                    <button
+                      onClick={() => {
+                        setSedeToDelete(sedes[activeSedeTab]);
+                        setShowDeleteSedeModal(true);
+                      }}
+                      className="text-sm px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                      title="Eliminar sede"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Eliminar Sede
+                    </button>
+                  )}
                 </div>
 
                 {/* Foto de perfil con uploader */}
@@ -1811,6 +1915,53 @@ export default function DespachoPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmación para eliminar sede */}
+      {showDeleteSedeModal && sedeToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="ml-3 text-lg font-medium text-gray-900">¿Eliminar sede?</h3>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                ¿Estás seguro de que deseas eliminar la sede <strong>{sedeToDelete.nombre}</strong>?
+              </p>
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>Nota:</strong> Esta acción marcará la sede como inactiva. No se eliminará permanentemente de la base de datos.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteSedeModal(false);
+                  setSedeToDelete(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                disabled={deletingSede}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSede}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                disabled={deletingSede}
+              >
+                {deletingSede ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
