@@ -1076,6 +1076,7 @@ export default function DespachoPage() {
                     {/* Preview de la foto */}
                     <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                       {newSedeData.foto_perfil ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img 
                           src={newSedeData.foto_perfil} 
                           alt="Preview" 

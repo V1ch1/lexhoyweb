@@ -60,7 +60,6 @@ export default function CrearSedePage() {
     es_principal: false,
   });
 
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string>('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -87,7 +86,6 @@ export default function CrearSedePage() {
         setError('La imagen no puede superar los 2MB');
         return;
       }
-      setFotoFile(file);
       // Crear preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -502,6 +500,7 @@ export default function CrearSedePage() {
               {/* Preview de la foto */}
               <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                 {fotoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">

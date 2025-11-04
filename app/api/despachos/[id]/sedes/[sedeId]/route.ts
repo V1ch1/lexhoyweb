@@ -159,7 +159,7 @@ export async function DELETE(
     const isSuperAdmin = user.user_metadata?.role === 'super_admin';
     
     // Verificar si el usuario tiene relación con este despacho
-    const { data: userDespacho, error: userDespachoError } = await supabase
+    const { data: userDespacho } = await supabase
       .from('user_despachos')
       .select('*')
       .eq('user_id', user.id)
