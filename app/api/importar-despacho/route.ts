@@ -61,9 +61,8 @@ export async function POST(request: Request) {
       .from('user_despachos')
       .insert({
         user_id: user.id,
-        despacho_id: result.despachoId,
-        role: 'admin',
-        created_at: new Date().toISOString()
+        despacho_id: result.despachoId
+        // No incluir rol ni created_at - se asignarán por defecto en la BD
       });
 
     if (relationError) {

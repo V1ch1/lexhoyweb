@@ -8,7 +8,7 @@ interface User {
   email: string;
   nombre?: string;
   apellidos?: string;
-  despacho_id?: string;
+  yaAdministraEsteDespacho?: boolean;
 }
 
 const ModalAsignarPropietario = ({
@@ -33,7 +33,7 @@ const ModalAsignarPropietario = ({
     email: string;
     nombre?: string;
     apellidos?: string;
-    despacho_id?: string;
+    yaAdministraEsteDespacho?: boolean;
   } | null>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,42 +42,155 @@ const ModalAsignarPropietario = ({
   };
 
   useEffect(() => {
-    if (!show || !searchUser) {
+    if (!show || !searchUser || searchUser.length < 2) {
       setUserResults([]);
       return;
     }
-    setUserLoading(true);
-    setUserError(null);
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, email, nombre, apellidos, despacho_id")
-        .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
-        .limit(10);
-      if (error) {
+    
+    const timeoutId = setTimeout(async () => {
+      setUserLoading(true);
+      setUserError(null);
+      
+      try {
+        // Buscar usuarios
+        const { data: users, error: usersError } = await supabase
+          .from("users")
+          .select("id, email, nombre, apellidos")
+          .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
+          .limit(10);
+
+        if (usersError) throw usersError;
+
+        // Para cada usuario, verificar si ya administra ESTE despacho
+        const usersWithDespacho = await Promise.all(
+          (users || []).map(async (user) => {
+            const { data: userDespachos } = await supabase
+              .from("user_despachos")
+              .select("despacho_id")
+              .eq("user_id", user.id)
+              .eq("despacho_id", despachoId)
+              .maybeSingle();
+
+            return {
+              ...user,
+              yaAdministraEsteDespacho: !!userDespachos
+            };
+          })
+        );
+
+        setUserResults(usersWithDespacho);
+      } catch (error) {
+        console.error('Error al buscar usuarios:', error);
         setUserError("Error al buscar usuarios");
         setUserResults([]);
-      } else {
-        setUserResults(data || []);
+      } finally {
+        setUserLoading(false);
       }
-      setUserLoading(false);
-    };
-    fetchUsers();
-  }, [searchUser, show]);
+    }, 300); // Debounce de 300ms
+
+    return () => clearTimeout(timeoutId);
+  }, [searchUser, show, despachoId]);
 
   const handleAsignar = async () => {
     if (!selectedUser || !despachoId) return;
+
+    if (selectedUser.yaAdministraEsteDespacho) {
+      setUserError("Este usuario ya administra este despacho");
+      return;
+    }
 
     setUserLoading(true);
     setUserError(null);
 
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({ despacho_id: despachoId })
-        .eq("id", selectedUser.id);
+      console.log('🔄 Asignando propietario:', {
+        user_id: selectedUser.id,
+        despacho_id: despachoId,
+        email: selectedUser.email
+      });
 
-      if (error) throw error;
+      // Crear relación en user_despachos (solo columnas obligatorias)
+      const { data: insertData, error: relationError } = await supabase
+        .from("user_despachos")
+        .insert({
+          user_id: selectedUser.id,
+          despacho_id: despachoId
+          // No incluir rol ni created_at - se asignarán por defecto en la BD
+        })
+        .select();
+
+      if (relationError) {
+        console.error('❌ Error al crear relación:', relationError);
+        throw new Error(`Error al crear relación: ${relationError.message}`);
+      }
+
+      console.log('✅ Relación creada:', insertData);
+
+      // Actualizar owner_email en despachos
+      const { error: updateError } = await supabase
+        .from("despachos")
+        .update({ 
+          owner_email: selectedUser.email,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", despachoId);
+
+      if (updateError) {
+        console.error('❌ Error al actualizar owner_email:', updateError);
+        throw new Error(`Error al actualizar owner_email: ${updateError.message}`);
+      }
+
+      console.log('✅ Propietario asignado exitosamente');
+
+      // Enviar email de notificación al usuario asignado
+      try {
+        const emailResponse = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: selectedUser.email,
+            subject: '🎉 Te han asignado un despacho en LexHoy',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">¡Enhorabuena!</h2>
+                <p>Hola ${selectedUser.nombre} ${selectedUser.apellidos},</p>
+                <p>Te informamos que un administrador te ha asignado como propietario de un despacho en LexHoy.</p>
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0;"><strong>Ya puedes gestionar tu despacho:</strong></p>
+                  <ul style="margin-top: 10px;">
+                    <li>Editar información del despacho</li>
+                    <li>Gestionar sedes</li>
+                    <li>Recibir y gestionar leads</li>
+                    <li>Actualizar datos de contacto</li>
+                  </ul>
+                </div>
+                <p>
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://lexhoy.com'}/dashboard/despachos" 
+                     style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">
+                    Ir a Mis Despachos
+                  </a>
+                </p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                  Si tienes alguna pregunta, no dudes en contactarnos.
+                </p>
+                <p style="color: #6b7280; font-size: 14px;">
+                  Saludos,<br>
+                  El equipo de LexHoy
+                </p>
+              </div>
+            `
+          })
+        });
+
+        if (!emailResponse.ok) {
+          console.error('⚠️ Error al enviar email de notificación');
+        } else {
+          console.log('📧 Email de notificación enviado exitosamente');
+        }
+      } catch (emailError) {
+        console.error('⚠️ Error al enviar email:', emailError);
+        // No bloqueamos el flujo si falla el email
+      }
 
       onAsignar();
       onClose();
@@ -85,8 +198,9 @@ const ModalAsignarPropietario = ({
       setSearchUser("");
       setUserResults([]);
     } catch (error) {
-      console.error('Error al asignar propietario:', error);
-      setUserError("Error al asignar propietario");
+      console.error('❌ Error al asignar propietario:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setUserError(`Error al asignar propietario: ${errorMessage}`);
     } finally {
       setUserLoading(false);
     }
@@ -128,7 +242,7 @@ const ModalAsignarPropietario = ({
                 <li
                   key={u.id}
                   className={`p-3 rounded-lg mb-2 ${
-                    u.despacho_id
+                    u.yaAdministraEsteDespacho
                       ? "bg-gray-100 cursor-not-allowed"
                       : "cursor-pointer hover:bg-blue-50 border border-transparent hover:border-blue-200"
                   } 
@@ -137,15 +251,15 @@ const ModalAsignarPropietario = ({
                         ? "bg-blue-50 border-blue-300"
                         : ""
                     }`}
-                  onClick={() => !u.despacho_id && setSelectedUser(u)}
+                  onClick={() => !u.yaAdministraEsteDespacho && setSelectedUser(u)}
                 >
                   <div className="font-semibold text-gray-900 text-base">
                     {u.nombre} {u.apellidos}
                   </div>
                   <div className="text-sm text-gray-700 mt-1">{u.email}</div>
-                  {u.despacho_id && (
+                  {u.yaAdministraEsteDespacho && (
                     <div className="text-sm text-red-600 font-medium mt-1">
-                      Ya administra un despacho
+                      Ya administra este despacho
                     </div>
                   )}
                 </li>
@@ -158,13 +272,15 @@ const ModalAsignarPropietario = ({
           ) : null}
         </div>
         {selectedUser && (
-          <div className="mb-2 p-2 border rounded bg-gray-50">
-            <div>
-              <b>Seleccionado:</b> {selectedUser.nombre}{" "}
-              {selectedUser.apellidos}
+          <div className="mb-4 p-4 border-2 border-blue-300 rounded-lg bg-blue-50">
+            <div className="text-sm font-semibold text-blue-900 mb-2">
+              ✓ Usuario Seleccionado
             </div>
-            <div>
-              <b>Email:</b> {selectedUser.email}
+            <div className="text-base font-medium text-gray-900">
+              {selectedUser.nombre} {selectedUser.apellidos}
+            </div>
+            <div className="text-sm text-gray-700 mt-1">
+              {selectedUser.email}
             </div>
           </div>
         )}
@@ -173,7 +289,7 @@ const ModalAsignarPropietario = ({
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg flex-1 transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             onClick={handleAsignar}
             disabled={
-              !selectedUser || userLoading || !!selectedUser?.despacho_id
+              !selectedUser || userLoading || !!selectedUser?.yaAdministraEsteDespacho
             }
           >
             Asignar propietario
