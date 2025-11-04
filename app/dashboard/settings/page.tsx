@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -69,9 +68,10 @@ const userService = new UserService();
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const router = useRouter(); // Used for navigation
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
+  const [currentHash, setCurrentHash] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
@@ -85,6 +85,63 @@ export default function SettingsPage() {
     fecha_registro: new Date().toISOString(),
     ultimo_acceso: new Date().toISOString(),
   });
+
+  // Detectar hash en la URL y cambiar sección activa
+  useEffect(() => {
+    // Mapear hashes a secciones
+    const hashToSection: Record<string, SettingsSection> = {
+      'perfil': 'profile',
+      'profile': 'profile',
+      'contrasena': 'password',
+      'password': 'password',
+      'notificaciones': 'notifications',
+      'notifications': 'notifications',
+      'mis-despachos': 'mis-despachos',
+      'privacidad': 'privacy',
+      'privacy': 'privacy',
+      'sesiones': 'sessions',
+      'sessions': 'sessions'
+    };
+
+    const updateSection = () => {
+      const hash = window.location.hash.replace('#', '');
+      console.log('🔍 Hash detectado:', hash);
+      
+      if (hash && hashToSection[hash]) {
+        console.log('✅ Cambiando a sección:', hashToSection[hash]);
+        setActiveSection(hashToSection[hash]);
+        setCurrentHash(hash);
+      } else {
+        console.log('🏠 Mostrando overview');
+        setActiveSection('overview');
+        setCurrentHash('');
+      }
+    };
+
+    // Ejecutar al montar y cada vez que cambie la URL
+    updateSection();
+
+    // Escuchar cambios en el hash
+    const handleHashChange = () => {
+      console.log('🔄 Hash change event');
+      updateSection();
+    };
+
+    // Polling para detectar cambios (fallback)
+    const interval = setInterval(() => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash !== currentHash) {
+        console.log('⏱️ Polling detectó cambio de hash');
+        updateSection();
+      }
+    }, 100);
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      clearInterval(interval);
+    };
+  }, [currentHash]);
 
   // Load user data on component mount
   useEffect(() => {
@@ -453,7 +510,7 @@ export default function SettingsPage() {
         {/* Breadcrumb */}
         {activeSection !== 'overview' && (
           <button
-            onClick={() => setActiveSection('overview')}
+            onClick={() => router.push('/dashboard/settings')}
             className="mt-3 text-blue-600 hover:text-blue-700 font-medium flex items-center text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -499,13 +556,26 @@ export default function SettingsPage() {
 
           {/* Settings Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {settingsCards.filter(card => card.visible).map((card) => (
-              <SettingsCardComponent
-                key={card.id}
-                card={card}
-                onClick={() => setActiveSection(card.id)}
-              />
-            ))}
+            {settingsCards.filter(card => card.visible).map((card) => {
+              // Mapear IDs de sección a hashes en español
+              const sectionToHash: Record<SettingsSection, string> = {
+                'overview': '',
+                'profile': 'perfil',
+                'password': 'contrasena',
+                'notifications': 'notificaciones',
+                'mis-despachos': 'mis-despachos',
+                'privacy': 'privacidad',
+                'sessions': 'sesiones'
+              };
+              
+              return (
+                <SettingsCardComponent
+                  key={card.id}
+                  card={card}
+                  onClick={() => router.push(`/dashboard/settings#${sectionToHash[card.id]}`)}
+                />
+              );
+            })}
           </div>
         </>
       ) : (
