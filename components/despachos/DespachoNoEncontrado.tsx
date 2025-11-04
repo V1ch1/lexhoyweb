@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
 
 interface DespachoNoEncontradoProps {
@@ -9,6 +9,19 @@ interface DespachoNoEncontradoProps {
 export function DespachoNoEncontrado({ onImportSuccess }: DespachoNoEncontradoProps) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
+
+  // Escuchar evento del sidebar para abrir modal
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setShowModal(true);
+    };
+
+    window.addEventListener('openImportModal', handleOpenModal);
+
+    return () => {
+      window.removeEventListener('openImportModal', handleOpenModal);
+    };
+  }, []);
 
   return (
     <>
