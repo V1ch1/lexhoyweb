@@ -226,6 +226,7 @@ export default function DespachoPage() {
   const [editSedeData, setEditSedeData] = useState<Sede | null>(null);
   const [isCreatingNewSede, setIsCreatingNewSede] = useState(false);
   const [newSedeData, setNewSedeData] = useState<Partial<Sede> | null>(null);
+  const [formError, setFormError] = useState<string | null>(null); // Error específico del formulario
 
   useEffect(() => {
     const fetchDespachoData = async () => {
@@ -420,6 +421,7 @@ export default function DespachoPage() {
           observaciones: editSedeData.observaciones,
           foto_perfil: editSedeData.foto_perfil,
           areas_practica: editSedeData.areas_practica,
+          es_principal: editSedeData.es_principal || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingSedeId);
@@ -478,6 +480,7 @@ export default function DespachoPage() {
   const handleCreateNewSede = () => {
     setIsCreatingNewSede(true);
     setEditingSedeId(null);
+    setFormError(null); // Limpiar errores previos
     setNewSedeData({
       nombre: '',
       descripcion: '',
@@ -525,46 +528,73 @@ export default function DespachoPage() {
   const handleSaveNewSede = async () => {
     if (!newSedeData || !despacho) return;
     
-    // Validaciones básicas
-    if (!newSedeData.nombre) {
-      setError('El nombre de la sede es obligatorio');
+    // Validaciones de campos obligatorios
+    if (!newSedeData.nombre || newSedeData.nombre.trim() === '') {
+      setFormError('El nombre de la sede es obligatorio');
+      return;
+    }
+    
+    if (!newSedeData.localidad || newSedeData.localidad.trim() === '') {
+      setFormError('La localidad es obligatoria');
+      return;
+    }
+    
+    if (!newSedeData.provincia || newSedeData.provincia.trim() === '') {
+      setFormError('La provincia es obligatoria');
+      return;
+    }
+    
+    if (!newSedeData.telefono || newSedeData.telefono.trim() === '') {
+      setFormError('El teléfono es obligatorio');
+      return;
+    }
+    
+    if (!newSedeData.email_contacto || newSedeData.email_contacto.trim() === '') {
+      setFormError('El email de contacto es obligatorio');
+      return;
+    }
+    
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newSedeData.email_contacto)) {
+      setFormError('El formato del email no es válido');
       return;
     }
     
     try {
       setSavingSede(true);
-      setError(null);
+      setFormError(null);
       
       const { data: nuevaSede, error: insertError } = await supabase
         .from('sedes')
         .insert({
           despacho_id: despacho.id,
-          nombre: newSedeData.nombre,
-          descripcion: newSedeData.descripcion,
-          telefono: newSedeData.telefono,
-          email_contacto: newSedeData.email_contacto,
-          web: newSedeData.web,
-          persona_contacto: newSedeData.persona_contacto,
-          calle: newSedeData.calle,
-          numero: newSedeData.numero,
-          piso: newSedeData.piso,
-          codigo_postal: newSedeData.codigo_postal,
-          localidad: newSedeData.localidad,
-          provincia: newSedeData.provincia,
-          pais: newSedeData.pais,
-          ano_fundacion: newSedeData.ano_fundacion,
-          tamano_despacho: newSedeData.tamano_despacho,
-          numero_colegiado: newSedeData.numero_colegiado,
-          colegio: newSedeData.colegio,
-          experiencia: newSedeData.experiencia,
-          especialidades: newSedeData.especialidades,
-          servicios_especificos: newSedeData.servicios_especificos,
-          horarios: newSedeData.horarios,
-          redes_sociales: newSedeData.redes_sociales,
-          observaciones: newSedeData.observaciones,
-          foto_perfil: newSedeData.foto_perfil,
-          areas_practica: newSedeData.areas_practica,
-          es_principal: newSedeData.es_principal,
+          nombre: newSedeData.nombre || 'Nueva Sede',
+          descripcion: newSedeData.descripcion || '',
+          telefono: newSedeData.telefono || '',
+          email_contacto: newSedeData.email_contacto || '',
+          web: newSedeData.web || '',
+          persona_contacto: newSedeData.persona_contacto || '',
+          calle: newSedeData.calle || '',
+          numero: newSedeData.numero || '',
+          piso: newSedeData.piso || '',
+          codigo_postal: newSedeData.codigo_postal || '',
+          localidad: newSedeData.localidad || '',
+          provincia: newSedeData.provincia || '',
+          pais: newSedeData.pais || 'España',
+          ano_fundacion: newSedeData.ano_fundacion ? parseInt(newSedeData.ano_fundacion) : null,
+          tamano_despacho: newSedeData.tamano_despacho || '',
+          numero_colegiado: newSedeData.numero_colegiado || '',
+          colegio: newSedeData.colegio || '',
+          experiencia: newSedeData.experiencia || '',
+          especialidades: newSedeData.especialidades || '',
+          servicios_especificos: newSedeData.servicios_especificos || '',
+          horarios: newSedeData.horarios || {},
+          redes_sociales: newSedeData.redes_sociales || {},
+          observaciones: newSedeData.observaciones || '',
+          foto_perfil: newSedeData.foto_perfil || '',
+          areas_practica: newSedeData.areas_practica || [],
+          es_principal: newSedeData.es_principal || false,
           activa: true,
         })
         .select()
@@ -737,6 +767,61 @@ export default function DespachoPage() {
                 )}
               </div>
             </div>
+
+            {/* Selector de Sede Principal */}
+            {sedes.length > 1 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <label htmlFor="sede-principal-select" className="text-sm font-medium text-gray-900">
+                      Sede Principal:
+                    </label>
+                  </div>
+                  <select
+                    id="sede-principal-select"
+                    value={sedes.find(s => s.es_principal)?.id || sedes[0]?.id || ''}
+                    onChange={async (e) => {
+                      const nuevaSedeId = parseInt(e.target.value);
+                      try {
+                        // Actualizar en la base de datos
+                        const { error } = await supabase
+                          .from('sedes')
+                          .update({ es_principal: true })
+                          .eq('id', nuevaSedeId);
+
+                        if (error) throw error;
+
+                        // Actualizar estado local
+                        const sedesActualizadas = sedes.map(sede => ({
+                          ...sede,
+                          es_principal: sede.id === nuevaSedeId
+                        }));
+                        setSedes(sedesActualizadas);
+                        
+                        setSuccess(true);
+                        setTimeout(() => setSuccess(false), 2000);
+                      } catch (error) {
+                        console.error('Error al cambiar sede principal:', error);
+                        setFormError('Error al cambiar la sede principal. Por favor, intenta de nuevo.');
+                      }
+                    }}
+                    className="px-3 py-1.5 text-sm border border-yellow-300 rounded-lg bg-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  >
+                    {sedes.map(sede => (
+                      <option key={sede.id} value={sede.id}>
+                        {sede.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  La sede principal es la que aparece por defecto en tu perfil público
+                </p>
+              </div>
+            )}
             
             {/* Tabs de sedes */}
             <div className="flex gap-2 border-b border-gray-200 mb-4 overflow-x-auto">
@@ -778,10 +863,26 @@ export default function DespachoPage() {
                   </button>
                 </div>
 
+                {/* Mensaje de error */}
+                {formError && (
+                  <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <XMarkIcon className="h-5 w-5 text-red-400" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-800 font-medium">
+                          {formError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Campos obligatorios */}
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Campo obligatorio:</strong> Nombre de la sede
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>* Campos obligatorios:</strong> Nombre, Localidad, Provincia, Teléfono, Email
                   </p>
                 </div>
 
@@ -800,13 +901,25 @@ export default function DespachoPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Email de Contacto</label>
+                      <label className="block text-xs text-gray-500 mb-1">Email de Contacto *</label>
                       <input
                         type="email"
                         value={newSedeData.email_contacto || ''}
                         onChange={(e) => setNewSedeData(prev => prev ? {...prev, email_contacto: e.target.value} : null)}
+                        required
                         className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="contacto@despacho.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Teléfono *</label>
+                      <input
+                        type="tel"
+                        value={newSedeData.telefono || ''}
+                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, telefono: e.target.value} : null)}
+                        required
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="912 345 678"
                       />
                     </div>
                     <div>
@@ -867,6 +980,64 @@ export default function DespachoPage() {
                   </div>
                 </div>
 
+                {/* Foto de Perfil */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Foto de Perfil (500x500px)</h4>
+                  <div className="flex items-center space-x-6">
+                    {/* Preview de la foto */}
+                    <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                      {newSedeData.foto_perfil ? (
+                        <img 
+                          src={newSedeData.foto_perfil} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Input de archivo */}
+                    <div className="flex-1">
+                      <label className="cursor-pointer bg-white px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 inline-block text-sm">
+                        <span className="text-gray-700">Subir foto</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Validar tamaño (máx 2MB)
+                              if (file.size > 2 * 1024 * 1024) {
+                                setFormError('La imagen no debe superar 2MB');
+                                return;
+                              }
+                              
+                              // Crear preview
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setNewSedeData(prev => prev ? {...prev, foto_perfil: reader.result as string} : null);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-xs text-gray-500 mt-2">
+                        JPG, PNG o GIF. Máximo 2MB.
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        La imagen debe ser exactamente 500x500 píxeles
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Ubicación */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Ubicación</h4>
@@ -912,21 +1083,23 @@ export default function DespachoPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Localidad</label>
+                      <label className="block text-xs text-gray-500 mb-1">Localidad *</label>
                       <input
                         type="text"
                         value={newSedeData.localidad || ''}
                         onChange={(e) => setNewSedeData(prev => prev ? {...prev, localidad: e.target.value} : null)}
+                        required
                         className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Madrid"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Provincia</label>
+                      <label className="block text-xs text-gray-500 mb-1">Provincia *</label>
                       <input
                         type="text"
                         value={newSedeData.provincia || ''}
                         onChange={(e) => setNewSedeData(prev => prev ? {...prev, provincia: e.target.value} : null)}
+                        required
                         className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Madrid"
                       />
@@ -939,16 +1112,6 @@ export default function DespachoPage() {
                         onChange={(e) => setNewSedeData(prev => prev ? {...prev, pais: e.target.value} : null)}
                         className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="España"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
-                      <input
-                        type="tel"
-                        value={newSedeData.telefono || ''}
-                        onChange={(e) => setNewSedeData(prev => prev ? {...prev, telefono: e.target.value} : null)}
-                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="+34 123 456 789"
                       />
                     </div>
                   </div>

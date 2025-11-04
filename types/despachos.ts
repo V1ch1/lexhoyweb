@@ -18,6 +18,7 @@ export interface DespachoSummary {
   owner_nombre?: string | null;
   owner_apellidos?: string | null;
   owner_email?: string | null;
+  isOwner?: boolean; // Indica si el usuario actual es propietario del despacho
 }
 
 import { SedeWP, DespachoWP as BaseDespachoWP } from './wordpress';

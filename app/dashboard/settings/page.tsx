@@ -282,20 +282,62 @@ export default function SettingsPage() {
     }
   };
 
-  // Handle despacho deletion
+  // Handle despacho deletion (desasignar usuario, no eliminar despacho)
   const handleDeleteDespacho = async (despachoId: string) => {
     try {
       setLoading(true);
+
+      // Obtener sesión actual
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setMessage({
+          type: 'error',
+          text: 'No estás autenticado'
+        });
+        return;
+      }
+
+      // Llamar al endpoint para desasignar usuario
+      const response = await fetch(`/api/user/despachos/${despachoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Verificar si la respuesta es JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Respuesta no es JSON:', await response.text());
+        throw new Error('Error del servidor. Por favor, recarga la página e intenta de nuevo.');
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al desasignarte del despacho');
+      }
+
+      // Actualizar estado local
       setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
+      
       setMessage({
         type: 'success',
-        text: 'Despacho eliminado correctamente'
+        text: 'Te has desasignado del despacho correctamente. El despacho sigue existiendo y puede ser asignado a otros usuarios.'
       });
+
+      // Recargar datos después de 2 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
     } catch (error) {
-      console.error('Error al eliminar el despacho:', error);
+      console.error('Error al desasignar del despacho:', error);
       setMessage({
         type: 'error',
-        text: 'Error al eliminar el despacho. Por favor, inténtalo de nuevo.'
+        text: error instanceof Error ? error.message : 'Error al desasignarte del despacho. Por favor, inténtalo de nuevo.'
       });
     } finally {
       setLoading(false);

@@ -171,7 +171,12 @@ export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: Mis
             <div className="px-4 py-4 sm:px-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{decodeHtmlEntities(despacho.nombre)}</h3>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {despacho.nombre && despacho.nombre.trim() !== '' 
+                      ? decodeHtmlEntities(despacho.nombre)
+                      : <span className="text-gray-400 italic">Sin nombre (ID: {despacho.id.substring(0, 8)}...)</span>
+                    }
+                  </h3>
                   <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {despacho.localidad && (
                       <p className="flex items-center text-sm text-gray-900">
@@ -285,10 +290,24 @@ export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: Mis
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar eliminación</h3>
-            <p className="text-gray-600 mb-6">
-              ¿Estás seguro de que deseas eliminar este despacho de tu lista?
-            </p>
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="ml-3 text-lg font-medium text-gray-900">¿Desasignarte de este despacho?</h3>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                Esto te quitará el acceso a este despacho. El despacho <strong>NO se eliminará</strong> y seguirá disponible para otros usuarios.
+              </p>
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Nota:</strong> Si eres el único propietario, el despacho quedará sin propietario hasta que otro usuario lo reclame.
+                </p>
+              </div>
+            </div>
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -301,10 +320,10 @@ export default function MisDespachosTab({ userDespachos, onDeleteDespacho }: Mis
               <button
                 type="button"
                 onClick={() => confirmDelete(showDeleteConfirm)}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? 'Eliminando...' : 'Eliminar'}
+                {loading ? 'Desasignando...' : 'Sí, Desasignarme'}
               </button>
             </div>
           </div>

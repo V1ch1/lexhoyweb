@@ -249,13 +249,17 @@ const DespachosPage = () => {
     setError(null);
     
     try {
-      // Obtener los despachos con el conteo actualizado
+      if (!user?.id) {
+        setDespachos([]);
+        setTotal(0);
+        setLoadingDespachos(false);
+        return;
+      }
+
+      // Obtener TODOS los despachos
       let query = supabase
         .from("despachos")
-        .select(`
-          *,
-          owner_email
-        `, { count: "exact" })
+        .select(`*`, { count: "exact" })
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
         
@@ -273,6 +277,14 @@ const DespachosPage = () => {
         setLoadingDespachos(false);
         return;
       }
+
+      // Obtener los IDs de despachos del usuario
+      const { data: userDespachosData } = await supabase
+        .from("user_despachos")
+        .select("despacho_id")
+        .eq("user_id", user.id);
+
+      const userDespachoIds = new Set(userDespachosData?.map(ud => ud.despacho_id) || []);
 
       // Mapear los datos de los despachos
       const mapped = await Promise.all(
@@ -314,6 +326,7 @@ const DespachosPage = () => {
               telefono: sedePrincipal?.telefono || "",
               email: sedePrincipal?.email_contacto || "",
               owner_email: d.owner_email || null,
+              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
             };
           } catch (error) {
             console.error(`Error procesando despacho ${d.id}:`, error);
@@ -325,6 +338,7 @@ const DespachosPage = () => {
               created_at: d.created_at,
               estado: d.estado,
               localidad: "",
+              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
               provincia: "",
               telefono: "",
               email: "",

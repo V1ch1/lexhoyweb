@@ -372,7 +372,7 @@ export function DespachosList({
                     )}
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex justify-end pr-2">
-                        {user?.role === "super_admin" || d.owner_email === user?.email ? (
+                        {user?.role === "super_admin" || d.isOwner ? (
                           <div className="flex space-x-3">
                             <button
                               className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
@@ -423,7 +423,7 @@ export function DespachosList({
                               </button>
                             )}
                           </div>
-                        ) : !d.owner_email ? (
+                        ) : (
                           <button
                             onClick={() => {
                               setDespachoSolicitar(d);
@@ -463,8 +463,6 @@ export function DespachosList({
                               "Solicitar propiedad"
                             )}
                           </button>
-                        ) : (
-                          <span className="text-sm text-gray-500">Contactar al administrador</span>
                         )}
                       </div>
                     </td>

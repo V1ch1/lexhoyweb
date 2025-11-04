@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { SyncService } from "@/lib/syncService";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 /**
  * Endpoint para importar un despacho desde WordPress a Next.js
@@ -16,7 +22,27 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('📥 Importando despacho:', despachoWP.id);
+    // Obtener usuario autenticado
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'No autenticado' },
+        { status: 401 }
+      );
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado' },
+        { status: 401 }
+      );
+    }
+
+    console.log('📥 Importando despacho:', despachoWP.id, 'para usuario:', user.id);
 
     // Importar usando SyncService
     const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
@@ -26,6 +52,25 @@ export async function POST(request: Request) {
         { error: result.error, details: result.details },
         { status: 500 }
       );
+    }
+
+    // Crear relación en user_despachos
+    console.log('👤 Creando relación user_despachos para:', user.id, result.despachoId);
+    
+    const { error: relationError } = await supabase
+      .from('user_despachos')
+      .insert({
+        user_id: user.id,
+        despacho_id: result.despachoId,
+        role: 'admin',
+        created_at: new Date().toISOString()
+      });
+
+    if (relationError) {
+      console.error('⚠️ Error al crear relación user_despachos:', relationError);
+      // No es crítico, el despacho ya se importó
+    } else {
+      console.log('✅ Relación user_despachos creada exitosamente');
     }
 
     return NextResponse.json({

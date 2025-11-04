@@ -142,15 +142,60 @@ Sistema de notificaciones
 
 Sedes de los despachos
 
+**Campos básicos**:
 - **id**: integer (PK, NOT NULL, default: nextval('sedes_id_seq'::regclass))
+- **idx**: integer (NULLABLE)
 - **despacho_id**: uuid (FK a despachos.id, NOT NULL)
+- **wp_sede_id**: integer (NULLABLE)
 - **nombre**: character varying (NOT NULL)
 - **descripcion**: text (NULLABLE)
-- **web**: character varying (NULLABLE)
-- **ano_fundacion**: character varying (NULLABLE)
-- **tamano_despacho**: character varying (NULLABLE)
-- **persona_contacto**: character varying (NULLABLE)
+
+**Ubicación**:
+- **calle**: character varying (NULLABLE)
+- **numero**: character varying (NULLABLE)
+- **piso**: character varying (NULLABLE)
+- **localidad**: character varying (NULLABLE)
+- **provincia**: character varying (NULLABLE)
+- **codigo_postal**: character varying (NULLABLE)
+- **pais**: character varying (NULLABLE, default: 'España')
+- **direccion**: jsonb (NULLABLE) - Objeto con estructura completa de dirección
+
+**Contacto**:
+- **telefono**: character varying (NULLABLE)
 - **email_contacto**: character varying (NULLABLE)
+- **persona_contacto**: character varying (NULLABLE)
+- **web**: character varying (NULLABLE)
+
+**Información profesional**:
+- **numero_colegiado**: character varying (NULLABLE)
+- **colegio**: character varying (NULLABLE)
+- **experiencia**: text (NULLABLE)
+- **areas_practica**: text[] (NULLABLE) - Array de áreas de práctica
+- **especialidades**: text (NULLABLE)
+- **servicios_especificos**: text (NULLABLE)
+
+**Información adicional**:
+- **ano_fundacion**: integer (NULLABLE)
+- **tamano_despacho**: character varying (NULLABLE)
+
+**Estado**:
+- **es_principal**: boolean (NULLABLE, default: false)
+- **activa**: boolean (NULLABLE, default: true)
+- **estado_verificacion**: character varying (NULLABLE)
+- **estado_registro**: character varying (NULLABLE)
+- **is_verified**: boolean (NULLABLE)
+
+**Multimedia**:
+- **foto_perfil**: text (NULLABLE) - URL de la foto
+
+**Datos estructurados (JSONB)**:
+- **horarios**: jsonb (NULLABLE) - Horarios de atención
+- **redes_sociales**: jsonb (NULLABLE) - Enlaces a redes sociales
+- **observaciones**: text (NULLABLE)
+
+**Auditoría**:
+- **created_at**: timestamp with time zone (NULLABLE, default: now())
+- **updated_at**: timestamp with time zone (NULLABLE, default: now())
 
 ### users
 
