@@ -13,10 +13,10 @@ const supabase = createClient(
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const despachoId = params.id;
+    const { id: despachoId } = await context.params;
 
     console.log('📋 Listando sedes del despacho:', despachoId);
 
@@ -107,10 +107,10 @@ export async function GET(
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const despachoId = params.id;
+    const { id: despachoId } = await context.params;
 
     console.log('📝 Creando nueva sede para despacho:', despachoId);
     console.log('📦 Headers:', request.headers.get('content-type'));
