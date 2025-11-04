@@ -103,83 +103,91 @@ UPDATE sedes SET es_principal = true WHERE id = (SELECT id FROM sedes WHERE desp
 
 ---
 
-## 🟡 SIGUIENTE - GESTIÓN DE SEDES
+## ✅ COMPLETADO - GESTIÓN DE SEDES
 
-### 2. Selector de Sede Principal (Con 2+ Sedes)
+### 2. Selector de Sede Principal ✅
 **Funcionalidad**: Permitir cambiar la sede principal cuando hay múltiples sedes
 - ✅ Selector dropdown visible solo si `num_sedes >= 2`
 - ✅ Trigger SQL para garantizar única sede principal
-- [ ] **PENDIENTE**: Probar cambio de sede principal
-- [ ] **PENDIENTE**: Verificar que trigger funciona correctamente
+- ✅ Guarda cambios en BD inmediatamente
+- ✅ Reordena lista automáticamente (principal primero)
+- ✅ Cambia a tab de la nueva sede principal
 
 **Archivos**:
 - ✅ `app/dashboard/despachos/[slug]/page.tsx` - Selector implementado
 - ✅ `database/migrations/trigger_sede_principal.sql` - Trigger creado
-
-**SQL Trigger**:
-```sql
-CREATE OR REPLACE FUNCTION validar_sede_principal()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.es_principal = true THEN
-    UPDATE sedes 
-    SET es_principal = false 
-    WHERE despacho_id = NEW.despacho_id 
-      AND id != NEW.id 
-      AND es_principal = true;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
+- ✅ `app/api/despachos/[id]/sedes/[sedeId]/route.ts` - Endpoints con Next.js 15
 
 ---
 
-### 3. Crear Nueva Sede
+### 3. Crear Nueva Sede ✅
 **Funcionalidad**: Formulario para agregar sedes adicionales al despacho
-- ✅ Página: `/dashboard/despachos/[slug]/sedes/crear`
-- ✅ Formulario completo con todos los campos
+- ✅ Botón "Añadir Nueva Sede" en página del despacho
+- ✅ Formulario inline completo con todos los campos
 - ✅ Endpoint: `POST /api/despachos/[id]/sedes`
-- [ ] **PENDIENTE**: Botón "Nueva Sede" en página del despacho
-- [ ] **PENDIENTE**: Navegación desde listado de sedes
-- [ ] **PENDIENTE**: Probar creación completa
+- ✅ Validaciones de campos obligatorios
+- ✅ Actualiza contador de sedes automáticamente
 
 **Campos del formulario**:
-- Información básica: nombre, descripción
-- Ubicación: calle, número, piso, localidad, provincia, CP
-- Contacto: teléfono, email, persona contacto, web
-- Adicional: año fundación, tamaño despacho
-- Checkbox: "Marcar como sede principal"
+- ✅ Información básica: nombre, descripción
+- ✅ Ubicación: calle, número, piso, localidad, provincia, CP
+- ✅ Contacto: teléfono, email, persona contacto, web
+- ✅ Adicional: año fundación, tamaño despacho
+- ✅ Checkbox: "Marcar como sede principal"
 
 ---
 
-### 4. Eliminar Sede
+### 4. Editar Sede ✅
+**Funcionalidad**: Modificar información de sedes existentes
+- ✅ Botón "Editar Sede" en cada sede
+- ✅ Formulario inline editable
+- ✅ Botón "Guardar Cambios" durante edición
+- ✅ Actualiza BD y estado local
+- ✅ Feedback visual con mensaje de éxito
+
+---
+
+### 5. Eliminar Sede ✅
 **Funcionalidad**: Permitir eliminar sedes (excepto si es la única)
 - ✅ Endpoint: `DELETE /api/despachos/[id]/sedes/[sedeId]`
 - ✅ Soft delete (marca como inactiva)
-- [ ] **PENDIENTE**: Botón "Eliminar" en listado de sedes
-- [ ] **PENDIENTE**: Modal de confirmación
-- [ ] **PENDIENTE**: Validación: no permitir eliminar si es única sede
-- [ ] **PENDIENTE**: Validación: no permitir eliminar sede principal
+- ✅ Botón "Eliminar" visible solo si hay 2+ sedes
+- ✅ Modal de confirmación con advertencias
+- ✅ Validación: no permitir eliminar si es única sede
+- ✅ Validación: no permitir eliminar sede principal
+- ✅ Autenticación con token
+- ✅ Verificación de permisos con `user_despachos`
 
 **Validaciones**:
-- ❌ No se puede eliminar si `num_sedes === 1`
-- ❌ No se puede eliminar si `es_principal === true` (primero cambiar principal)
-- ✅ Soft delete: `activo = false`
+- ✅ No se puede eliminar si `num_sedes === 1`
+- ✅ No se puede eliminar si `es_principal === true`
+- ✅ Soft delete: `activa = false`
 
 ---
 
-### 5. Listado de Sedes del Despacho
-**Funcionalidad**: Ver todas las sedes de un despacho
-- [ ] Página: `/dashboard/despachos/[slug]/sedes`
-- [ ] Mostrar todas las sedes con información clave
-- [ ] Indicar cuál es la principal
-- [ ] Botones: "Editar", "Eliminar", "Marcar como principal"
-- [ ] Botón destacado: "+ Nueva Sede"
+### 6. Mejoras de UX ✅
+- ✅ Skeleton loader en dashboard para "Mis Despachos"
+- ✅ Tabs para navegar entre sedes
+- ✅ Ordenamiento automático (sede principal primero)
+- ✅ Feedback visual inmediato
+- ✅ Logs de debugging en consola
 
 ---
 
-### 6. Separar "Eliminar Despacho" (Solo Super Admin)
+## 🟡 SIGUIENTE - REVISIÓN DE DISEÑO
+
+### Tareas de Diseño y UX
+- [ ] Revisar diseño general de la aplicación
+- [ ] Mejorar consistencia visual entre páginas
+- [ ] Optimizar responsive design
+- [ ] Revisar accesibilidad
+- [ ] Mejorar feedback visual de acciones
+
+---
+
+## 🔴 PENDIENTE - FUNCIONALIDADES ADICIONALES
+
+### 7. Separar "Eliminar Despacho" (Solo Super Admin)
 **Problema**: No existe funcionalidad para eliminar permanentemente un despacho
 
 **Comportamiento Esperado**:
