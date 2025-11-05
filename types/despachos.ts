@@ -91,8 +91,55 @@ export type LocalDespachoWP = Omit<BaseDespachoWP, 'meta' | 'title' | 'content'>
  * Propiedades para el componente BuscadorDespachosWordpress
  * @property {Function} [onImport] - Función que se ejecuta al importar un despacho
  * @property {Function} [onClose] - Función que se ejecuta al cerrar el buscador
+ * @property {Function} [onImportSuccess] - Función que se ejecuta cuando la importación es exitosa
  */
 export interface BuscadorDespachosProps {
   onImport?: (objectId: string) => Promise<{success: boolean; error?: string}>;
   onClose?: () => void;
+  onImportSuccess?: () => void;
+}
+
+/**
+ * Interfaz completa para una Sede basada en el schema real de Supabase
+ */
+export interface SedeFormData {
+  nombre: string;
+  descripcion: string;
+  web: string;
+  persona_contacto: string;
+  ano_fundacion: string;
+  tamano_despacho: string;
+  telefono: string;
+  email_contacto: string;
+  numero_colegiado: string;
+  colegio: string;
+  experiencia: string;
+  calle: string;
+  numero: string;
+  piso: string;
+  codigo_postal: string;
+  localidad: string;
+  provincia: string;
+  pais: string;
+  especialidades: string;
+  servicios_especificos: string;
+  areas_practica: string[];
+  horarios: {
+    lunes: string;
+    martes: string;
+    miercoles: string;
+    jueves: string;
+    viernes: string;
+    sabado: string;
+    domingo: string;
+  };
+  redes_sociales: {
+    facebook: string;
+    twitter: string;
+    linkedin: string;
+    instagram: string;
+  };
+  foto_perfil: string;
+  observaciones: string;
+  es_principal: boolean;
 }

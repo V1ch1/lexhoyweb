@@ -1,659 +1,186 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
-import { DespachoSummary } from "@/types/despachos";
 
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
+import {
+  BuildingOfficeIcon,
+  MagnifyingGlassIcon,
+  PlusCircleIcon,
+  CloudArrowDownIcon,
+  ArrowRightIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 
-import { useEffect, useState } from "react";
-import { DespachosListSkeleton } from "@/components/despachos/skeletons";
-import { DespachosList } from "@/components/despachos/DespachosList";
-import { DespachoNoEncontrado } from "@/components/despachos/DespachoNoEncontrado";
+// Types
+type DespachosSection = 'overview' | 'ver-despachos' | 'mis-despachos' | 'importar-lexhoy' | 'crear' | 'mis-solicitudes';
 
-interface User {
-  id: string;
-  email: string;
-  nombre?: string;
-  apellidos?: string;
-  despacho_id?: string;
+interface DespachosCard {
+  id: DespachosSection;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  visible: boolean;
+  path: string;
 }
 
-// Utilidad para decodificar entidades HTML
-function decodeHtmlEntities(str: string) {
-  if (!str) return "";
-  return str
-    .replace(/&#([0-9]{1,4});/g, (match, dec) => String.fromCharCode(dec))
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#8211;/g, "–");
-}
-import { supabase } from "@/lib/supabase";
-import { slugify } from "@/lib/slugify";
-
-// ...existing code...
-import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
-
-
-const DespachosPage = () => {
-  const { user, isLoading } = useAuth();
+export default function DespachosPage() {
+  const { user } = useAuth();
   const router = useRouter();
-  
-  // Estados principales
-  const [despachos, setDespachos] = useState<DespachoSummary[]>([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  
-  // Estado para búsqueda de usuario
-  const [showAsignarModal, setShowAsignarModal] = useState(false);
-  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(null);
-  const [searchUser, setSearchUser] = useState<string>("");
-  const [userResults, setUserResults] = useState<User[]>([]);
-  const [userLoading, setUserLoading] = useState<boolean>(false);
-  const [userError, setUserError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // Estado para modal de solicitar propiedad
-  const [showSolicitarModal, setShowSolicitarModal] = useState(false);
-  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
-  const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
-  const [mensajePropiedad, setMensajePropiedad] = useState<{
-    tipo: "success" | "error";
-    texto: string;
-  } | null>(null);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Set<string>>(new Set());
-  
-  // Cargar solicitudes pendientes del usuario actual
-  useEffect(() => {
-    const fetchSolicitudesPendientes = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('solicitudes_despacho')
-          .select('despacho_id')
-          .eq('user_id', user.id)
-          .eq('estado', 'pendiente');
-          
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          const despachosIds = data.map(s => s.despacho_id);
-          setSolicitudesPendientes(new Set(despachosIds));
-        }
-      } catch (error) {
-        console.error('Error al cargar solicitudes pendientes:', error);
-      }
-    };
-    
-    fetchSolicitudesPendientes();
-  }, [user?.id]);
-  
-  // Función para actualizar las solicitudes pendientes
-  const actualizarSolicitudesPendientes = (despachoId: string) => {
-    setSolicitudesPendientes(prev => new Set(prev).add(despachoId));
-  };
-
-  // Buscar usuarios en tiempo real por email o nombre de despacho
-  useEffect(() => {
-    if (!showAsignarModal || !searchUser) {
-      setUserResults([]);
-      return;
+  // Despachos cards configuration
+  const despachosCards: DespachosCard[] = [
+    {
+      id: 'ver-despachos',
+      name: 'Despachos Disponibles',
+      description: 'Explora todos los despachos importados',
+      icon: MagnifyingGlassIcon,
+      color: 'green',
+      visible: true,
+      path: '/dashboard/despachos/ver-despachos'
+    },
+    {
+      id: 'importar-lexhoy',
+      name: 'Importar de Lexhoy',
+      description: 'Importa tu despacho desde el directorio Lexhoy',
+      icon: CloudArrowDownIcon,
+      color: 'purple',
+      visible: true,
+      path: '/dashboard/despachos/importar-lexhoy'
+    },
+    {
+      id: 'crear',
+      name: 'Dar de Alta Despacho',
+      description: 'Crea un nuevo despacho desde cero',
+      icon: PlusCircleIcon,
+      color: 'orange',
+      visible: true,
+      path: '/dashboard/despachos/crear'
+    },
+    {
+      id: 'mis-despachos',
+      name: 'Mis Despachos',
+      description: 'Administra los despachos a los que tienes acceso',
+      icon: BuildingOfficeIcon,
+      color: 'blue',
+      visible: true,
+      path: '/dashboard/despachos/mis-despachos'
+    },
+    {
+      id: 'mis-solicitudes',
+      name: 'Mis Solicitudes',
+      description: 'Revisa el estado de tus solicitudes de acceso',
+      icon: DocumentTextIcon,
+      color: 'yellow',
+      visible: true,
+      path: '/dashboard/despachos/mis-solicitudes'
     }
-    setUserLoading(true);
-    setUserError(null);
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, email, nombre, apellidos, despacho_nombre")
-        .or(
-          `email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%,despacho_nombre.ilike.%${searchUser}%`
-        )
-        .limit(10);
-      if (error) {
-        setUserError("Error al buscar usuarios");
-        setUserResults([]);
-      } else {
-        setUserResults(data || []);
-      }
-      setUserLoading(false);
-    };
-    fetchUsers();
-  }, [searchUser, showAsignarModal]);
+  ];
 
-  // Asignar propietario
-  const handleAsignarPropietario = async () => {
-    if (!selectedUser || !asignarDespachoId) return;
-    setUserLoading(true);
-    setUserError(null);
-    const { error } = await supabase
-      .from("despachos")
-      .update({ owner_email: selectedUser.email })
-      .eq("id", asignarDespachoId);
-    if (error) {
-      setUserError("Error al asignar propietario");
-    }
-    setShowAsignarModal(false);
-    setSelectedUser(null);
-    setSearchUser("");
-    fetchDespachos();
-    setUserLoading(false);
-  };
-
-  // Solicitar propiedad del despacho
-  const handleSolicitarPropiedad = async () => {
-    if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad) return;
-    
-    setSolicitandoPropiedad(true);
-    setMensajePropiedad(null);
-
-    try {
-      // Obtener datos completos del usuario
-      const { data: userData } = await supabase
-        .from("users")
-        .select("nombre, apellidos")
-        .eq("id", user.id)
-        .single();
-
-      // Verificar si ya existe una solicitud pendiente para este despacho y usuario
-      const { data: solicitudExistente } = await supabase
-        .from("solicitudes_despacho")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("despacho_id", despachoSolicitar.object_id || despachoSolicitar.id)
-        .eq("estado", "pendiente")
-        .single();
-
-      if (solicitudExistente) {
-        setMensajePropiedad({
-          tipo: "error",
-          texto: "Ya tienes una solicitud pendiente para este despacho.",
-        });
-        setSolicitandoPropiedad(false);
-        return;
-      }
-
-      // Crear solicitud pendiente de aprobación
-      const { data: solicitudCreada, error } = await supabase
-        .from("solicitudes_despacho")
-        .insert({
-          user_id: user.id,
-          user_email: user.email,
-          user_name: userData
-            ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
-            : user.email,
-          despacho_id: despachoSolicitar.object_id || despachoSolicitar.id,
-          despacho_nombre: despachoSolicitar.nombre,
-          despacho_localidad: despachoSolicitar.localidad,
-          despacho_provincia: despachoSolicitar.provincia,
-          estado: "pendiente",
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      console.log("✅ Solicitud creada:", solicitudCreada);
-
-      // Actualizar el estado de solicitudes pendientes
-      actualizarSolicitudesPendientes(despachoSolicitar.id);
-      
-      // Mostrar mensaje de éxito
-      setMensajePropiedad({
-        tipo: "success",
-        texto: "Solicitud enviada correctamente. Te notificaremos cuando sea revisada.",
-      });
-
-      // Enviar notificación y email al super_admin
-      await fetch("/api/notificar-solicitud", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          solicitudId: solicitudCreada.id,
-          userName: solicitudCreada.user_name,
-          userEmail: solicitudCreada.user_email,
-          despachoNombre: solicitudCreada.despacho_nombre,
-          despachoLocalidad: solicitudCreada.despacho_localidad,
-          despachoProvincia: solicitudCreada.despacho_provincia,
-        }),
-      });
-
-      // Cerrar el modal después de 2 segundos
-      setTimeout(() => {
-        setShowSolicitarModal(false);
-        setDespachoSolicitar(null);
-        setMensajePropiedad(null);
-      }, 2000);
-      
-    } catch (err) {
-      console.error("Error al enviar la solicitud:", err);
-      setMensajePropiedad({
-        tipo: "error",
-        texto: "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
-      });
-    } finally {
-      setSolicitandoPropiedad(false);
-    }
-  };
-  const PAGE_SIZE = 20;
-  const [loadingDespachos, setLoadingDespachos] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // Fetch despachos con useEffect bien configurado
-  const fetchDespachos = async () => {
-    setLoadingDespachos(true);
-    setError(null);
-    
-    try {
-      if (!user?.id) {
-        setDespachos([]);
-        setTotal(0);
-        setLoadingDespachos(false);
-        return;
-      }
-
-      // Obtener TODOS los despachos
-      let query = supabase
-        .from("despachos")
-        .select(`*`, { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-        
-      if (search) {
-        query = query.ilike("nombre", `%${search}%`);
-      }
-      
-      const { data, error, count } = await query;
-      
-      if (error) {
-        console.error("Error al cargar despachos:", error);
-        setError("Error al cargar los despachos: " + error.message);
-        setDespachos([]);
-        setTotal(0);
-        setLoadingDespachos(false);
-        return;
-      }
-
-      // Obtener los IDs de despachos del usuario
-      const { data: userDespachosData } = await supabase
-        .from("user_despachos")
-        .select("despacho_id")
-        .eq("user_id", user.id);
-
-      const userDespachoIds = new Set(userDespachosData?.map(ud => ud.despacho_id) || []);
-
-      // Mapear los datos de los despachos
-      const mapped = await Promise.all(
-        (data || []).map(async (d: DespachoSummary) => {
-          try {
-            // Obtener el conteo real de sedes para este despacho
-            const { count: conteoSedes } = await supabase
-              .from('sedes')
-              .select('*', { count: 'exact', head: true })
-              .eq('despacho_id', d.id);
-
-            const numSedes = conteoSedes || 0;
-            
-            // Si el conteo es diferente, actualizar el campo en la base de datos
-            if (numSedes !== d.num_sedes) {
-              await supabase
-                .from('despachos')
-                .update({ num_sedes: numSedes })
-                .eq('id', d.id);
-            }
-
-            // Obtener la sede principal
-            const { data: sedePrincipal } = await supabase
-              .from("sedes")
-              .select("*")
-              .eq("despacho_id", d.id)
-              .eq("es_principal", true)
-              .maybeSingle();
-
-            return {
-              id: d.id,
-              object_id: d.object_id,
-              nombre: decodeHtmlEntities(d.nombre),
-              num_sedes: numSedes,
-              created_at: d.created_at,
-              estado: d.estado,
-              localidad: sedePrincipal?.localidad || "",
-              provincia: sedePrincipal?.provincia || "",
-              telefono: sedePrincipal?.telefono || "",
-              email: sedePrincipal?.email_contacto || "",
-              owner_email: d.owner_email || null,
-              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
-            };
-          } catch (error) {
-            console.error(`Error procesando despacho ${d.id}:`, error);
-            return {
-              id: d.id,
-              object_id: d.object_id,
-              nombre: decodeHtmlEntities(d.nombre),
-              num_sedes: d.num_sedes || 0,
-              created_at: d.created_at,
-              estado: d.estado,
-              localidad: "",
-              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
-              provincia: "",
-              telefono: "",
-              email: "",
-              owner_email: d.owner_email || null,
-            };
-          }
-      })
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-gray-600">Por favor, inicia sesión para acceder a los despachos.</p>
+        </div>
+      </div>
     );
-      setDespachos(mapped);
-      setTotal(count || 0);
-    } catch (error) {
-      console.error("Error al cargar despachos:", error);
-      setError("Error al cargar los despachos. Por favor, intente de nuevo.");
-    } finally {
-      setLoadingDespachos(false);
-    }
+  }
+
+  // Despachos Card Component
+  const DespachosCardComponent = ({ 
+    card, 
+    onClick 
+  }: { 
+    card: DespachosCard; 
+    onClick: () => void;
+  }) => {
+    const colorClasses = {
+      blue: "bg-blue-50 text-blue-600 hover:bg-blue-100",
+      green: "bg-green-50 text-green-600 hover:bg-green-100",
+      purple: "bg-purple-50 text-purple-600 hover:bg-purple-100",
+      orange: "bg-orange-50 text-orange-600 hover:bg-orange-100",
+      yellow: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",
+      red: "bg-red-50 text-red-600 hover:bg-red-100",
+    };
+
+    return (
+      <button
+        onClick={onClick}
+        className={`${colorClasses[card.color as keyof typeof colorClasses]} w-full p-6 rounded-xl transition-all duration-200 hover:shadow-md text-left group`}
+      >
+        <card.icon className="h-8 w-8 mb-3" />
+        <h3 className="text-lg font-semibold mb-1">{card.name}</h3>
+        <p className="text-sm opacity-80">{card.description}</p>
+        <ArrowRightIcon className="h-5 w-5 mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    );
   };
-
-  // useEffect: llama a fetchDespachos cuando user está cargado y cambia page/search
-  useEffect(() => {
-    if (!user) return;
-    fetchDespachos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, page, search]);
-
-  // Calcular totalPages para la paginación
-  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <>
-      <ModalAsignarPropietario
-        despachoId={asignarDespachoId}
-        show={showAsignarModal}
-        onClose={() => setShowAsignarModal(false)}
-        onAsignar={fetchDespachos}
-      />
-
-      {/* Modal para solicitar propiedad */}
-      {showSolicitarModal && despachoSolicitar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 relative">
-            <button
-              onClick={() => {
-                setShowSolicitarModal(false);
-                setDespachoSolicitar(null);
-                setMensajePropiedad(null);
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Solicitar Propiedad
-            </h3>
-            <p className="text-gray-700 mb-4">
-              ¿Deseas solicitar la propiedad del despacho{" "}
-              <strong>&quot;{despachoSolicitar.nombre}&quot;</strong>?
-            </p>
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-              <p className="text-sm text-blue-800">
-                <strong>📋 Proceso de aprobación:</strong>
-                <br />
-                Tu solicitud será revisada por un administrador. Recibirás una
-                notificación cuando sea aprobada o rechazada.
-              </p>
-            </div>
-
-            {mensajePropiedad && (
-              <div
-                className={`mb-4 p-3 rounded ${mensajePropiedad.tipo === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-              >
-                {mensajePropiedad.texto}
-              </div>
-            )}
-
-            <div className="flex gap-3 justify-end">
-              {mensajePropiedad?.tipo !== "success" ? (
-                <>
-                  <button
-                    onClick={() => {
-                      if (!solicitandoPropiedad) {
-                        setShowSolicitarModal(false);
-                        setDespachoSolicitar(null);
-                        setMensajePropiedad(null);
-                      }
-                    }}
-                    disabled={solicitandoPropiedad}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSolicitarPropiedad}
-                    disabled={solicitandoPropiedad}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {solicitandoPropiedad ? (
-                      <>
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Procesando...
-                      </>
-                    ) : (
-                      "Confirmar"
-                    )}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    setShowSolicitarModal(false);
-                    setDespachoSolicitar(null);
-                    setMensajePropiedad(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Cerrar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="p-6 w-full">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {user?.role === "super_admin"
-              ? "Gestión de Despachos"
-              : "Buscar Mi Despacho"}
-          </h1>
-          <p className="text-lg text-gray-600">
-            {user?.role === "super_admin"
-              ? "Gestiona todos los despachos jurídicos de la plataforma"
-              : "Encuentra tu despacho en nuestro directorio y solicita la propiedad"}
-          </p>
-        </div>
-
-        {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Total Despachos
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos ? "..." : total}
-                </p>
-              </div>
-              <div className="bg-blue-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Activos
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos
-                    ? "..."
-                    : despachos.filter((d) => d.estado === "activo").length}
-                </p>
-              </div>
-              <div className="bg-green-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Con Propietario
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos
-                    ? "..."
-                    : despachos.filter((d) => d.owner_email).length}
-                </p>
-              </div>
-              <div className="bg-purple-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">Tu Rol</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {user?.role === "super_admin"
-                    ? "Super Admin"
-                    : "Despacho Admin"}
-                </p>
-              </div>
-              <div className="bg-orange-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sección principal: Lista de Despachos - Solo si hay búsqueda o hay despachos */}
-        <DespachosList
-          search={search}
-          setSearch={setSearch}
-          page={page}
-          setPage={setPage}
-          totalPages={totalPages}
-          loadingDespachos={loadingDespachos}
-          fetchDespachos={fetchDespachos}
-          error={error}
-          despachos={despachos}
-          user={user}
-          setAsignarDespachoId={setAsignarDespachoId}
-          setShowAsignarModal={setShowAsignarModal}
-          solicitudesPendientes={solicitudesPendientes}
-          setDespachoSolicitar={setDespachoSolicitar}
-          setShowSolicitarModal={setShowSolicitarModal}
-        />
-
-        <DespachoNoEncontrado onImportSuccess={fetchDespachos} />
+    <div className="p-6 w-full">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          Gestión de Despachos
+        </h1>
+        <p className="text-lg text-gray-600">
+          Administra, importa y crea despachos jurídicos
+        </p>
       </div>
-    </>
-  );
-};
 
-export default DespachosPage;
+      {/* User Info Card */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+        <div className="flex items-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-2xl mr-4">
+            {user.name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'U'}
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+            <p className="text-gray-600">{user.email}</p>
+            <span className="inline-block mt-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
+              {user.role === 'super_admin' ? 'Super Admin' : user.role === 'despacho_admin' ? 'Despacho Admin' : 'Usuario'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Despachos Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {despachosCards.filter(card => card.visible).map((card) => (
+          <DespachosCardComponent
+            key={card.id}
+            card={card}
+            onClick={() => router.push(card.path)}
+          />
+        ))}
+      </div>
+
+      {/* Help Section */}
+      <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="ml-3 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              ¿Necesitas ayuda?
+            </h3>
+            <p className="text-gray-700 mb-3">
+              Gestiona tus despachos de forma sencilla. Puedes importar despachos existentes desde Lexhoy o crear nuevos desde cero.
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+              <li><strong>Mis Despachos:</strong> Accede a los despachos que ya tienes asignados</li>
+              <li><strong>Despachos Disponibles:</strong> Explora todos los despachos disponibles en la plataforma</li>
+              <li><strong>Importar:</strong> Busca e importa tu despacho desde el directorio de Lexhoy</li>
+              <li><strong>Crear:</strong> Da de alta un nuevo despacho con toda su información</li>
+              <li><strong>Mis Solicitudes:</strong> Revisa el estado de tus solicitudes de acceso a despachos</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,7 +5,9 @@ export function DespachosListSkeleton() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Despachos Disponibles</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Despachos Disponibles
+          </h2>
           <p className="text-sm text-gray-600 mt-1">Cargando despachos...</p>
         </div>
       </div>
@@ -21,8 +23,20 @@ export function DespachosListSkeleton() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
-              {['Nombre', 'Localidad', 'Provincia', 'Teléfono', 'Email', 'Nº Sedes', 'Propietario', 'Acciones'].map((header) => (
-                <th key={header} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              {[
+                "Nombre",
+                "Localidad",
+                "Provincia",
+                "Teléfono",
+                "Email",
+                "Nº Sedes",
+                "Propietario",
+                "Acciones",
+              ].map((header) => (
+                <th
+                  key={header}
+                  className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
+                >
                   {header}
                 </th>
               ))}

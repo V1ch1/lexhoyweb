@@ -34,6 +34,7 @@ import { LocalDespachoWP, BuscadorDespachosProps } from "@/types/despachos";
 export default function BuscadorDespachosWordpress({
   onImport,
   onClose,
+  onImportSuccess,
 }: BuscadorDespachosProps) {
   const [query, setQuery] = useState("");
   // Estado para la paginación
@@ -264,6 +265,8 @@ export default function BuscadorDespachosWordpress({
           toast.success("Despacho importado correctamente");
           // Actualizar el estado de importados
           setImportedOffices((prev) => new Set(prev).add(objectId));
+          // Llamar al callback de éxito
+          if (onImportSuccess) onImportSuccess();
           // Cerrar el modal después de 1.5 segundos
           setTimeout(() => {
             if (onClose) onClose();
@@ -292,6 +295,8 @@ export default function BuscadorDespachosWordpress({
           toast.success("Despacho importado correctamente");
           // Actualizar el estado de importados
           setImportedOffices((prev) => new Set(prev).add(objectId));
+          // Llamar al callback de éxito
+          if (onImportSuccess) onImportSuccess();
           // Cerrar el modal después de 1.5 segundos
           setTimeout(() => {
             if (onClose) onClose();

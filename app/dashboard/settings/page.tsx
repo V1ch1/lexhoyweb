@@ -10,7 +10,6 @@ import {
   UserIcon,
   KeyIcon,
   BellIcon,
-  BuildingOfficeIcon,
   ShieldCheckIcon,
   ComputerDesktopIcon,
   CheckCircleIcon,
@@ -20,26 +19,11 @@ import {
 import ProfileTab from '@/components/settings/ProfileTab';
 import PasswordTab from '@/components/settings/PasswordTab';
 import NotificationsTab from '@/components/settings/NotificationsTab';
-import MisDespachosTab from '@/components/settings/MisDespachosTab';
 import PrivacyTab from '@/components/settings/PrivacyTab';
 import SessionsTab from '@/components/settings/SessionsTab';
 
 // Types
-type SettingsSection = 'overview' | 'profile' | 'password' | 'notifications' | 'mis-despachos' | 'privacy' | 'sessions';
-
-interface Despacho {
-  id: string;
-  nombre: string;
-  localidad?: string;
-  provincia?: string;
-  telefono?: string;
-  email?: string;
-  web?: string;
-  descripcion?: string;
-  num_sedes?: number;
-  estado?: string;
-  created_at: string;
-}
+type SettingsSection = 'overview' | 'profile' | 'password' | 'notifications' | 'privacy' | 'sessions';
 
 interface UserProfile {
   id: string;
@@ -96,7 +80,6 @@ export default function SettingsPage() {
       'password': 'password',
       'notificaciones': 'notifications',
       'notifications': 'notifications',
-      'mis-despachos': 'mis-despachos',
       'privacidad': 'privacy',
       'privacy': 'privacy',
       'sesiones': 'sessions',
@@ -214,14 +197,6 @@ export default function SettingsPage() {
       visible: true
     },
     {
-      id: 'mis-despachos',
-      name: 'Mis Despachos',
-      description: 'Administra tus despachos asignados',
-      icon: BuildingOfficeIcon,
-      color: 'green',
-      visible: true
-    },
-    {
       id: 'privacy',
       name: 'Privacidad',
       description: 'Controla tu privacidad y datos',
@@ -277,39 +252,6 @@ export default function SettingsPage() {
     }
   };
 
-  // State for Mis Despachos
-  const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
-  
-  // Load user's despachos
-  useEffect(() => {
-    const loadUserDespachos = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/users/${user.id}/despachos`);
-        const data = await response.json();
-        if (response.ok) {
-          setUserDespachos(data);
-        } else {
-          throw new Error(data.message || 'Error al cargar los despachos');
-        }
-      } catch (error) {
-        console.error('Error al cargar los despachos:', error);
-        setMessage({
-          type: 'error',
-          text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (activeSection === 'mis-despachos') {
-      loadUserDespachos();
-    }
-  }, [user, activeSection]);
-
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
@@ -336,68 +278,6 @@ export default function SettingsPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Handle despacho deletion (desasignar usuario, no eliminar despacho)
-  const handleDeleteDespacho = async (despachoId: string) => {
-    try {
-      setLoading(true);
-
-      // Obtener sesión actual
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setMessage({
-          type: 'error',
-          text: 'No estás autenticado'
-        });
-        return;
-      }
-
-      // Llamar al endpoint para desasignar usuario
-      const response = await fetch(`/api/user/despachos/${despachoId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      // Verificar si la respuesta es JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('Respuesta no es JSON:', await response.text());
-        throw new Error('Error del servidor. Por favor, recarga la página e intenta de nuevo.');
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al desasignarte del despacho');
-      }
-
-      // Actualizar estado local
-      setUserDespachos(prev => prev.filter(d => d.id !== despachoId));
-      
-      setMessage({
-        type: 'success',
-        text: 'Te has desasignado del despacho correctamente. El despacho sigue existiendo y puede ser asignado a otros usuarios.'
-      });
-
-      // Recargar datos después de 2 segundos
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error al desasignar del despacho:', error);
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Error al desasignarte del despacho. Por favor, inténtalo de nuevo.'
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -429,13 +309,6 @@ export default function SettingsPage() {
         );
       case 'notifications':
         return <NotificationsTab loading={loading} notifications={{ email_nuevos_leads: false, email_actualizaciones: false, email_sistema: false, push_leads: false, push_mensajes: false }} onUpdate={() => {}} onSubmit={() => {}} />;
-      case 'mis-despachos':
-        return (
-          <MisDespachosTab 
-            userDespachos={userDespachos} 
-            onDeleteDespacho={handleDeleteDespacho} 
-          />
-        );
       case 'privacy':
         return <PrivacyTab loading={loading} />;
       case 'sessions':
@@ -563,7 +436,6 @@ export default function SettingsPage() {
                 'profile': 'perfil',
                 'password': 'contrasena',
                 'notifications': 'notificaciones',
-                'mis-despachos': 'mis-despachos',
                 'privacy': 'privacidad',
                 'sessions': 'sesiones'
               };

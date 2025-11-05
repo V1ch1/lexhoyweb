@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { SyncService } from "@/lib/syncService";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,22 +37,37 @@ export async function POST(request: Request) {
 
     // Obtener datos del body
     const body = await request.json();
+    console.log('📦 Body recibido:', JSON.stringify(body, null, 2));
+    
     const {
       nombre,
-      descripcion,
-      areas_practica,
-      localidad,
-      provincia,
-      direccion,
-      telefono,
-      email,
-      web,
+      sedes,
     } = body;
+    
+    console.log('📋 Sedes recibidas:', sedes?.length || 0);
+    console.log('📝 Datos de sedes:', JSON.stringify(sedes, null, 2));
 
     // Validar campos requeridos
-    if (!nombre || !descripcion || !localidad || !provincia) {
+    if (!nombre) {
       return NextResponse.json(
-        { error: "Faltan campos requeridos: nombre, descripción, localidad, provincia" },
+        { error: "El nombre del despacho es requerido" },
+        { status: 400 }
+      );
+    }
+
+    // Validar que haya al menos una sede
+    if (!sedes || !Array.isArray(sedes) || sedes.length === 0) {
+      return NextResponse.json(
+        { error: "Debe proporcionar al menos una sede" },
+        { status: 400 }
+      );
+    }
+
+    // Validar campos requeridos de la sede principal
+    const sedePrincipal = sedes[0];
+    if (!sedePrincipal.localidad || !sedePrincipal.provincia || !sedePrincipal.telefono || !sedePrincipal.email_contacto) {
+      return NextResponse.json(
+        { error: "Faltan campos requeridos en la sede principal: localidad, provincia, teléfono, email" },
         { status: 400 }
       );
     }
@@ -90,18 +104,22 @@ export async function POST(request: Request) {
       }
     }
 
+    // Obtener email del usuario
+    const userEmail = body.user_email || user.email;
+
     // Crear despacho en Next.js
     const { data: despacho, error: despachoError } = await supabase
       .from('despachos')
       .insert({
         nombre,
-        descripcion,
         slug,
-        areas_practica: areas_practica || [],
-        activo: false, // Inactivo hasta que se apruebe la solicitud
-        verificado: false,
-        sincronizado_wp: false, // Aún no enviado a WordPress
-        num_sedes: 1,
+        status: 'publish', // Publicado para sincronizar con WordPress
+        num_sedes: sedes.length,
+        owner_email: userEmail, // Email del propietario
+        wordpress_id: null, // Se asignará cuando se sincronice con WP
+        featured_media_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select('id')
       .single();
@@ -113,41 +131,185 @@ export async function POST(request: Request) {
 
     console.log('✅ Despacho creado en Next.js:', despacho.id);
 
-    // Crear sede principal
-    const { error: sedeError } = await supabase
-      .from('sedes')
+    // Obtener el user_id de la tabla users usando el email
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', userEmail)
+      .single();
+
+    if (userError || !userData) {
+      console.error('⚠️ No se encontró el usuario en la tabla users:', userError);
+      console.log('📧 Email buscado:', userEmail);
+      console.log('🔑 Auth user.id:', user.id);
+      
+      // Intentar crear el usuario en la tabla users si no existe
+      const { data: newUser, error: createUserError } = await supabase
+        .from('users')
+        .insert({
+          id: user.id, // Usar el ID de auth
+          email: userEmail,
+          role: 'despacho_admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (createUserError) {
+        console.error('❌ Error al crear usuario en tabla users:', createUserError);
+      } else {
+        console.log('✅ Usuario creado en tabla users:', newUser.id);
+      }
+    }
+
+    const finalUserId = userData?.id || user.id;
+
+    // Asignar despacho al usuario en user_despachos (solo campos que existen)
+    const { error: userDespachoError } = await supabase
+      .from('user_despachos')
       .insert({
-        despacho_id: despacho.id,
-        nombre: 'Sede Principal',
-        es_principal: true,
-        localidad,
-        provincia,
-        calle: direccion || '',
-        telefono: telefono || '',
-        email: email || '',
-        web: web || '',
-        activa: true,
-        sincronizado_wp: false,
-        estado_verificacion: 'pendiente',
+        user_id: finalUserId,
+        despacho_id: despacho.id
+        // Los demás campos se asignan por defecto en la BD
       });
 
-    if (sedeError) {
-      console.error('Error al crear sede:', sedeError);
+    if (userDespachoError) {
+      console.error('❌ Error al asignar despacho al usuario:', userDespachoError);
+      console.log('📝 Datos intentados:', {
+        user_id: finalUserId,
+        despacho_id: despacho.id,
+        rol: 'propietario'
+      });
+    } else {
+      console.log('✅ Despacho asignado al usuario:', finalUserId);
+    }
+
+    // Obtener super_admin para notificar
+    const { data: superAdmins } = await supabase
+      .from('users')
+      .select('id')
+      .eq('role', 'super_admin')
+      .limit(1);
+
+    // Enviar notificación al super_admin
+    if (superAdmins && superAdmins.length > 0) {
+      const { error: notifError } = await supabase
+        .from('notificaciones')
+        .insert({
+          user_id: superAdmins[0].id,
+          tipo: 'nuevo_despacho',
+          titulo: 'Nuevo despacho creado',
+          mensaje: `El usuario ${userEmail} ha creado el despacho "${nombre}"`,
+          leida: false,
+          url: `/dashboard/admin/despachos/${despacho.id}`,
+          metadata: {
+            despacho_id: despacho.id,
+            user_email: userEmail,
+            nombre_despacho: nombre,
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (notifError) {
+        console.error('Error al crear notificación:', notifError);
+      } else {
+        console.log('✅ Notificación enviada al super_admin');
+      }
+    }
+
+    // Crear todas las sedes
+    const sedesData = sedes.map((sede: {
+      nombre: string;
+      descripcion?: string;
+      calle?: string;
+      numero?: string;
+      piso?: string;
+      localidad: string;
+      provincia: string;
+      codigo_postal?: string;
+      pais?: string;
+      telefono: string;
+      email_contacto: string;
+      persona_contacto?: string;
+      web?: string;
+      numero_colegiado?: string;
+      colegio?: string;
+      experiencia?: string;
+      areas_practica?: string[];
+      especialidades?: string;
+      servicios_especificos?: string;
+      ano_fundacion?: string;
+      tamano_despacho?: string;
+      horarios?: {
+        lunes?: string;
+        martes?: string;
+        miercoles?: string;
+        jueves?: string;
+        viernes?: string;
+        sabado?: string;
+        domingo?: string;
+      };
+      redes_sociales?: {
+        facebook?: string;
+        twitter?: string;
+        linkedin?: string;
+        instagram?: string;
+      };
+      foto_perfil?: string;
+      observaciones?: string;
+      es_principal?: boolean;
+    }) => ({
+      despacho_id: despacho.id,
+      nombre: sede.nombre || 'Sede',
+      descripcion: sede.descripcion || '',
+      es_principal: sede.es_principal || false,
+      calle: sede.calle || '',
+      numero: sede.numero || '',
+      piso: sede.piso || '',
+      localidad: sede.localidad,
+      provincia: sede.provincia,
+      codigo_postal: sede.codigo_postal || '',
+      pais: sede.pais || 'España',
+      telefono: sede.telefono,
+      email_contacto: sede.email_contacto,
+      persona_contacto: sede.persona_contacto || '',
+      web: sede.web || '',
+      numero_colegiado: sede.numero_colegiado || '',
+      colegio: sede.colegio || '',
+      experiencia: sede.experiencia || '',
+      areas_practica: sede.areas_practica || [],
+      especialidades: sede.especialidades || '',
+      servicios_especificos: sede.servicios_especificos || '',
+      ano_fundacion: sede.ano_fundacion ? parseInt(sede.ano_fundacion) : null,
+      tamano_despacho: sede.tamano_despacho || '',
+      horarios: sede.horarios || {},
+      redes_sociales: sede.redes_sociales || {},
+      foto_perfil: sede.foto_perfil || '',
+      observaciones: sede.observaciones || '',
+      activa: true,
+      estado_verificacion: 'pendiente',
+    }));
+
+    console.log('📝 Intentando crear sedes:', JSON.stringify(sedesData, null, 2));
+    
+    const { error: sedesError } = await supabase
+      .from('sedes')
+      .insert(sedesData);
+
+    if (sedesError) {
+      console.error('❌ Error al crear sedes:', sedesError);
+      console.error('📋 Datos que causaron el error:', JSON.stringify(sedesData, null, 2));
       // No lanzamos error, el despacho ya está creado
     } else {
-      console.log('✅ Sede principal creada');
+      console.log(`✅ ${sedes.length} sede(s) creada(s)`);
     }
 
-    // Intentar enviar a WordPress
-    console.log('🔄 Enviando despacho a WordPress...');
-    const wpResult = await SyncService.enviarDespachoAWordPress(despacho.id);
-
-    if (wpResult.success) {
-      console.log('✅ Despacho enviado a WordPress:', wpResult.objectId);
-    } else {
-      console.warn('⚠️ No se pudo enviar a WordPress:', wpResult.error);
-      console.warn('El despacho se sincronizará más tarde');
-    }
+    // TODO: Sincronización con WordPress (Fase 2)
+    // Por ahora solo almacenamos en Supabase
+    console.log('ℹ️ Sincronización con WordPress deshabilitada (Fase 2)');
+    const wpResult = { success: false, objectId: null, error: 'Deshabilitado' };
 
     return NextResponse.json({
       success: true,
@@ -155,6 +317,13 @@ export async function POST(request: Request) {
       despachoId: despacho.id,
       objectId: wpResult.objectId,
       sincronizadoWP: wpResult.success,
+      sedesCreadas: !sedesError,
+      sedesError: sedesError ? {
+        message: sedesError.message,
+        details: sedesError.details,
+        hint: sedesError.hint,
+        code: sedesError.code
+      } : null,
     });
 
   } catch (error) {
