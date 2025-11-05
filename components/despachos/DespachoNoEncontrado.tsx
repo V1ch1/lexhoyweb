@@ -1,6 +1,10 @@
 import { useRouter } from "next/navigation";
 
-export function DespachoNoEncontrado() {
+interface DespachoNoEncontradoProps {
+  onImportSuccess?: () => void | Promise<void>;
+}
+
+export function DespachoNoEncontrado({ onImportSuccess }: DespachoNoEncontradoProps = {}) {
   const router = useRouter();
 
   return (
