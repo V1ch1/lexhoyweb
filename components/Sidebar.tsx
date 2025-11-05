@@ -73,103 +73,21 @@ const Sidebar = () => {
               </button>
             </li>
 
-            {/* Despachos - Con submenú desplegable */}
+            {/* Despachos - Botón simple sin desplegable */}
             <li>
-              <div className="mb-1">
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleNavigation("/dashboard/despachos")}
-                    className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-l-lg transition-all duration-200 ${
-                      pathname.startsWith("/dashboard/despachos")
-                        ? "bg-slate-800 text-white shadow-md"
-                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                    }`}
-                  >
-                    <BuildingOfficeIcon className="h-5 w-5" />
-                    <span className="font-playfair text-sm font-semibold">
-                      Despachos
-                    </span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setOpenMenu(openMenu === "despachos" ? null : "despachos")
-                    }
-                    className={`px-2 py-2.5 rounded-r-lg transition-all duration-200 ${
-                      pathname.startsWith("/dashboard/despachos")
-                        ? "bg-slate-800 text-white shadow-md"
-                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                    }`}
-                  >
-                    {openMenu === "despachos" ? (
-                      <ChevronDownIcon className="h-4 w-4" />
-                    ) : (
-                      <ChevronRightIcon className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submenú desplegable */}
-              {openMenu === "despachos" && (
-                <ul className="ml-4 space-y-1 border-l-2 border-slate-300 pl-4">
-                  <li>
-                    <button
-                      onClick={() =>
-                        handleNavigation("/dashboard/despachos/ver-despachos")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/despachos/ver-despachos"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Despachos
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        handleNavigation("/dashboard/despachos/crear")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/despachos/crear"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Dar de Alta Despacho
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        handleNavigation("/dashboard/despachos/mis-despachos")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/despachos/mis-despachos"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Mis Despachos
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        handleNavigation("/dashboard/despachos/mis-solicitudes")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/despachos/mis-solicitudes"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Mis Solicitudes
-                    </button>
-                  </li>
-                </ul>
-              )}
+              <button
+                onClick={() => handleNavigation("/dashboard/despachos")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                  pathname.startsWith("/dashboard/despachos")
+                    ? "bg-slate-800 text-white shadow-md"
+                    : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                }`}
+              >
+                <BuildingOfficeIcon className="h-5 w-5" />
+                <span className="font-playfair text-sm font-semibold">
+                  Despachos
+                </span>
+              </button>
             </li>
 
             {/* Leads - Solo para despacho_admin y super_admin */}

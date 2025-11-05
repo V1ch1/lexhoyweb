@@ -6,13 +6,12 @@ import {
   BuildingOfficeIcon,
   MagnifyingGlassIcon,
   PlusCircleIcon,
-  CloudArrowDownIcon,
   ArrowRightIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 // Types
-type DespachosSection = 'overview' | 'ver-despachos' | 'mis-despachos' | 'importar-lexhoy' | 'crear' | 'mis-solicitudes';
+type DespachosSection = 'overview' | 'ver-despachos' | 'mis-despachos' | 'crear' | 'mis-solicitudes';
 
 interface DespachosCard {
   id: DespachosSection;
@@ -32,21 +31,12 @@ export default function DespachosPage() {
   const despachosCards: DespachosCard[] = [
     {
       id: 'ver-despachos',
-      name: 'Despachos Disponibles',
-      description: 'Explora todos los despachos importados',
+      name: 'Buscar Despachos',
+      description: 'Busca tu despacho y solicita la propiedad',
       icon: MagnifyingGlassIcon,
       color: 'green',
       visible: true,
       path: '/dashboard/despachos/ver-despachos'
-    },
-    {
-      id: 'importar-lexhoy',
-      name: 'Importar de Lexhoy',
-      description: 'Importa tu despacho desde el directorio Lexhoy',
-      icon: CloudArrowDownIcon,
-      color: 'purple',
-      visible: true,
-      path: '/dashboard/despachos/importar-lexhoy'
     },
     {
       id: 'crear',

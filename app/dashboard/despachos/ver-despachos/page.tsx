@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DespachosListSkeleton } from "@/components/despachos/skeletons";
 import { DespachosList } from "@/components/despachos/DespachosList";
-import { DespachoNoEncontrado } from "@/components/despachos/DespachoNoEncontrado";
 
 interface User {
   id: string;
@@ -573,7 +572,39 @@ const VerDespachosPage = () => {
           setShowSolicitarModal={setShowSolicitarModal}
         />
 
-        <DespachoNoEncontrado onImportSuccess={fetchDespachos} />
+        {/* Mostrar botón de crear despacho solo si no hay resultados */}
+        {!loadingDespachos && despachos.length === 0 && search && (
+          <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-sm border-2 border-green-200 p-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                No encontramos tu despacho
+              </h3>
+              <p className="text-gray-700 mb-6">
+                Puedes darlo de alta manualmente con toda la información necesaria
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/despachos/crear")}
+                className="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-md"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Dar de Alta Nuevo Despacho
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
