@@ -372,15 +372,6 @@ export async function POST(request: Request) {
               redes_sociales: sede.redes_sociales && typeof sede.redes_sociales === 'object' 
                 ? sede.redes_sociales 
                 : {},
-              direccion: {
-                calle: String(sede.calle || ""),
-                numero: String(sede.numero || ""),
-                piso: String(sede.piso || ""),
-                codigo_postal: String(sede.codigo_postal || ""),
-                localidad: String(sede.localidad || ""),
-                provincia: String(sede.provincia || ""),
-                pais: String(sede.pais || "España")
-              },
               
               // Observaciones
               observaciones: String(sede.observaciones || ''),
