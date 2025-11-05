@@ -145,7 +145,7 @@ const VerDespachosPage = () => {
     setUserLoading(false);
   };
 
-  // Solicitar propiedad del despacho
+  // Solicitar propiedad del despacho (con importación automática si es necesario)
   const handleSolicitarPropiedad = async () => {
     if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad) return;
     
@@ -153,74 +153,43 @@ const VerDespachosPage = () => {
     setMensajePropiedad(null);
 
     try {
-      // Obtener datos completos del usuario
-      const { data: userData } = await supabase
-        .from("users")
-        .select("nombre, apellidos")
-        .eq("id", user.id)
-        .single();
-
-      // Verificar si ya existe una solicitud pendiente para este despacho y usuario
-      const { data: solicitudExistente } = await supabase
-        .from("solicitudes_despacho")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("despacho_id", despachoSolicitar.object_id || despachoSolicitar.id)
-        .eq("estado", "pendiente")
-        .single();
-
-      if (solicitudExistente) {
-        setMensajePropiedad({
-          tipo: "error",
-          texto: "Ya tienes una solicitud pendiente para este despacho.",
-        });
-        setSolicitandoPropiedad(false);
-        return;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error("No hay sesión activa");
       }
 
-      // Crear solicitud pendiente de aprobación
-      const { data: solicitudCreada, error } = await supabase
-        .from("solicitudes_despacho")
-        .insert({
-          user_id: user.id,
-          user_email: user.email,
-          user_name: userData
-            ? `${userData.nombre || ""} ${userData.apellidos || ""}`.trim()
-            : user.email,
-          despacho_id: despachoSolicitar.object_id || despachoSolicitar.id,
-          despacho_nombre: despachoSolicitar.nombre,
-          despacho_localidad: despachoSolicitar.localidad,
-          despacho_provincia: despachoSolicitar.provincia,
-          estado: "pendiente",
-        })
-        .select()
-        .single();
+      // Usar el nuevo endpoint inteligente que importa si es necesario
+      const response = await fetch("/api/despachos/solicitar-propiedad-inteligente", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          despachoId: despachoSolicitar.id,
+          origen: (despachoSolicitar as any).origen || "supabase",
+          wordpressId: (despachoSolicitar as any).wordpress_id || null,
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      console.log("✅ Solicitud creada:", solicitudCreada);
+      if (!response.ok) {
+        throw new Error(result.error || "Error al procesar solicitud");
+      }
+
+      console.log("✅ Solicitud procesada:", result);
 
       // Actualizar el estado de solicitudes pendientes
-      actualizarSolicitudesPendientes(despachoSolicitar.id);
+      actualizarSolicitudesPendientes(result.despachoId);
       
       // Mostrar mensaje de éxito
       setMensajePropiedad({
         tipo: "success",
-        texto: "Solicitud enviada correctamente. Te notificaremos cuando sea revisada.",
-      });
-
-      // Enviar notificación y email al super_admin
-      await fetch("/api/notificar-solicitud", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          solicitudId: solicitudCreada.id,
-          userName: solicitudCreada.user_name,
-          userEmail: solicitudCreada.user_email,
-          despachoNombre: solicitudCreada.despacho_nombre,
-          despachoLocalidad: solicitudCreada.despacho_localidad,
-          despachoProvincia: solicitudCreada.despacho_provincia,
-        }),
+        texto: result.importado 
+          ? "Despacho importado y solicitud enviada correctamente. Te notificaremos cuando sea revisada."
+          : "Solicitud enviada correctamente. Te notificaremos cuando sea revisada.",
       });
 
       // Cerrar el modal después de 2 segundos
@@ -228,13 +197,15 @@ const VerDespachosPage = () => {
         setShowSolicitarModal(false);
         setDespachoSolicitar(null);
         setMensajePropiedad(null);
+        // Recargar despachos para mostrar el recién importado
+        fetchDespachos();
       }, 2000);
       
     } catch (err) {
       console.error("Error al enviar la solicitud:", err);
       setMensajePropiedad({
         tipo: "error",
-        texto: "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
+        texto: err instanceof Error ? err.message : "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
       });
     } finally {
       setSolicitandoPropiedad(false);
@@ -243,7 +214,7 @@ const VerDespachosPage = () => {
   const PAGE_SIZE = 20;
   const [loadingDespachos, setLoadingDespachos] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Fetch despachos con useEffect bien configurado
+  // Fetch despachos con búsqueda unificada (Supabase + WordPress)
   const fetchDespachos = async () => {
     setLoadingDespachos(true);
     setError(null);
@@ -256,27 +227,16 @@ const VerDespachosPage = () => {
         return;
       }
 
-      // Obtener TODOS los despachos
-      let query = supabase
-        .from("despachos")
-        .select(`*`, { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-        
-      if (search) {
-        query = query.ilike("nombre", `%${search}%`);
+      // Usar el nuevo endpoint de búsqueda unificada
+      const response = await fetch(
+        `/api/despachos/buscar-unificado?query=${encodeURIComponent(search)}&page=${page}&perPage=${PAGE_SIZE}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al buscar despachos");
       }
-      
-      const { data, error, count } = await query;
-      
-      if (error) {
-        console.error("Error al cargar despachos:", error);
-        setError("Error al cargar los despachos: " + error.message);
-        setDespachos([]);
-        setTotal(0);
-        setLoadingDespachos(false);
-        return;
-      }
+
+      const { data, pagination } = await response.json();
 
       // Obtener los IDs de despachos del usuario
       const { data: userDespachosData } = await supabase
@@ -286,69 +246,23 @@ const VerDespachosPage = () => {
 
       const userDespachoIds = new Set(userDespachosData?.map(ud => ud.despacho_id) || []);
 
-      // Mapear los datos de los despachos
-      const mapped = await Promise.all(
-        (data || []).map(async (d: DespachoSummary) => {
-          try {
-            // Obtener el conteo real de sedes para este despacho
-            const { count: conteoSedes } = await supabase
-              .from('sedes')
-              .select('*', { count: 'exact', head: true })
-              .eq('despacho_id', d.id);
+      // Mapear los datos (ya vienen formateados del endpoint)
+      const mapped = (data || []).map((d: any) => ({
+        id: d.id,
+        wordpress_id: d.wordpress_id,
+        nombre: decodeHtmlEntities(d.nombre),
+        num_sedes: d.num_sedes || 0,
+        localidad: d.localidad || "",
+        provincia: d.provincia || "",
+        telefono: d.telefono || "",
+        email: d.email || "",
+        origen: d.origen, // 'supabase' o 'wordpress'
+        yaImportado: d.yaImportado, // true o false
+        isOwner: d.origen === 'supabase' && userDespachoIds.has(d.id),
+      }));
 
-            const numSedes = conteoSedes || 0;
-            
-            // Si el conteo es diferente, actualizar el campo en la base de datos
-            if (numSedes !== d.num_sedes) {
-              await supabase
-                .from('despachos')
-                .update({ num_sedes: numSedes })
-                .eq('id', d.id);
-            }
-
-            // Obtener la sede principal
-            const { data: sedePrincipal } = await supabase
-              .from("sedes")
-              .select("*")
-              .eq("despacho_id", d.id)
-              .eq("es_principal", true)
-              .maybeSingle();
-
-            return {
-              id: d.id,
-              object_id: d.object_id,
-              nombre: decodeHtmlEntities(d.nombre),
-              num_sedes: numSedes,
-              created_at: d.created_at,
-              estado: d.estado,
-              localidad: sedePrincipal?.localidad || "",
-              provincia: sedePrincipal?.provincia || "",
-              telefono: sedePrincipal?.telefono || "",
-              email: sedePrincipal?.email_contacto || "",
-              owner_email: d.owner_email || null,
-              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
-            };
-          } catch (error) {
-            console.error(`Error procesando despacho ${d.id}:`, error);
-            return {
-              id: d.id,
-              object_id: d.object_id,
-              nombre: decodeHtmlEntities(d.nombre),
-              num_sedes: d.num_sedes || 0,
-              created_at: d.created_at,
-              estado: d.estado,
-              localidad: "",
-              isOwner: userDespachoIds.has(d.id), // Marcar si el usuario es propietario
-              provincia: "",
-              telefono: "",
-              email: "",
-              owner_email: d.owner_email || null,
-            };
-          }
-      })
-    );
       setDespachos(mapped);
-      setTotal(count || 0);
+      setTotal(pagination.total || 0);
     } catch (error) {
       console.error("Error al cargar despachos:", error);
       setError("Error al cargar los despachos. Por favor, intente de nuevo.");

@@ -16,15 +16,15 @@ export function DespachoNoEncontrado({ onImportSuccess }: DespachoNoEncontradoPr
             ¿No encuentras tu despacho?
           </h3>
           <p className="text-gray-700">
-            Puedes importarlo desde nuestro directorio de Lexhoy.com o darlo
+            Puedes buscarlo en nuestro directorio de Lexhoy.com o darlo
             de alta manualmente
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-          {/* Botón Importar desde Lexhoy.com */}
+          {/* Botón Buscar en Lexhoy.com */}
           <button
-            onClick={() => router.push("/dashboard/despachos/importar-lexhoy")}
+            onClick={() => router.push("/dashboard/despachos/ver-despachos")}
             className="group relative bg-white hover:bg-blue-50 border-2 border-blue-300 hover:border-blue-500 rounded-xl p-6 transition-all duration-200 hover:shadow-lg"
           >
             <div className="flex flex-col items-center text-center">
@@ -45,14 +45,14 @@ export function DespachoNoEncontrado({ onImportSuccess }: DespachoNoEncontradoPr
                 </svg>
               </div>
               <h4 className="text-lg font-bold text-gray-900 mb-2">
-                Importar desde Lexhoy.com
+                Buscar mi despacho
               </h4>
               <p className="text-sm text-gray-600 mb-4">
                 Busca tu despacho en nuestro directorio de más de 10,000
-                despachos jurídicos
+                despachos jurídicos y solicita la propiedad
               </p>
               <span className="text-blue-600 font-semibold text-sm group-hover:underline">
-                Buscar e importar →
+                Buscar despacho →
               </span>
             </div>
           </button>

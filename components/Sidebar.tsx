@@ -129,20 +129,6 @@ const Sidebar = () => {
                   <li>
                     <button
                       onClick={() =>
-                        handleNavigation("/dashboard/despachos/importar-lexhoy")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/despachos/importar-lexhoy"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Importar de Lexhoy
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
                         handleNavigation("/dashboard/despachos/crear")
                       }
                       className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
