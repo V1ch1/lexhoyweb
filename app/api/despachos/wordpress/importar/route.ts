@@ -300,9 +300,6 @@ export async function POST(request: Request) {
       // Procesar sedes si existen
       const sedesData = Array.isArray(despacho.meta?._despacho_sedes) ? despacho.meta._despacho_sedes : [];
       let processedCount = 0;
-      
-      // Usar datosAdicionales en la respuesta
-      console.log('📊 [Datos Adicionales]', datosAdicionales);
 
       if (sedesData.length > 0 && result?.data?.[0]?.id) {
         console.log(
