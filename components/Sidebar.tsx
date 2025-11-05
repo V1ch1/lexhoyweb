@@ -1,15 +1,12 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
 import {
   HomeIcon,
   ClipboardIcon,
   CogIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 
@@ -17,29 +14,6 @@ const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
-  const [currentHash, setCurrentHash] = useState("");
-  const [openMenu, setOpenMenu] = useState<"despachos" | "config" | null>(null);
-
-  // Detectar cambios en el hash
-  useEffect(() => {
-    const updateHash = () => {
-      setCurrentHash(window.location.hash);
-    };
-
-    // Actualizar al montar
-    updateHash();
-
-    // Escuchar cambios
-    window.addEventListener("hashchange", updateHash);
-
-    // Polling como fallback
-    const interval = setInterval(updateHash, 100);
-
-    return () => {
-      window.removeEventListener("hashchange", updateHash);
-      clearInterval(interval);
-    };
-  }, []);
 
   const handleNavigation = (href: string) => {
     router.push(href);
@@ -125,120 +99,21 @@ const Sidebar = () => {
               </li>
             )}
 
-            {/* Configuración - Con submenú desplegable */}
+            {/* Configuración - Botón simple sin desplegable */}
             <li>
-              <div className="mb-1">
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => router.push("/dashboard/settings")}
-                    className={`flex-1 flex items-center gap-3 px-4 py-2.5 rounded-l-lg transition-all duration-200 ${
-                      pathname === "/dashboard/settings" && currentHash === ""
-                        ? "bg-slate-800 text-white shadow-md"
-                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                    }`}
-                  >
-                    <CogIcon className="h-5 w-5" />
-                    <span className="font-playfair text-sm font-semibold">
-                      Configuración
-                    </span>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setOpenMenu(openMenu === "config" ? null : "config")
-                    }
-                    className={`px-2 py-2.5 rounded-r-lg transition-all duration-200 ${
-                      pathname === "/dashboard/settings"
-                        ? "bg-slate-800 text-white shadow-md"
-                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                    }`}
-                  >
-                    {openMenu === "config" ? (
-                      <ChevronDownIcon className="h-4 w-4" />
-                    ) : (
-                      <ChevronRightIcon className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submenú desplegable */}
-              {openMenu === "config" && (
-                <ul className="ml-4 space-y-1 border-l-2 border-slate-300 pl-4">
-                  <li>
-                    <button
-                      onClick={() => router.push("/dashboard/settings#perfil")}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/settings" &&
-                        currentHash === "#perfil"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Perfil
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        router.push("/dashboard/settings#contrasena")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/settings" &&
-                        currentHash === "#contrasena"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Contraseña
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        router.push("/dashboard/settings#notificaciones")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/settings" &&
-                        currentHash === "#notificaciones"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Notificaciones
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        router.push("/dashboard/settings#privacidad")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/settings" &&
-                        currentHash === "#privacidad"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Privacidad
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        router.push("/dashboard/settings#sesiones")
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all duration-200 ${
-                        pathname === "/dashboard/settings" &&
-                        currentHash === "#sesiones"
-                          ? "text-slate-900 font-medium bg-slate-200"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
-                    >
-                      Sesiones
-                    </button>
-                  </li>
-                </ul>
-              )}
+              <button
+                onClick={() => router.push("/dashboard/settings")}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                  pathname === "/dashboard/settings"
+                    ? "bg-slate-800 text-white shadow-md"
+                    : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                }`}
+              >
+                <CogIcon className="h-5 w-5" />
+                <span className="font-playfair text-sm font-semibold">
+                  Configuración
+                </span>
+              </button>
             </li>
           </ul>
         </nav>

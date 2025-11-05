@@ -61,7 +61,8 @@ export async function GET(request: Request) {
     // 2. Buscar en WordPress (despachos disponibles para importar)
     let wordpressResults: any[] = [];
     try {
-      const wpUrl = `${WORDPRESS_API_URL}/despacho?search=${encodeURIComponent(query)}&per_page=50&_fields=id,title,content,meta`;
+      // Aumentar per_page a 100 para obtener más resultados (máximo permitido por WordPress)
+      const wpUrl = `${WORDPRESS_API_URL}/despacho?search=${encodeURIComponent(query)}&per_page=100&_fields=id,title,content,meta`;
       console.log("🔍 [WordPress] URL:", wpUrl);
 
       const wpResponse = await fetch(wpUrl);
