@@ -185,37 +185,38 @@ export async function POST(request: Request) {
       console.log('✅ Despacho asignado al usuario:', finalUserId);
     }
 
-    // Obtener super_admin para notificar
+    // Obtener TODOS los super_admin para notificar
     const { data: superAdmins } = await supabase
       .from('users')
       .select('id')
-      .eq('role', 'super_admin')
-      .limit(1);
+      .eq('role', 'super_admin');
 
-    // Enviar notificación al super_admin
+    // Enviar notificación a TODOS los super_admin
     if (superAdmins && superAdmins.length > 0) {
+      const notificaciones = superAdmins.map(admin => ({
+        user_id: admin.id,
+        tipo: 'nuevo_despacho',
+        titulo: 'Nuevo despacho creado',
+        mensaje: `El usuario ${userEmail} ha creado el despacho "${nombre}"`,
+        leida: false,
+        url: `/dashboard/admin/despachos/${despacho.id}`,
+        metadata: {
+          despacho_id: despacho.id,
+          user_email: userEmail,
+          nombre_despacho: nombre,
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+
       const { error: notifError } = await supabase
         .from('notificaciones')
-        .insert({
-          user_id: superAdmins[0].id,
-          tipo: 'nuevo_despacho',
-          titulo: 'Nuevo despacho creado',
-          mensaje: `El usuario ${userEmail} ha creado el despacho "${nombre}"`,
-          leida: false,
-          url: `/dashboard/admin/despachos/${despacho.id}`,
-          metadata: {
-            despacho_id: despacho.id,
-            user_email: userEmail,
-            nombre_despacho: nombre,
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+        .insert(notificaciones);
 
       if (notifError) {
-        console.error('Error al crear notificación:', notifError);
+        console.error('Error al crear notificaciones:', notifError);
       } else {
-        console.log('✅ Notificación enviada al super_admin');
+        console.log(`✅ Notificaciones enviadas a ${superAdmins.length} super_admin(s)`);
       }
     }
 
