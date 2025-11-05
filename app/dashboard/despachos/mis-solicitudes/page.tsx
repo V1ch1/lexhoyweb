@@ -17,7 +17,7 @@ interface Solicitud {
   estado: 'pendiente' | 'aprobada' | 'rechazada';
   fecha_solicitud: string;
   fecha_respuesta?: string;
-  notas_admin?: string;
+  notas_respuesta?: string;
 }
 
 export default function MisSolicitudesPage() {
@@ -270,7 +270,7 @@ export default function MisSolicitudesPage() {
                         </p>
                       )}
                       
-                      {solicitud.notas_admin && (
+                      {solicitud.notas_respuesta && (
                         <div className={`mt-3 border-l-4 p-3 rounded ${
                           solicitud.estado === 'rechazada' 
                             ? 'bg-red-50 border-red-500' 
@@ -284,7 +284,7 @@ export default function MisSolicitudesPage() {
                           <p className={`text-sm ${
                             solicitud.estado === 'rechazada' ? 'text-red-800' : 'text-blue-800'
                           }`}>
-                            {solicitud.notas_admin}
+                            {solicitud.notas_respuesta}
                           </p>
                         </div>
                       )}
