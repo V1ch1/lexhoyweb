@@ -98,7 +98,7 @@ export async function POST(request: Request) {
           if (sedesData.length > 0) {
             console.log(`📍 [Importar] Importando ${sedesData.length} sedes...`);
 
-            const sedesToInsert = sedesData.map((sede: any) => ({
+            const sedesToInsert = sedesData.map((sede: Record<string, unknown>) => ({
               despacho_id: newDespacho.id,
               wp_sede_id: sede.id_sede || null,
               nombre: sede.nombre || `Sede de ${despachoData.nombre}`,

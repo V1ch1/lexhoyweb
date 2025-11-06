@@ -227,15 +227,15 @@ export async function POST(request: Request) {
       despachoData.featured_media_url = `https://lexhoy.com/wp-content/uploads/${despacho.featured_media}.jpg`;
     }
     
-    // Guardar datos adicionales en un campo JSON si es necesario
-    const datosAdicionales = {
-      areas_practica: despacho.meta?._despacho_sedes?.[0]?.areas_practica || [],
-      verificado: despacho.meta?._despacho_sedes?.[0]?.estado_verificacion === 'verificado',
-      num_sedes: despacho.meta?._despacho_sedes?.length || 0,
-      sincronizado_wp: true,
-      ultima_sincronizacion: new Date().toISOString(),
-      wordpress_url: despacho.link
-    };
+    // Datos adicionales disponibles para uso futuro si se necesitan
+    // const datosAdicionales = {
+    //   areas_practica: despacho.meta?._despacho_sedes?.[0]?.areas_practica || [],
+    //   verificado: despacho.meta?._despacho_sedes?.[0]?.estado_verificacion === 'verificado',
+    //   num_sedes: despacho.meta?._despacho_sedes?.length || 0,
+    //   sincronizado_wp: true,
+    //   ultima_sincronizacion: new Date().toISOString(),
+    //   wordpress_url: despacho.link
+    // };
 
     try {
       // Primero verificar si el despacho ya existe
