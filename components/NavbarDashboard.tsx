@@ -10,13 +10,13 @@ const NavbarDashboard = () => {
 
   return (
     <nav className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
-      <div className="text-2xl font-semibold font-playfair">Dashboard</div>
+      <div className="text-2xl font-semibold font-playfair">
+        Gestión de despachos
+      </div>
 
       <div className="flex items-center space-x-4">
         {/* Campana de notificaciones para todos los usuarios */}
-        {user && (
-          <NotificationBell userId={user.id} userRole={user.role} />
-        )}
+        {user && <NotificationBell userId={user.id} userRole={user.role} />}
 
         {/* Información del usuario */}
         {user && (

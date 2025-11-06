@@ -7,6 +7,7 @@ import {
   CogIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
+  MegaphoneIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 
@@ -78,6 +79,24 @@ const Sidebar = () => {
                 >
                   <ClipboardIcon className="h-5 w-5" />
                   <span className="font-playfair text-sm">Leads</span>
+                </button>
+              </li>
+            )}
+
+            {/* Marketing - Solo para despacho_admin y super_admin */}
+            {(user.role === "despacho_admin" ||
+              user.role === "super_admin") && (
+              <li>
+                <button
+                  onClick={() => handleNavigation("/dashboard/marketing")}
+                  className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                    pathname.startsWith("/dashboard/marketing")
+                      ? "bg-slate-800 text-white shadow-md"
+                      : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                  }`}
+                >
+                  <MegaphoneIcon className="h-5 w-5" />
+                  <span className="font-playfair text-sm">Marketing</span>
                 </button>
               </li>
             )}
