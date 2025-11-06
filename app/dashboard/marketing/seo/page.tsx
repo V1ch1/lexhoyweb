@@ -76,8 +76,8 @@ export default function SEOPage() {
     }
   };
 
-  const handleParticipar = (id: number, titulo: string) => {
-    setSelectedEntrada({ id, titulo });
+  const handleParticipar = (id: string | number, titulo: string) => {
+    setSelectedEntrada({ id: typeof id === 'string' ? parseInt(id) : id, titulo });
     setPopupOpen(true);
   };
 
