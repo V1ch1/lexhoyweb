@@ -44,15 +44,15 @@ interface RecentLead {
   telefono: string;
   especialidad: string;
   fecha: Date;
-  estado: 'nuevo' | 'contactado' | 'cerrado';
+  estado: "nuevo" | "contactado" | "cerrado";
 }
 
 // Usando la interfaz UserDespacho de los tipos globales
 
 // Función para decodificar entidades HTML
 function decodeHtmlEntities(text: string): string {
-  if (typeof window === 'undefined') return text;
-  const textarea = document.createElement('textarea');
+  if (typeof window === "undefined") return text;
+  const textarea = document.createElement("textarea");
   textarea.innerHTML = text;
   return textarea.value;
 }
@@ -61,7 +61,9 @@ const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
-  const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(null);
+  const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(
+    null
+  );
   const [statsLoading, setStatsLoading] = useState(true);
   const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
   const [despachosLoading, setDespachosLoading] = useState(false);
@@ -70,8 +72,8 @@ const DashboardPage = () => {
 
   // Cargar despachos del usuario
   useEffect(() => {
-    if (!user?.id || user.role === 'usuario') return;
-    
+    if (!user?.id || user.role === "usuario") return;
+
     const loadDespachos = async () => {
       setDespachosLoading(true);
       try {
@@ -81,7 +83,7 @@ const DashboardPage = () => {
           setUserDespachos(data.slice(0, 3)); // Solo los primeros 3
         }
       } catch (error) {
-        console.error('Error al cargar despachos:', error);
+        console.error("Error al cargar despachos:", error);
       } finally {
         setDespachosLoading(false);
       }
@@ -93,27 +95,30 @@ const DashboardPage = () => {
   // Cargar solicitudes pendientes para super_admin
   useEffect(() => {
     if (user?.role !== "super_admin") return;
-    
-    fetch('/api/solicitudes-despacho-pendientes')
-      .then(res => res.json())
+
+    fetch("/api/solicitudes-despacho-pendientes")
+      .then((res) => res.json())
       .then((response) => {
-        const pendientes = response.solicitudes?.filter((s: { estado: string }) => s.estado === "pendiente").length || 0;
+        const pendientes =
+          response.solicitudes?.filter(
+            (s: { estado: string }) => s.estado === "pendiente"
+          ).length || 0;
         setSolicitudesPendientes(pendientes);
       })
       .catch((err) => {
-        console.error('Error cargando solicitudes:', err);
+        console.error("Error cargando solicitudes:", err);
       });
   }, [user?.role]);
 
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {
     if (!user?.id || !user?.role) return;
-    
+
     const loadStats = async () => {
       setStatsLoading(true);
       try {
         if (user.role === "super_admin") {
-          const response = await fetch('/api/admin/stats');
+          const response = await fetch("/api/admin/stats");
           if (response.ok) {
             const stats = await response.json();
             setSystemStats(stats);
@@ -123,51 +128,58 @@ const DashboardPage = () => {
           const totalLeads = Math.floor(Math.random() * 150) + 50; // 50-200
           const leadsThisMonth = Math.floor(Math.random() * 30) + 10; // 10-40
           const leadsToday = Math.floor(Math.random() * 5) + 1; // 1-6
-          
+
           setDespachoStats({
             leadsToday,
             leadsThisMonth,
-            totalLeads
+            totalLeads,
           });
-          
+
           // Generar leads recientes de ejemplo
           const especialidades = [
-            'Derecho Civil',
-            'Derecho Penal',
-            'Derecho Laboral',
-            'Derecho Mercantil',
-            'Derecho Fiscal',
-            'Derecho Familiar',
-            'Derecho Administrativo'
+            "Derecho Civil",
+            "Derecho Penal",
+            "Derecho Laboral",
+            "Derecho Mercantil",
+            "Derecho Fiscal",
+            "Derecho Familiar",
+            "Derecho Administrativo",
           ];
-          
+
           const nombres = [
-            'María García López',
-            'Juan Martínez Ruiz',
-            'Carmen Rodríguez Sánchez',
-            'Pedro Fernández Torres',
-            'Ana López Martín',
-            'Carlos Sánchez Pérez'
+            "María García López",
+            "Juan Martínez Ruiz",
+            "Carmen Rodríguez Sánchez",
+            "Pedro Fernández Torres",
+            "Ana López Martín",
+            "Carlos Sánchez Pérez",
           ];
-          
-          const estados: Array<'nuevo' | 'contactado' | 'cerrado'> = ['nuevo', 'contactado', 'cerrado'];
-          
+
+          const estados: Array<"nuevo" | "contactado" | "cerrado"> = [
+            "nuevo",
+            "contactado",
+            "cerrado",
+          ];
+
           const mockLeads: RecentLead[] = Array.from({ length: 3 }, (_, i) => {
             const now = new Date();
             const horasAtras = Math.floor(Math.random() * 48) + 1;
             const fecha = new Date(now.getTime() - horasAtras * 60 * 60 * 1000);
-            
+
             return {
               id: `lead-${i + 1}`,
               nombre: nombres[Math.floor(Math.random() * nombres.length)],
               email: `cliente${i + 1}@example.com`,
               telefono: `6${Math.floor(Math.random() * 100000000) + 10000000}`,
-              especialidad: especialidades[Math.floor(Math.random() * especialidades.length)],
+              especialidad:
+                especialidades[
+                  Math.floor(Math.random() * especialidades.length)
+                ],
               fecha,
-              estado: estados[Math.floor(Math.random() * estados.length)]
+              estado: estados[Math.floor(Math.random() * estados.length)],
             };
           });
-          
+
           setRecentLeads(mockLeads);
         }
       } catch (error) {
@@ -191,18 +203,18 @@ const DashboardPage = () => {
   }
 
   // Componente de tarjeta de acción rápida
-  const QuickActionCard = ({ 
-    title, 
-    description, 
-    icon: Icon, 
-    onClick, 
+  const QuickActionCard = ({
+    title,
+    description,
+    icon: Icon,
+    onClick,
     color = "blue",
-    badge
-  }: { 
-    title: string; 
-    description: string; 
-    icon: React.ComponentType<{ className?: string }>; 
-    onClick: () => void; 
+    badge,
+  }: {
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    onClick: () => void;
     color?: string;
     badge?: number;
   }) => {
@@ -234,16 +246,16 @@ const DashboardPage = () => {
   };
 
   // Componente de tarjeta de estadística
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
-    trend, 
-    color = "blue" 
-  }: { 
-    title: string; 
-    value: string | number; 
-    icon: React.ComponentType<{ className?: string }>; 
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    trend,
+    color = "blue",
+  }: {
+    title: string;
+    value: string | number;
+    icon: React.ComponentType<{ className?: string }>;
     trend?: string;
     color?: string;
   }) => {
@@ -260,7 +272,9 @@ const DashboardPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 font-playfair">{statsLoading ? "..." : value}</p>
+            <p className="text-3xl font-bold text-gray-900 font-playfair">
+              {statsLoading ? "..." : value}
+            </p>
             {trend && (
               <p className="text-sm text-green-600 mt-2 flex items-center">
                 <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />
@@ -268,7 +282,9 @@ const DashboardPage = () => {
               </p>
             )}
           </div>
-          <div className={`${colorClasses[color as keyof typeof colorClasses]} p-3 rounded-lg`}>
+          <div
+            className={`${colorClasses[color as keyof typeof colorClasses]} p-3 rounded-lg`}
+          >
             <Icon className="h-6 w-6 text-white" />
           </div>
         </div>
@@ -284,21 +300,42 @@ const DashboardPage = () => {
           ¡Bienvenido, {user.name.split(" ")[0]}! 👋
         </h1>
         <p className="text-lg text-gray-600">
-          {user.role === "super_admin" && "Panel de administración global de la plataforma"}
-          {user.role === "despacho_admin" && "Gestiona tu despacho y leads desde aquí"}
-          {user.role === "usuario" && "Tu cuenta está activa. Solicita un despacho para acceder a más funciones"}
+          {user.role === "super_admin" &&
+            "Panel de administración global de la plataforma"}
+          {user.role === "despacho_admin" &&
+            "Gestiona tu despacho y leads desde aquí"}
+          {user.role === "usuario" &&
+            "Tu cuenta está activa. Solicita un despacho para acceder a más funciones"}
         </p>
       </div>
 
       {/* Alerta de solicitudes pendientes para super_admin */}
-      {user.role === "super_admin" && solicitudesPendientes > 0 && (
+      {user.role === "super_admin" && statsLoading && (
+        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4 animate-pulse">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center flex-1">
+              <div className="h-6 w-6 bg-yellow-300 rounded mr-3"></div>
+              <div className="flex-1">
+                <div className="h-5 bg-yellow-200 rounded w-48 mb-2"></div>
+                <div className="h-4 bg-yellow-200 rounded w-64"></div>
+              </div>
+            </div>
+            <div className="h-10 w-32 bg-yellow-300 rounded-lg"></div>
+          </div>
+        </div>
+      )}
+      
+      {user.role === "super_admin" && !statsLoading && solicitudesPendientes > 0 && (
         <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-3" />
               <div>
                 <h3 className="text-lg font-semibold text-yellow-900">
-                  {solicitudesPendientes} {solicitudesPendientes === 1 ? 'solicitud pendiente' : 'solicitudes pendientes'}
+                  {solicitudesPendientes}{" "}
+                  {solicitudesPendientes === 1
+                    ? "solicitud pendiente"
+                    : "solicitudes pendientes"}
                 </h3>
                 <p className="text-sm text-yellow-800">
                   Hay solicitudes de despacho esperando tu revisión
@@ -316,7 +353,22 @@ const DashboardPage = () => {
       )}
 
       {/* Estadísticas principales */}
-      {user.role === "super_admin" && systemStats && (
+      {user.role === "super_admin" && statsLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-20"></div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {user.role === "super_admin" && !statsLoading && systemStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total Usuarios"
@@ -345,7 +397,22 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {user.role === "despacho_admin" && despachoStats && (
+      {user.role === "despacho_admin" && statsLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-20"></div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {user.role === "despacho_admin" && !statsLoading && despachoStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Leads Hoy"
@@ -377,29 +444,34 @@ const DashboardPage = () => {
       )}
 
       {/* Call to action: Importar despacho */}
-      {user.role === "despacho_admin" && userDespachos.length === 0 && !despachosLoading && (
-        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border-2 border-blue-200 p-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <BuildingOfficeIcon className="h-10 w-10 text-blue-600" />
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">¡Importa tu despacho desde Lexhoy.com!</h3>
-              <p className="text-gray-700 mb-4">
-                Encuentra tu despacho en nuestro directorio de más de 10,000 despachos jurídicos y empieza a gestionar tus leads.
-              </p>
-              <button
-                onClick={() => router.push("/dashboard/despachos")}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center"
-              >
-                <BuildingOfficeIcon className="h-5 w-5 mr-2" />
-                Buscar e importar mi despacho
-                <ArrowRightIcon className="h-5 w-5 ml-2" />
-              </button>
+      {user.role === "despacho_admin" &&
+        userDespachos.length === 0 &&
+        !despachosLoading && (
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border-2 border-blue-200 p-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <BuildingOfficeIcon className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  ¡Gestiona tu despacho de Lexhoy.com!
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  Encuentra tu despacho en nuestro directorio de más de 12,000
+                  despachos jurídicos y empieza a conseguir más clientes.
+                </p>
+                <button
+                  onClick={() => router.push("/dashboard/despachos")}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center"
+                >
+                  <BuildingOfficeIcon className="h-5 w-5 mr-2" />
+                  Buscar mi despacho
+                  <ArrowRightIcon className="h-5 w-5 ml-2" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Mostrar Mis Despachos para despacho_admin (con skeleton mientras carga) */}
       {user.role === "despacho_admin" && (
@@ -407,7 +479,7 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
             <button
-              onClick={() => router.push("/dashboard/despachos")}
+              onClick={() => router.push("/dashboard/despachos/mis-despachos")}
               className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
             >
               Gestionar despachos
@@ -432,34 +504,43 @@ const DashboardPage = () => {
                   </div>
                 </div>
               ))
-            ) : userDespachos.length > 0 && userDespachos.some(d => 
-                (d.nombre && d.nombre !== 'Sin nombre' && d.nombre.trim() !== '')
+            ) : userDespachos.length > 0 &&
+              userDespachos.some(
+                (d) =>
+                  d.nombre &&
+                  d.nombre !== "Sin nombre" &&
+                  d.nombre.trim() !== ""
               ) ? (
               userDespachos
-                .filter(despacho => {
-                  const nombre = despacho.nombre || (despacho.despachos?.nombre || '');
-                  return nombre && nombre !== 'Sin nombre';
+                .filter((despacho) => {
+                  const nombre =
+                    despacho.nombre || despacho.despachos?.nombre || "";
+                  return nombre && nombre !== "Sin nombre";
                 })
                 .map((despacho) => {
                   // Obtener el nombre del despacho, probando ambas ubicaciones posibles
                   const nombreDespacho = decodeHtmlEntities(
-                    despacho.nombre || 
-                    (despacho.despachos?.nombre) || 
-                    'Sin nombre'
+                    despacho.nombre ||
+                      despacho.despachos?.nombre ||
+                      "Sin nombre"
                   );
-                  
+
                   // Generar el slug para la URL
                   const despachoSlug = slugify(nombreDespacho);
-                  
+
                   // Obtener localidad y provincia, probando ambas ubicaciones posibles
-                  const localidad = despacho.localidad || despacho.despachos?.localidad || '';
-                  const provincia = despacho.provincia || despacho.despachos?.provincia || '';
-                  
+                  const localidad =
+                    despacho.localidad || despacho.despachos?.localidad || "";
+                  const provincia =
+                    despacho.provincia || despacho.despachos?.provincia || "";
+
                   return (
                     <div
                       key={despacho.id}
                       className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/dashboard/despachos/${despachoSlug}`)}
+                      onClick={() =>
+                        router.push(`/dashboard/despachos/${despachoSlug}`)
+                      }
                     >
                       <div className="flex items-start justify-between mb-2">
                         <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
@@ -472,7 +553,8 @@ const DashboardPage = () => {
                       </h3>
                       {(localidad || provincia) && (
                         <p className="text-sm text-gray-600">
-                          {localidad}{provincia ? `, ${provincia}` : ''}
+                          {localidad}
+                          {provincia ? `, ${provincia}` : ""}
                         </p>
                       )}
                     </div>
@@ -481,8 +563,12 @@ const DashboardPage = () => {
             ) : (
               <div className="col-span-3 text-center py-8 bg-white rounded-lg border border-gray-100">
                 <BuildingOfficeIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-1">No tienes despachos asignados</p>
-                <p className="text-sm text-gray-400">Solicita un despacho para empezar</p>
+                <p className="text-gray-500 mb-1">
+                  No tienes despachos asignados
+                </p>
+                <p className="text-sm text-gray-400">
+                  Solicita un despacho para empezar
+                </p>
               </div>
             )}
           </div>
@@ -491,7 +577,9 @@ const DashboardPage = () => {
 
       {/* Acciones rápidas */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Accesos Rápidos</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Accesos Rápidos
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {user.role === "super_admin" && (
             <>
@@ -587,7 +675,9 @@ const DashboardPage = () => {
                 title="Mis Solicitudes"
                 description="Revisa el estado de tus solicitudes"
                 icon={DocumentTextIcon}
-                onClick={() => router.push("/dashboard/settings?tab=solicitudes")}
+                onClick={() =>
+                  router.push("/dashboard/settings?tab=solicitudes")
+                }
                 color="blue"
               />
               <QuickActionCard
@@ -607,7 +697,9 @@ const DashboardPage = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center">
             <ClockIcon className="h-6 w-6 mr-2 text-gray-600" />
-            {user.role === "despacho_admin" ? "Leads Recientes" : "Actividad Reciente"}
+            {user.role === "despacho_admin"
+              ? "Leads Recientes"
+              : "Actividad Reciente"}
           </h2>
           {user.role === "despacho_admin" && recentLeads.length > 0 && (
             <button
@@ -619,57 +711,102 @@ const DashboardPage = () => {
             </button>
           )}
         </div>
-        
+
         {user.role === "despacho_admin" && recentLeads.length > 0 ? (
           <div className="space-y-4">
             {recentLeads.map((lead) => {
               const estadoConfig = {
-                nuevo: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Nuevo' },
-                contactado: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Contactado' },
-                cerrado: { bg: 'bg-green-100', text: 'text-green-800', label: 'Cerrado' }
+                nuevo: {
+                  bg: "bg-blue-100",
+                  text: "text-blue-800",
+                  label: "Nuevo",
+                },
+                contactado: {
+                  bg: "bg-yellow-100",
+                  text: "text-yellow-800",
+                  label: "Contactado",
+                },
+                cerrado: {
+                  bg: "bg-green-100",
+                  text: "text-green-800",
+                  label: "Cerrado",
+                },
               };
-              
+
               const config = estadoConfig[lead.estado];
-              const horasAtras = Math.floor((new Date().getTime() - lead.fecha.getTime()) / (1000 * 60 * 60));
-              const tiempoTexto = horasAtras < 1 
-                ? 'Hace menos de 1 hora' 
-                : horasAtras === 1 
-                  ? 'Hace 1 hora' 
-                  : horasAtras < 24 
-                    ? `Hace ${horasAtras} horas` 
-                    : `Hace ${Math.floor(horasAtras / 24)} días`;
-              
+              const horasAtras = Math.floor(
+                (new Date().getTime() - lead.fecha.getTime()) / (1000 * 60 * 60)
+              );
+              const tiempoTexto =
+                horasAtras < 1
+                  ? "Hace menos de 1 hora"
+                  : horasAtras === 1
+                    ? "Hace 1 hora"
+                    : horasAtras < 24
+                      ? `Hace ${horasAtras} horas`
+                      : `Hace ${Math.floor(horasAtras / 24)} días`;
+
               return (
-                <div 
-                  key={lead.id} 
+                <div
+                  key={lead.id}
                   className="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200"
                   onClick={() => router.push("/dashboard/leads")}
                 >
                   <div className="flex-shrink-0 mr-4">
                     <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                      {lead.nombre.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                      {lead.nombre
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .substring(0, 2)}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
                       <div>
-                        <h3 className="text-base font-semibold text-gray-900">{lead.nombre}</h3>
-                        <p className="text-sm text-gray-600">{lead.especialidad}</p>
+                        <h3 className="text-base font-semibold text-gray-900">
+                          {lead.nombre}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {lead.especialidad}
+                        </p>
                       </div>
-                      <span className={`${config.bg} ${config.text} text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ml-2`}>
+                      <span
+                        className={`${config.bg} ${config.text} text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ml-2`}
+                      >
                         {config.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
                         </svg>
                         {lead.email}
                       </span>
                       <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                          />
                         </svg>
                         {lead.telefono}
                       </span>
@@ -688,8 +825,10 @@ const DashboardPage = () => {
             <ClockIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 mb-1">No hay actividad reciente</p>
             <p className="text-sm text-gray-400">
-              {user.role === "super_admin" && "Las actividades del sistema aparecerán aquí"}
-              {user.role === "despacho_admin" && "Los nuevos leads aparecerán aquí"}
+              {user.role === "super_admin" &&
+                "Las actividades del sistema aparecerán aquí"}
+              {user.role === "despacho_admin" &&
+                "Los nuevos leads aparecerán aquí"}
               {user.role === "usuario" && "Tus actividades aparecerán aquí"}
             </p>
           </div>

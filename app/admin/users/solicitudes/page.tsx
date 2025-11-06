@@ -31,6 +31,7 @@ export default function SolicitudesPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedSolicitudId, setSelectedSolicitudId] = useState<string | null>(null);
   const [motivoRechazo, setMotivoRechazo] = useState("");
+  const [processingId, setProcessingId] = useState<string | null>(null); // Para mostrar spinner
 
   const loadSolicitudes = useCallback(async () => {
     try {
@@ -76,7 +77,8 @@ export default function SolicitudesPage() {
     }
   }, [user, loadSolicitudes]);
 
-  const handleApproveSolicitud = async (solicitudId: string, notas?: string) => {
+  const handleApproveSolicitud = async (solicitudId: string) => {
+    setProcessingId(solicitudId); // Mostrar spinner
     try {
       const { createClient } = await import("@supabase/supabase-js");
       const supabase = createClient(
@@ -91,18 +93,18 @@ export default function SolicitudesPage() {
           type: "error",
           message: "No hay sesión activa.",
         });
+        setProcessingId(null);
         return;
       }
 
-      const response = await fetch("/api/aprobar-solicitud", {
-        method: "POST",
+      const response = await fetch(`/api/admin/solicitudes/${solicitudId}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          solicitudId,
-          notas: notas || "Solicitud aprobada",
+          accion: "aprobar",
         }),
       });
 
@@ -123,10 +125,13 @@ export default function SolicitudesPage() {
         type: "error",
         message: error instanceof Error ? error.message : "Error al aprobar la solicitud.",
       });
+    } finally {
+      setProcessingId(null); // Ocultar spinner
     }
   };
 
-  const handleRejectSolicitud = async (solicitudId: string, notas: string) => {
+  const handleRejectSolicitud = async (solicitudId: string, motivo: string) => {
+    setProcessingId(solicitudId); // Mostrar spinner
     try {
       const { createClient } = await import("@supabase/supabase-js");
       const supabase = createClient(
@@ -141,18 +146,19 @@ export default function SolicitudesPage() {
           type: "error",
           message: "No hay sesión activa.",
         });
+        setProcessingId(null);
         return;
       }
 
-      const response = await fetch("/api/rechazar-solicitud", {
-        method: "POST",
+      const response = await fetch(`/api/admin/solicitudes/${solicitudId}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          solicitudId,
-          notas,
+          accion: "rechazar",
+          motivo,
         }),
       });
 
@@ -170,6 +176,8 @@ export default function SolicitudesPage() {
         type: "error",
         message: error instanceof Error ? error.message : "Error al rechazar la solicitud.",
       });
+    } finally {
+      setProcessingId(null); // Ocultar spinner
     }
   };
 
@@ -267,10 +275,23 @@ export default function SolicitudesPage() {
                 <div className="flex gap-3 mt-2">
                   <button
                     onClick={() => handleApproveSolicitud(solicitud.id)}
-                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
+                    disabled={processingId === solicitud.id}
+                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <CheckCircleIcon className="h-5 w-5" />
-                    Aprobar
+                    {processingId === solicitud.id ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Aprobando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-5 w-5" />
+                        Aprobar
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -278,7 +299,8 @@ export default function SolicitudesPage() {
                       setShowRejectModal(true);
                       setMotivoRechazo("");
                     }}
-                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
+                    disabled={processingId === solicitud.id}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <XCircleIcon className="h-5 w-5" />
                     Rechazar
@@ -376,23 +398,34 @@ export default function SolicitudesPage() {
                   setSelectedSolicitudId(null);
                   setMotivoRechazo("");
                 }}
-                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                disabled={processingId !== null}
+                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (selectedSolicitudId && motivoRechazo.trim()) {
-                    handleRejectSolicitud(selectedSolicitudId, motivoRechazo.trim());
+                    await handleRejectSolicitud(selectedSolicitudId, motivoRechazo.trim());
                     setShowRejectModal(false);
                     setSelectedSolicitudId(null);
                     setMotivoRechazo("");
                   }
                 }}
-                disabled={!motivoRechazo.trim()}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!motivoRechazo.trim() || processingId !== null}
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Rechazar
+                {processingId === selectedSolicitudId ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Rechazando...
+                  </>
+                ) : (
+                  "Rechazar"
+                )}
               </button>
             </div>
           </div>

@@ -221,7 +221,7 @@ export function DespachosList({
               No se encontraron despachos
             </p>
             <p className="text-gray-500 text-sm">
-              Intenta con otros términos de búsqueda o importa tu despacho
+              Intenta con otros términos de búsqueda
             </p>
           </div>
         ) : (
@@ -372,7 +372,7 @@ export function DespachosList({
                     )}
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex justify-end pr-2">
-                        {user?.role === "super_admin" || d.isOwner ? (
+                        {user?.role === "super_admin" || d.isOwner || (d.owner_email && d.owner_email === user?.email) ? (
                           <div className="flex space-x-3">
                             <button
                               className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"

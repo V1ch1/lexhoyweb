@@ -47,6 +47,11 @@ const VerDespachosPage = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalWordPress, setTotalWordPress] = useState(0); // Total real en WordPress
+  
+  // Estados para contadores (no cambian con la paginación)
+  const [totalActivos, setTotalActivos] = useState(0);
+  const [totalConPropietario, setTotalConPropietario] = useState(0);
   
   // Estado para búsqueda de usuario
   const [showAsignarModal, setShowAsignarModal] = useState(false);
@@ -98,6 +103,49 @@ const VerDespachosPage = () => {
     setSolicitudesPendientes(prev => new Set(prev).add(despachoId));
   };
 
+  // Función para cargar estadísticas generales
+  const fetchEstadisticas = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Contar despachos activos en Supabase
+      const { count: countActivos } = await supabase
+        .from('despachos')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'publish');
+      
+      // Contar despachos con propietario en Supabase
+      const { count: countConPropietario } = await supabase
+        .from('despachos')
+        .select('*', { count: 'exact', head: true })
+        .not('owner_email', 'is', null);
+      
+      setTotalActivos(countActivos || 0);
+      setTotalConPropietario(countConPropietario || 0);
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error);
+    }
+  };
+
+  // Cargar estadísticas y total de WordPress al inicio (solo una vez)
+  useEffect(() => {
+    const fetchTotalWordPress = async () => {
+      try {
+        const response = await fetch('/api/despachos/buscar-unificado?query=&page=1&perPage=1');
+        if (response.ok) {
+          const { totalWordPress } = await response.json();
+          setTotalWordPress(totalWordPress || 0);
+        }
+      } catch (error) {
+        console.error('Error al obtener total de WordPress:', error);
+      }
+    };
+
+    fetchEstadisticas();
+    fetchTotalWordPress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   // Buscar usuarios en tiempo real por email o nombre de despacho
   useEffect(() => {
     if (!showAsignarModal || !searchUser) {
@@ -141,6 +189,7 @@ const VerDespachosPage = () => {
     setSelectedUser(null);
     setSearchUser("");
     fetchDespachos();
+    fetchEstadisticas(); // Recargar estadísticas
     setUserLoading(false);
   };
 
@@ -167,8 +216,8 @@ const VerDespachosPage = () => {
         },
         body: JSON.stringify({
           despachoId: despachoSolicitar.id,
-          origen: (despachoSolicitar as any).origen || "supabase",
-          wordpressId: (despachoSolicitar as any).wordpress_id || null,
+          origen: 'origen' in despachoSolicitar ? despachoSolicitar.origen : "supabase",
+          wordpressId: 'wordpress_id' in despachoSolicitar ? despachoSolicitar.wordpress_id : null,
         }),
       });
 
@@ -246,22 +295,25 @@ const VerDespachosPage = () => {
       const userDespachoIds = new Set(userDespachosData?.map(ud => ud.despacho_id) || []);
 
       // Mapear los datos (ya vienen formateados del endpoint)
-      const mapped = (data || []).map((d: any) => ({
-        id: d.id,
-        wordpress_id: d.wordpress_id,
-        nombre: decodeHtmlEntities(d.nombre),
-        num_sedes: d.num_sedes || 0,
-        localidad: d.localidad || "",
-        provincia: d.provincia || "",
-        telefono: d.telefono || "",
-        email: d.email || "",
-        origen: d.origen, // 'supabase' o 'wordpress'
-        yaImportado: d.yaImportado, // true o false
-        isOwner: d.origen === 'supabase' && userDespachoIds.has(d.id),
+      const mapped = (data || []).map((d: Record<string, unknown>) => ({
+        id: String(d.id || ''),
+        wordpress_id: d.wordpress_id as number | undefined,
+        nombre: decodeHtmlEntities(String(d.nombre || '')),
+        slug: String(d.slug || ''),
+        num_sedes: Number(d.num_sedes) || 0,
+        localidad: String(d.localidad || ''),
+        provincia: String(d.provincia || ''),
+        telefono: String(d.telefono || ''),
+        email: String(d.email || ''),
+        owner_email: d.owner_email ? String(d.owner_email) : null,
+        origen: d.origen as 'supabase' | 'wordpress',
+        yaImportado: Boolean(d.yaImportado),
+        isOwner: d.origen === 'supabase' && userDespachoIds.has(String(d.id)),
       }));
 
       setDespachos(mapped);
       setTotal(pagination.total || 0);
+      // NO actualizar totalWordPress aquí - se mantiene fijo desde el inicio
     } catch (error) {
       console.error("Error al cargar despachos:", error);
       setError("Error al cargar los despachos. Por favor, intente de nuevo.");
@@ -439,7 +491,7 @@ const VerDespachosPage = () => {
                   Total Despachos
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos ? "..." : total}
+                  {totalWordPress || "..."}
                 </p>
               </div>
               <div className="bg-blue-500 p-3 rounded-lg">
@@ -468,9 +520,7 @@ const VerDespachosPage = () => {
                   Activos
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos
-                    ? "..."
-                    : despachos.filter((d) => d.estado === "activo").length}
+                  {totalActivos}
                 </p>
               </div>
               <div className="bg-green-500 p-3 rounded-lg">
@@ -499,9 +549,7 @@ const VerDespachosPage = () => {
                   Con Propietario
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {loadingDespachos
-                    ? "..."
-                    : despachos.filter((d) => d.owner_email).length}
+                  {totalConPropietario}
                 </p>
               </div>
               <div className="bg-purple-500 p-3 rounded-lg">

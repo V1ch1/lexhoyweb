@@ -25,6 +25,7 @@ export default function MisDespachosPage() {
   const { user } = useAuth();
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Load user's despachos
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function MisDespachosPage() {
       if (!user) return;
       
       try {
+        setLoading(true);
         const response = await fetch(`/api/users/${user.id}/despachos`);
         const data = await response.json();
         if (response.ok) {
@@ -46,7 +48,7 @@ export default function MisDespachosPage() {
           text: 'Error al cargar los despachos. Por favor, inténtalo de nuevo.'
         });
       } finally {
-        // Loading complete
+        setLoading(false);
       }
     };
 
@@ -158,10 +160,35 @@ export default function MisDespachosPage() {
       {/* Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-6">
-          <MisDespachosTab 
-            userDespachos={userDespachos} 
-            onDeleteDespacho={handleDeleteDespacho} 
-          />
+          {loading ? (
+            // Skeleton loading
+            <div className="space-y-6">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-64 mb-6"></div>
+              </div>
+              {[1, 2].map((i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-6 animate-pulse">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-40"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-10 w-24 bg-gray-200 rounded"></div>
+                      <div className="h-10 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <MisDespachosTab 
+              userDespachos={userDespachos} 
+              onDeleteDespacho={handleDeleteDespacho} 
+            />
+          )}
         </div>
       </div>
     </div>

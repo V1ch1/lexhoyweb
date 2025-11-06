@@ -116,6 +116,26 @@ export async function DELETE(
       }
     }
 
+    // Cancelar solicitudes aprobadas para permitir nueva solicitud
+    console.log('🔄 Actualizando solicitudes aprobadas a canceladas');
+    
+    const { error: updateSolicitudError } = await supabase
+      .from('solicitudes_despacho')
+      .update({ 
+        estado: 'cancelada',
+        fecha_respuesta: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('despacho_id', despachoId)
+      .eq('estado', 'aprobado');
+
+    if (updateSolicitudError) {
+      console.error('⚠️ Error al actualizar solicitudes:', updateSolicitudError);
+      // No es crítico, continuar
+    } else {
+      console.log('✅ Solicitudes actualizadas correctamente');
+    }
+
     console.log('✅ Usuario desasignado exitosamente del despacho');
 
     return NextResponse.json(

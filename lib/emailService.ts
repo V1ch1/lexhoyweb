@@ -4,8 +4,10 @@ import { supabase } from "./supabase";
 const FROM_EMAIL = process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL || "notificaciones@lexhoy.com";
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "admin@lexhoy.com";
 
-// URL base de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+// URL base de la API - usar localhost en desarrollo
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:3000'
+  : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
 
 export interface EmailData {
   to: string | string[];

@@ -175,21 +175,49 @@ export async function POST(request: Request) {
 
     const sede = despacho.sedes?.[0] || {};
 
-    // Verificar si ya existe una solicitud pendiente
+    // Verificar si el usuario ya es propietario del despacho
+    const { data: despachoCompleto } = await supabase
+      .from("despachos")
+      .select("owner_email")
+      .eq("id", finalDespachoId)
+      .single();
+
+    if (despachoCompleto?.owner_email === userEmail) {
+      return NextResponse.json(
+        { error: "Ya eres propietario de este despacho" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar si ya tiene acceso a través de user_despachos
+    const { data: userDespacho } = await supabase
+      .from("user_despachos")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("despacho_id", finalDespachoId)
+      .single();
+
+    if (userDespacho) {
+      return NextResponse.json(
+        { error: "Ya tienes acceso a este despacho" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar si ya existe una solicitud pendiente (solo pendientes, no aprobadas)
+    // Las aprobadas se ignoran porque el usuario pudo haberse desasignado
     const { data: existingSolicitud } = await supabase
       .from("solicitudes_despacho")
       .select("id, estado")
       .eq("user_id", user.id)
       .eq("despacho_id", finalDespachoId)
-      .in("estado", ["pendiente", "aprobado"])
+      .eq("estado", "pendiente")
       .single();
 
     if (existingSolicitud) {
       return NextResponse.json(
         { 
-          error: existingSolicitud.estado === "pendiente" 
-            ? "Ya tienes una solicitud pendiente para este despacho" 
-            : "Ya tienes acceso a este despacho",
+          error: "Ya tienes una solicitud pendiente para este despacho",
           solicitudId: existingSolicitud.id,
         },
         { status: 400 }
@@ -225,7 +253,14 @@ export async function POST(request: Request) {
 
     // Notificar a super admins
     try {
-      await fetch(`${request.url.replace(/\/[^/]+$/, "")}/notificar-solicitud`, {
+      // En desarrollo local, usar localhost; en producción usar la URL configurada
+      const baseUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000'
+        : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+      
+      console.log("📧 Enviando notificación a:", `${baseUrl}/api/notificar-solicitud`);
+      
+      const notifResponse = await fetch(`${baseUrl}/api/notificar-solicitud`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -237,6 +272,14 @@ export async function POST(request: Request) {
           despachoProvincia: sede.provincia,
         }),
       });
+
+      if (!notifResponse.ok) {
+        const errorData = await notifResponse.json();
+        console.error("⚠️ Error en respuesta de notificación:", errorData);
+      } else {
+        const responseData = await notifResponse.json();
+        console.log("✅ Notificación enviada correctamente:", responseData);
+      }
     } catch (notifError) {
       console.error("⚠️ Error al notificar:", notifError);
     }
