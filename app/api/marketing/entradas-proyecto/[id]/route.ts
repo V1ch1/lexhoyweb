@@ -5,10 +5,10 @@ import { cookies } from "next/headers";
 // PATCH - Actualizar estado de entrada (solo super_admin)
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const cookieStore = await cookies();
     const authCookie = cookieStore.get("sb-access-token");
 
@@ -133,10 +133,10 @@ export async function PATCH(
 // DELETE - Eliminar entrada (solo super_admin)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const cookieStore = await cookies();
     const authCookie = cookieStore.get("sb-access-token");
 
