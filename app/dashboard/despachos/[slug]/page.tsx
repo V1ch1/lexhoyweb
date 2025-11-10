@@ -180,6 +180,23 @@ export default function DespachoPage() {
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [cambiandoVerificacion, setCambiandoVerificacion] = useState(false);
   const [deletingSede, setDeletingSede] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Obtener el rol del usuario
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        setUserRole(userData?.role || null);
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   useEffect(() => {
     const fetchDespachoData = async () => {
@@ -837,7 +854,8 @@ export default function DespachoPage() {
                 </div>
               </div>
               
-              {/* Controles de Estado y Verificación */}
+              {/* Controles de Estado y Verificación - Solo para Super Admin */}
+              {userRole === 'super_admin' && (
               <div className="px-8 py-5 bg-white border-t border-gray-100">
                 <div className="flex items-center justify-end gap-4">
                   {/* Estado del Despacho */}
@@ -949,6 +967,7 @@ export default function DespachoPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
         {/* Sedes del Despacho */}
