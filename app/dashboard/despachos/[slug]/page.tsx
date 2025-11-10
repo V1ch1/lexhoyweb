@@ -6,13 +6,19 @@ import { supabase } from "@/lib/supabase";
 import Image from 'next/image';
 import { slugify } from "@/lib/slugify";
 import {
+  UserIcon,
   BuildingOfficeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  GlobeAltIcon,
+  MapPinIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  XMarkIcon,
   ArrowLeftIcon,
   CheckCircleIcon,
-  XMarkIcon,
-  PencilIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+} from '@heroicons/react/24/outline';
 
 const AREAS_PRACTICA_DISPONIBLES = [
   'Administrativo', 'Bancario', 'Civil', 'Comercial', 'Concursal', 'Consumo',
@@ -83,16 +89,16 @@ interface Despacho {
   areas_practica?: string[];
   sedes?: Sede[];
   estado?: string;
-  verificado?: boolean;
-  activo?: boolean;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
   foto_perfil?: string;
   direccion?: string;
   redes_sociales?: RedesSociales;
   horarios?: Record<string, string>;
   servicios_adicionales?: string[];
   object_id?: number;
-  updated_at?: string;
+  estado_publicacion?: string;
+  estado_verificacion?: 'pendiente' | 'verificado' | 'rechazado';
 }
 
 interface FormData {
@@ -128,64 +134,6 @@ const decodeHtmlEntities = (text: string): string => {
   return textarea.value;
 };
 
-// Configuración de estados
-const estadosConfig = {
-  activo: { 
-    bg: 'bg-green-100', 
-    text: 'text-green-800', 
-    label: 'Activo',
-    icon: CheckCircleIcon 
-  },
-  inactivo: { 
-    bg: 'bg-yellow-100', 
-    text: 'text-yellow-800', 
-    label: 'Inactivo',
-    icon: ClockIcon
-  },
-  pendiente: { 
-    bg: 'bg-blue-100', 
-    text: 'text-blue-800', 
-    label: 'Pendiente',
-    icon: ClockIcon
-  },
-  rechazado: { 
-    bg: 'bg-red-100', 
-    text: 'text-red-800', 
-    label: 'Rechazado',
-    icon: XMarkIcon
-  },
-  verificado: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    label: 'Verificado',
-    icon: CheckCircleIcon
-  },
-  default: { 
-    bg: 'bg-gray-100', 
-    text: 'text-gray-800', 
-    label: 'Sin estado',
-    icon: ClockIcon
-  }
-} as const;
-
-// Componente para mostrar el estado del despacho
-const EstadoIcon = ({ 
-  estado, 
-  className = '' 
-}: { 
-  estado: string; 
-  className?: string 
-}) => {
-  const config = estadosConfig[estado as keyof typeof estadosConfig] || estadosConfig.default;
-  const Icon = config.icon;
-
-  return (
-    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${config.bg} ${config.text} ${className}`}>
-      <Icon className="h-4 w-4 mr-1.5" />
-      {config.label}
-    </span>
-  );
-};
 
 export default function DespachoPage() {
   const params = useParams();
@@ -229,6 +177,8 @@ export default function DespachoPage() {
   const [formError, setFormError] = useState<string | null>(null); // Error específico del formulario
   const [showDeleteSedeModal, setShowDeleteSedeModal] = useState(false);
   const [sedeToDelete, setSedeToDelete] = useState<Sede | null>(null);
+  const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [cambiandoVerificacion, setCambiandoVerificacion] = useState(false);
   const [deletingSede, setDeletingSede] = useState(false);
 
   useEffect(() => {
@@ -319,8 +269,8 @@ export default function DespachoPage() {
         console.log('📝 Descripción del despacho:', processedDespacho.descripcion);
         console.log('📝 Descripción de la sede:', sedePrincipal?.descripcion);
         console.log('✅ Estado del despacho:', processedDespacho.estado);
-        console.log('✅ Verificado:', processedDespacho.verificado);
-        console.log('✅ Activo:', processedDespacho.activo);
+        console.log('✅ Estado de publicación:', processedDespacho.estado_publicacion);
+        console.log('✅ Estado de verificación:', processedDespacho.estado_verificacion);
         
         // Inicializar el formulario con los datos del despacho, usando la sede principal como fallback
         setFormData({
@@ -439,33 +389,32 @@ export default function DespachoPage() {
       );
       setSedes(sedesActualizadas);
 
-      // Sincronizar con WordPress si el despacho tiene object_id
-      // TEMPORALMENTE DESHABILITADO - Problema de autenticación con WordPress
-      /*
-      if (despacho?.object_id) {
+      // Sincronizar con WordPress (y luego Algolia via plugin)
+      if (despacho?.id) {
         console.log('🔄 Sincronizando cambios con WordPress...');
         try {
-          const syncResponse = await fetch('/api/sync-despacho', {
+          const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              despachoId: despacho.id,
-              objectId: despacho.object_id 
-            })
+            headers: { 'Content-Type': 'application/json' }
           });
 
-          if (syncResponse.ok) {
-            console.log('✅ Sincronizado con WordPress');
+          const syncResult = await syncResponse.json();
+
+          if (syncResult.success) {
+            console.log('✅ Sincronizado con WordPress correctamente');
+            console.log('📝 WordPress actualizará Algolia via plugin');
           } else {
-            console.warn('⚠️ Error al sincronizar con WordPress:', await syncResponse.text());
+            console.warn('⚠️ Advertencia: No se pudo sincronizar con WordPress');
+            console.warn('Los cambios se guardaron en la base de datos pero no en WordPress');
+            console.warn('Detalles:', syncResult.error);
+            // No mostramos error al usuario, solo advertencia en consola
+            // La sincronización se reintentará automáticamente
           }
         } catch (syncError) {
           console.error('❌ Error en sincronización con WordPress:', syncError);
-          // No mostramos error al usuario, solo log
+          // No mostramos error al usuario, la sincronización se reintentará
         }
       }
-      */
-      console.log('ℹ️ Sincronización con WordPress deshabilitada temporalmente');
 
       setSuccess(true);
       setEditingSedeId(null);
@@ -617,6 +566,27 @@ export default function DespachoPage() {
         .update({ num_sedes: sedesActualizadas.length })
         .eq('id', despacho.id);
 
+      // Sincronizar con WordPress (y luego Algolia via plugin)
+      if (despacho?.id) {
+        console.log('🔄 Sincronizando nueva sede con WordPress...');
+        try {
+          const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          const syncResult = await syncResponse.json();
+
+          if (syncResult.success) {
+            console.log('✅ Nueva sede sincronizada con WordPress');
+          } else {
+            console.warn('⚠️ No se pudo sincronizar con WordPress');
+          }
+        } catch (syncError) {
+          console.error('❌ Error en sincronización:', syncError);
+        }
+      }
+
       setSuccess(true);
       setIsCreatingNewSede(false);
       setNewSedeData(null);
@@ -687,12 +657,30 @@ export default function DespachoPage() {
         .update({ num_sedes: sedesActualizadas.length })
         .eq('id', despacho.id);
 
-      // Si estábamos en la sede eliminada, ir a la primera
-      if (activeSedeTab >= sedesActualizadas.length) {
-        setActiveSedeTab(0);
+      // Sincronizar con WordPress (y luego Algolia via plugin)
+      if (despacho?.id) {
+        console.log('🔄 Sincronizando eliminación de sede con WordPress...');
+        try {
+          const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          const syncResult = await syncResponse.json();
+
+          if (syncResult.success) {
+            console.log('✅ Eliminación sincronizada con WordPress');
+          } else {
+            console.warn('⚠️ No se pudo sincronizar con WordPress');
+          }
+        } catch (syncError) {
+          console.error('❌ Error en sincronización:', syncError);
+        }
       }
 
       setSuccess(true);
+      setActiveSedeTab(0); // Ir a la primera sede
+      
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error('Error al eliminar sede:', error);
@@ -774,35 +762,194 @@ export default function DespachoPage() {
 
       {/* Contenido principal */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con nombre del despacho, estado y fecha */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {decodeHtmlEntities(formData.nombre)}
-                </h1>
+        <div className="w-full space-y-6">
+            {/* Header con nombre del despacho, badges y controles */}
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              {/* Nombre y Badges */}
+              <div className="px-8 py-6 border-b border-gray-200 bg-white">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2 truncate">
+                      {decodeHtmlEntities(formData.nombre)}
+                    </h1>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Creado el {new Date(despacho?.created_at || '').toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Badges de Estado */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {/* Badge de Verificación */}
+                    {despacho?.estado_verificacion === 'verificado' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-800 border-2 border-emerald-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Verificado
+                      </span>
+                    )}
+                    {despacho?.estado_verificacion === 'pendiente' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 border-2 border-amber-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pendiente
+                      </span>
+                    )}
+                    {despacho?.estado_verificacion === 'rechazado' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-red-100 text-red-800 border-2 border-red-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Rechazado
+                      </span>
+                    )}
+                    
+                    {/* Badge de Estado de Publicación */}
+                    {despacho?.estado_publicacion === 'publish' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-800 border-2 border-green-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
+                        </svg>
+                        Publicado
+                      </span>
+                    )}
+                    {despacho?.estado_publicacion === 'draft' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border-2 border-blue-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Borrador
+                      </span>
+                    )}
+                    {despacho?.estado_publicacion === 'trash' && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-red-100 text-red-800 border-2 border-red-200 shadow-sm">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Papelera
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                <span>Creado el {new Date(despacho?.created_at || '').toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+              
+              {/* Controles de Estado y Verificación */}
+              <div className="px-8 py-5 bg-white border-t border-gray-100">
+                <div className="flex items-center justify-end gap-4">
+                  {/* Estado del Despacho */}
+                  <div className="group relative">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-2">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Estado del Despacho
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={despacho?.estado_publicacion || 'publish'}
+                        disabled={cambiandoEstado}
+                        onChange={async (e) => {
+                          const nuevoEstado = e.target.value;
+                          if (nuevoEstado === 'trash' && !confirm('¿Estás seguro de que deseas mover este despacho a la papelera?')) {
+                            e.target.value = despacho?.estado_publicacion || 'publish';
+                            return;
+                          }
+                          
+                          setCambiandoEstado(true);
+                          try {
+                            const response = await fetch(`/api/despachos/${despacho.id}/estado`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ estado: nuevoEstado }),
+                            });
+                            
+                            if (response.ok) {
+                              window.location.reload();
+                            } else {
+                              alert('Error al cambiar el estado');
+                              setCambiandoEstado(false);
+                            }
+                          } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error al cambiar el estado');
+                            setCambiandoEstado(false);
+                          }
+                        }}
+                        className="block w-auto min-w-[180px] rounded-lg border border-gray-200 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200 text-sm py-2 px-3 pr-9 bg-white hover:border-gray-300 hover:shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="publish">✅ Publicado</option>
+                        <option value="draft">📝 Borrador</option>
+                        <option value="trash">🗑️ Papelera</option>
+                      </select>
+                      {cambiandoEstado && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg className="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Estado de Verificación */}
+                  <div className="group relative">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-2">
+                      <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Estado de Verificación
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={despacho?.estado_verificacion || 'pendiente'}
+                        disabled={cambiandoVerificacion}
+                        onChange={async (e) => {
+                          const estado_verificacion = e.target.value;
+                          
+                          setCambiandoVerificacion(true);
+                          try {
+                            const response = await fetch(`/api/despachos/${despacho.id}/verificacion`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ estado_verificacion }),
+                            });
+                            
+                            if (response.ok) {
+                              window.location.reload();
+                            } else {
+                              alert('Error al cambiar la verificación');
+                              setCambiandoVerificacion(false);
+                            }
+                          } catch (error) {
+                            console.error('Error:', error);
+                            alert('Error al cambiar la verificación');
+                            setCambiandoVerificacion(false);
+                          }
+                        }}
+                        className="block w-auto min-w-[180px] rounded-lg border border-gray-200 shadow-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all duration-200 text-sm py-2 px-3 pr-9 bg-white hover:border-gray-300 hover:shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="pendiente">⏳ Pendiente</option>
+                        <option value="verificado">✅ Verificado</option>
+                        <option value="rechazado">❌ Rechazado</option>
+                      </select>
+                      {cambiandoVerificacion && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg className="animate-spin h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <EstadoIcon estado={despacho?.estado || 'activo'} />
-              {despacho?.verificado || sedes?.some(sede => sede.es_principal && sede.is_verified) ? (
-                <div className="flex items-center text-sm text-green-600">
-                  <CheckCircleIcon className="h-4 w-4 mr-1" />
-                  <span>Verificado</span>
-                </div>
-              ) : (
-                <div className="flex items-center text-sm text-gray-500">
-                  <ClockIcon className="h-4 w-4 mr-1" />
-                  <span>No verificado</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Sedes del Despacho */}
         {sedes && sedes.length > 0 && (
@@ -1916,6 +2063,9 @@ export default function DespachoPage() {
           </div>
         )}
       </div>
+      {/* Fin contenedor principal */}
+      </div>
+      {/* Fin contenedor principal wrapper */}
 
       {/* Modal de confirmación para eliminar sede */}
       {showDeleteSedeModal && sedeToDelete && (

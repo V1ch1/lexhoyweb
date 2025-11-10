@@ -337,8 +337,10 @@ export class SyncService {
 
   /**
    * Envía un despacho desde Next.js a WordPress
+   * @param despachoId - ID del despacho en Supabase
+   * @param forzarEstado - Si es true, usa el estado de Supabase. Si es false, mantiene el de WordPress
    */
-  static async enviarDespachoAWordPress(despachoId: string) {
+  static async enviarDespachoAWordPress(despachoId: string, forzarEstado: boolean = false) {
     try {
       console.log('🔄 Enviando despacho a WordPress:', despachoId);
 
@@ -354,16 +356,35 @@ export class SyncService {
       }
 
       // Preparar payload para WordPress con TODOS los campos
+      // Usar estado_publicacion si existe, sino usar activo
+      const estadoInicial = despacho.estado_publicacion || (despacho.activo ? 'publish' : 'draft');
+      
+      // Obtener la descripción de la sede principal o la primera sede
+      const sedePrincipal = despacho.sedes?.find((s: Sede) => s.es_principal) || despacho.sedes?.[0];
+      let descripcionFinal = despacho.descripcion || sedePrincipal?.descripcion || '';
+      
+      // IMPORTANTE: WordPress necesita contenido para renderizar correctamente
+      // Si no hay descripción, crear una básica con la información del despacho
+      if (!descripcionFinal || descripcionFinal.trim() === '') {
+        descripcionFinal = `<p>${despacho.nombre} es un despacho de abogados ubicado en ${sedePrincipal?.localidad || ''}, ${sedePrincipal?.provincia || ''}.</p>`;
+        if (sedePrincipal?.areas_practica && sedePrincipal.areas_practica.length > 0) {
+          descripcionFinal += `<p>Especializado en: ${sedePrincipal.areas_practica.join(', ')}.</p>`;
+        }
+      }
+      
       const payload = {
         title: despacho.nombre,
-        content: despacho.descripcion || '',
+        content: descripcionFinal,
         slug: despacho.slug,
-        status: despacho.activo ? 'publish' : 'draft',
+        status: estadoInicial,
         meta: {
           localidad: despacho.sedes?.[0]?.localidad || '',
           provincia: despacho.sedes?.[0]?.provincia || '',
           telefono: despacho.sedes?.[0]?.telefono || '',
           email_contacto: despacho.sedes?.[0]?.email_contacto || '',
+          // Campo de verificación con el nombre correcto que WordPress espera
+          _despacho_estado_verificacion: despacho.estado_verificacion || 'pendiente',
+          _despacho_is_verified: (despacho.estado_verificacion === 'verificado') ? '1' : '0',
           _despacho_sedes: despacho.sedes?.map((sede: Sede) => {
             // Construir dirección completa desde campos separados
             const direccionPartes = [
@@ -375,35 +396,35 @@ export class SyncService {
             ].filter(Boolean);
             
             return {
-              nombre: sede.nombre,
-              descripcion: sede.descripcion,
-              localidad: sede.localidad,
-              provincia: sede.provincia,
-              pais: sede.pais,
+              nombre: sede.nombre || '',
+              descripcion: sede.descripcion || '',
+              localidad: sede.localidad || '',
+              provincia: sede.provincia || '',
+              pais: sede.pais || 'España',
               direccion: direccionPartes.join(', '),
-              calle: sede.calle,
-              numero: sede.numero,
-              piso: sede.piso,
-              codigo_postal: sede.codigo_postal,
-              telefono: sede.telefono,
-              email: sede.email_contacto,
-              email_contacto: sede.email_contacto,
-              web: sede.web,
-              persona_contacto: sede.persona_contacto,
-              ano_fundacion: sede.ano_fundacion,
-              tamano_despacho: sede.tamano_despacho,
-              numero_colegiado: sede.numero_colegiado,
-              colegio: sede.colegio,
-              experiencia: sede.experiencia,
-              areas_practica: sede.areas_practica,
-              especialidades: sede.especialidades,
-              servicios_especificos: sede.servicios_especificos,
-              foto_perfil: sede.foto_perfil,
-              logo: sede.foto_perfil,
-              horarios: sede.horarios,
-              redes_sociales: sede.redes_sociales,
-              observaciones: sede.observaciones,
-              es_principal: sede.es_principal,
+              calle: sede.calle || '',
+              numero: sede.numero || '',
+              piso: sede.piso || '',
+              codigo_postal: sede.codigo_postal || '',
+              telefono: sede.telefono || '',
+              email: sede.email_contacto || '',
+              email_contacto: sede.email_contacto || '',
+              web: sede.web || '',
+              persona_contacto: sede.persona_contacto || '',
+              ano_fundacion: sede.ano_fundacion || null,
+              tamano_despacho: sede.tamano_despacho || '',
+              numero_colegiado: sede.numero_colegiado || '',
+              colegio: sede.colegio || '',
+              experiencia: sede.experiencia || '',
+              areas_practica: sede.areas_practica || [],
+              especialidades: sede.especialidades || '',
+              servicios_especificos: sede.servicios_especificos || '',
+              foto_perfil: sede.foto_perfil || null,
+              logo: sede.foto_perfil || null,
+              horarios: sede.horarios || {},
+              redes_sociales: sede.redes_sociales || {},
+              observaciones: sede.observaciones || '',
+              es_principal: sede.es_principal || false,
             };
           }) || [],
         },
@@ -423,10 +444,66 @@ export class SyncService {
       console.log('📝 Payload a enviar:', JSON.stringify(payload, null, 2));
 
       let wpResponse;
+      let objectIdToUse = despacho.object_id;
+      let currentWpPost = null;
       
-      if (despacho.object_id) {
+      // Si no tiene object_id, buscar en WordPress por slug
+      if (!objectIdToUse && despacho.slug) {
+        console.log('🔍 Buscando despacho en WordPress por slug:', despacho.slug);
+        
+        const searchResponse = await fetch(
+          `https://lexhoy.com/wp-json/wp/v2/despacho?slug=${despacho.slug}`,
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+            },
+          }
+        );
+        
+        if (searchResponse.ok) {
+          const searchResults = await searchResponse.json();
+          if (searchResults && searchResults.length > 0) {
+            objectIdToUse = searchResults[0].id;
+            currentWpPost = searchResults[0];
+            console.log('✅ Despacho encontrado en WordPress con ID:', objectIdToUse);
+            console.log('📊 Estado actual en WordPress:', currentWpPost.status);
+            
+            // Guardar el object_id en Supabase para futuras sincronizaciones
+            await supabase
+              .from('despachos')
+              .update({ object_id: objectIdToUse })
+              .eq('id', despachoId);
+          }
+        }
+      }
+      
+      // Obtener el estado actual si el despacho existe en WordPress
+      // Solo mantener el estado de WordPress si NO estamos forzando el estado
+      if (objectIdToUse && !forzarEstado) {
+        console.log('🔍 Obteniendo estado actual del despacho en WordPress...');
+        const postResponse = await fetch(
+          `https://lexhoy.com/wp-json/wp/v2/despacho/${objectIdToUse}`,
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+            },
+          }
+        );
+        
+        if (postResponse.ok) {
+          currentWpPost = await postResponse.json();
+          console.log('📊 Estado actual en WordPress:', currentWpPost.status);
+          // Mantener el estado actual
+          payload.status = currentWpPost.status;
+          console.log('✅ Manteniendo estado:', currentWpPost.status);
+        }
+      } else if (forzarEstado) {
+        console.log('🔄 Forzando estado desde Supabase:', payload.status);
+      }
+      
+      if (objectIdToUse) {
         // Actualizar despacho existente
-        const url = `https://lexhoy.com/wp-json/wp/v2/despacho/${despacho.object_id}`;
+        const url = `https://lexhoy.com/wp-json/wp/v2/despacho/${objectIdToUse}?force=true`;
         console.log('🔄 URL de actualización:', url);
         
         wpResponse = await fetch(url, {
@@ -441,6 +518,7 @@ export class SyncService {
         console.log('📊 Respuesta de WordPress:', wpResponse.status, wpResponse.statusText);
       } else {
         // Crear nuevo despacho
+        console.log('➕ Creando nuevo despacho en WordPress');
         wpResponse = await fetch(
           'https://lexhoy.com/wp-json/wp/v2/despacho',
           {
