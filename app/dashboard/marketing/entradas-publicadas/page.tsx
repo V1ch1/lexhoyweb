@@ -96,9 +96,7 @@ export default function EntradasPublicadasPage() {
       
       // Debug
       if (reset) {
-        console.log(`📊 Categoría: ${categoriaParam}, Entradas: ${data.entradas.length}, Total: ${data.pagination?.total}`);
-        console.log("📄 Paginación:", data.pagination);
-      }
+        }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {

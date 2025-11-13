@@ -15,8 +15,6 @@ export async function POST(request: Request) {
       despachoProvincia,
     } = body;
 
-    console.log("📬 Notificando solicitud de despacho:", solicitudId);
-
     // 1. Obtener todos los super_admin
     const { data: superAdmins, error: adminError } = await supabase
       .from("users")
@@ -35,8 +33,6 @@ export async function POST(request: Request) {
         { status: 200 }
       );
     }
-
-    console.log(`📧 Enviando notificaciones a ${superAdmins.length} super_admins`);
 
     // 2. Crear notificaciones para todos los super_admins
     const adminIds = superAdmins.map((admin) => admin.id);
@@ -59,8 +55,6 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log(`✅ ${adminIds.length} notificaciones creadas`);
-
     // 3. Enviar emails a todos los super_admins
     const emailPromises = superAdmins.map((admin) =>
       EmailService.send({
@@ -81,8 +75,6 @@ export async function POST(request: Request) {
     );
 
     await Promise.all(emailPromises);
-    console.log(`✅ ${superAdmins.length} emails enviados`);
-
     return NextResponse.json(
       {
         message: "Notificaciones y emails enviados correctamente",

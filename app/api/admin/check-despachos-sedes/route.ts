@@ -11,8 +11,6 @@ const supabase = createClient(
  */
 export async function POST() {
   try {
-    console.log('🔍 Verificando sedes de despachos...');
-
     // Obtener despachos con owner_email = blancocasal@gmail.com
     const { data: despachos, error: despachosError } = await supabase
       .from('despachos')
@@ -22,8 +20,6 @@ export async function POST() {
     if (despachosError) {
       throw despachosError;
     }
-
-    console.log(`📊 Encontrados ${despachos.length} despachos`);
 
     const results = [];
 
@@ -47,8 +43,7 @@ export async function POST() {
         tiene_sedes: (sedes?.length || 0) > 0
       });
 
-      console.log(`📍 ${despacho.nombre}: ${sedes?.length || 0} sedes`);
-    }
+      }
 
     return NextResponse.json({
       success: true,

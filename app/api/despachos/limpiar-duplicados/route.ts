@@ -51,8 +51,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { dryRun = true } = body;
 
-    console.log(`🔍 Buscando duplicados (dryRun: ${dryRun})...`);
-
     // 1. Buscar duplicados por wordpress_id
     const { data: todosDespachos } = await supabase
       .from('despachos')
@@ -102,11 +100,6 @@ export async function POST(request: Request) {
     const duplicadosSlug = Object.entries(duplicadosPorSlug)
       .filter(([, despachos]) => despachos.length > 1);
 
-    console.log(`📊 Duplicados encontrados:`);
-    console.log(`  - Por wordpress_id: ${duplicadosWpId.length} grupos`);
-    console.log(`  - Por nombre: ${duplicadosNombre.length} grupos`);
-    console.log(`  - Por slug: ${duplicadosSlug.length} grupos`);
-
     const acciones: Array<{
       tipo: string;
       mantener: string;
@@ -130,8 +123,6 @@ export async function POST(request: Request) {
       if (!dryRun) {
         // Eliminar duplicados
         for (const duplicado of eliminar) {
-          console.log(`🗑️ Eliminando duplicado: ${duplicado.id} (${duplicado.nombre})`);
-          
           // Eliminar sedes asociadas
           await supabase
             .from('sedes')
@@ -165,8 +156,6 @@ export async function POST(request: Request) {
 
         if (!dryRun) {
           for (const duplicado of eliminar) {
-            console.log(`🗑️ Eliminando duplicado por nombre: ${duplicado.id}`);
-            
             await supabase
               .from('sedes')
               .delete()

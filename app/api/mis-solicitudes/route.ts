@@ -24,8 +24,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Usuario no válido" }, { status: 401 });
     }
 
-    console.log('📊 Obteniendo solicitudes para usuario:', user.id);
-
     // Obtener solicitudes del usuario
     const { data: solicitudes, error } = await supabase
       .from('solicitudes_despacho')
@@ -40,8 +38,6 @@ export async function GET(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log('✅ Solicitudes encontradas:', solicitudes?.length || 0);
 
     return NextResponse.json(solicitudes || [], { status: 200 });
     

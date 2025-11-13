@@ -29,16 +29,6 @@ function ConfirmPageContent() {
         const error_description = searchParams.get("error_description");
         const confirmationUrl = window.location.href;
 
-        console.log("🔍 Parámetros de confirmación:", {
-          token_hash,
-          type,
-          error,
-          error_description,
-          url: confirmationUrl,
-          allParams: Object.fromEntries(searchParams.entries()),
-          hash: window.location.hash,
-        });
-
         // Si hay un error en los parámetros, mostrarlo
         if (error) {
           console.error("❌ Error en URL:", error, error_description);
@@ -49,7 +39,6 @@ function ConfirmPageContent() {
 
         // Intentar diferentes métodos de confirmación
         if (token_hash && type) {
-          console.log("Usando verifyOtp con token_hash");
           const { error } = await supabase.auth.verifyOtp({
             token_hash,
             type: type as "signup" | "recovery" | "email_change",
@@ -65,8 +54,6 @@ function ConfirmPageContent() {
         }
         // Intentar con el hash de la URL (formato legacy)
         else if (window.location.hash) {
-          console.log("Intentando con hash de URL:", window.location.hash);
-
           try {
             // Parsear el hash como parámetros
             const hashParams = new URLSearchParams(
@@ -97,7 +84,6 @@ function ConfirmPageContent() {
             setMessage("Enlace de confirmación inválido");
           }
         } else {
-          console.log("No se encontraron parámetros válidos");
           setStatus("error");
           setMessage(
             "Enlace de confirmación inválido. Faltan parámetros requeridos."
@@ -145,10 +131,7 @@ function ConfirmPageContent() {
               plan: "basico",
             });
 
-            console.log(
-              "✅ Usuario creado en la base de datos después de confirmación"
-            );
-          } else {
+            } else {
             // Si el usuario ya existe, actualizar su estado a activo
             await supabase
               .from("users")
@@ -159,10 +142,7 @@ function ConfirmPageContent() {
               })
               .eq("id", user.id);
 
-            console.log(
-              "✅ Usuario actualizado a estado activo después de confirmación"
-            );
-          }
+            }
         }
       } catch (dbError) {
         console.error("Error creating user in database:", dbError);

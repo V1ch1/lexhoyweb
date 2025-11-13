@@ -37,7 +37,6 @@ import { slugify } from "@/lib/slugify";
 // ...existing code...
 import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress";
 
-
 const VerDespachosPage = () => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -226,8 +225,6 @@ const VerDespachosPage = () => {
       if (!response.ok) {
         throw new Error(result.error || "Error al procesar solicitud");
       }
-
-      console.log("✅ Solicitud procesada:", result);
 
       // Actualizar el estado de solicitudes pendientes
       actualizarSolicitudesPendientes(result.despachoId);

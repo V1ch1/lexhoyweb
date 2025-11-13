@@ -24,20 +24,7 @@ import { LocalDespachoWP, BuscadorDespachosProps } from "@/types/despachos";
  *     // Lógica de importación
  *     return { success: true };
  *   }}
- *   onClose={() => console.log('Buscador cerrado')}
- * />
- * ```
- *
- * @param {BuscadorDespachosProps} props - Propiedades del componente
- * @returns {JSX.Element} Componente de búsqueda de despachos
- */
-export default function BuscadorDespachosWordpress({
-  onImport,
-  onClose,
-  onImportSuccess,
-}: BuscadorDespachosProps) {
-  const [query, setQuery] = useState("");
-  // Estado para la paginación
+ *   onClose={() => // Estado para la paginación
   const [pagination, setPagination] = useState({
     page: 1,
     perPage: 10,
@@ -86,8 +73,6 @@ export default function BuscadorDespachosWordpress({
       setImportSummary(null);
 
       try {
-        console.log("🔍 Buscando despacho:", { query, page, filters });
-
         // Construir los parámetros de búsqueda
         const params = new URLSearchParams({
           query: query || "",
@@ -111,8 +96,6 @@ export default function BuscadorDespachosWordpress({
         }
 
         const response: BusquedaDespachosResponse = await res.json();
-        console.log("📊 Resultados:", response);
-
         // Actualizar la paginación con la respuesta del servidor
         const paginationData = response.pagination || {
           page,
@@ -276,10 +259,6 @@ export default function BuscadorDespachosWordpress({
         }
       } else {
         // Comportamiento por defecto si no hay manejador personalizado
-        console.log(
-          "🔄 [Importar] Iniciando importación del despacho:",
-          objectId
-        );
         const response = await fetch("/api/despachos/wordpress/importar", {
           method: "POST",
           headers: {
@@ -291,7 +270,6 @@ export default function BuscadorDespachosWordpress({
         const data = await response.json();
 
         if (data.success) {
-          console.log("✅ [Importar] Despacho importado correctamente:", data);
           toast.success("Despacho importado correctamente");
           // Actualizar el estado de importados
           setImportedOffices((prev) => new Set(prev).add(objectId));

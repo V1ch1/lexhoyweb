@@ -19,8 +19,6 @@ export async function PUT(
     const { id: despachoId } = await context.params;
     const { estado_verificacion } = await request.json();
 
-    console.log('🔄 Cambiando verificación del despacho:', despachoId, 'a:', estado_verificacion);
-
     // Validar que el estado sea válido
     if (!['pendiente', 'verificado', 'rechazado'].includes(estado_verificacion)) {
       return NextResponse.json(
@@ -43,15 +41,11 @@ export async function PUT(
       );
     }
 
-    console.log('✅ Verificación actualizada en Supabase');
-
     // Sincronizar con WordPress
-    console.log('🔄 Sincronizando verificación con WordPress...');
     try {
       const { SyncService } = await import('@/lib/syncService');
       await SyncService.enviarDespachoAWordPress(despachoId, false);
-      console.log('✅ Verificación sincronizada con WordPress');
-    } catch (syncError) {
+      } catch (syncError) {
       console.error('⚠️ Error al sincronizar con WordPress:', syncError);
       // No fallar la petición si la sincronización falla
     }

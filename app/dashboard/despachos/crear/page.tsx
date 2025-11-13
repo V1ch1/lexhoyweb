@@ -1043,14 +1043,10 @@ export default function CrearDespachoPage() {
 
                                   // Mostrar información original
                                   const originalInfo = await ImageOptimizer.getImageInfo(file);
-                                  console.log(`📸 Imagen original: ${originalInfo.width}x${originalInfo.height}, ${ImageOptimizer.formatFileSize(originalInfo.size)}`);
-
                                   // Optimizar imagen manteniendo proporción
                                   const optimized = await ImageOptimizer.optimizeProfileImage(file);
                                   
                                   const reduction = ((originalInfo.size - optimized.size) / originalInfo.size * 100).toFixed(1);
-                                  console.log(`✨ Imagen optimizada: ${optimized.width}x${optimized.height}, ${ImageOptimizer.formatFileSize(optimized.size)} (reducida ${reduction}%), ${optimized.format}`);
-
                                   // Usar la imagen optimizada
                                   handleSedeChange(
                                     index,

@@ -61,8 +61,6 @@ export class SedeService {
    */
   static async crearSede(sedeData: SedeInput): Promise<{ success: boolean; data?: Sede; error?: string }> {
     try {
-      console.log('📝 Creando nueva sede:', sedeData.nombre);
-
       // Validar datos
       const validation = this.validarSede(sedeData);
       if (!validation.valid) {
@@ -109,8 +107,6 @@ export class SedeService {
         console.error('❌ Error al crear sede:', error);
         throw error;
       }
-
-      console.log('✅ Sede creada exitosamente:', data.id);
 
       // Incrementar contador de sedes en despacho
       await this.incrementarNumSedes(sedeData.despacho_id);
@@ -162,8 +158,6 @@ export class SedeService {
     sedeData: Partial<SedeInput>
   ): Promise<{ success: boolean; data?: Sede; error?: string }> {
     try {
-      console.log('🔄 Actualizando sede:', sedeId);
-
       const { data, error } = await supabase
         .from('sedes')
         .update({
@@ -175,8 +169,6 @@ export class SedeService {
         .single();
 
       if (error) throw error;
-
-      console.log('✅ Sede actualizada exitosamente');
 
       return {
         success: true,
@@ -196,8 +188,6 @@ export class SedeService {
    */
   static async eliminarSede(sedeId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🗑️ Eliminando sede:', sedeId);
-
       // Obtener información de la sede para validaciones
       const { data: sede } = await supabase
         .from('sedes')
@@ -229,8 +219,6 @@ export class SedeService {
         .eq('id', sedeId);
 
       if (error) throw error;
-
-      console.log('✅ Sede eliminada exitosamente');
 
       // Decrementar contador de sedes en despacho
       await this.decrementarNumSedes(sede.despacho_id);
@@ -372,8 +360,7 @@ export class SedeService {
           .update({ num_sedes: nuevoNumSedes })
           .eq('id', despachoId);
         
-        console.log(`✅ Contador de sedes incrementado a ${nuevoNumSedes}`);
-      }
+        }
     } catch (error) {
       console.error('❌ Error al incrementar num_sedes:', error);
     }
@@ -398,8 +385,7 @@ export class SedeService {
           .update({ num_sedes: nuevoNumSedes })
           .eq('id', despachoId);
         
-        console.log(`✅ Contador de sedes decrementado a ${nuevoNumSedes}`);
-      }
+        }
     } catch (error) {
       console.error('❌ Error al decrementar num_sedes:', error);
     }

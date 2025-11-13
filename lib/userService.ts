@@ -481,7 +481,6 @@ export class UserService {
       if (userError) throw userError;
 
       // 2. Obtener despachos de user_despachos (asignaciones manuales)
-      console.log("🔍 Buscando asignaciones para user_id:", userId);
       const { data: assignedDespachos, error: assignedError } = await supabase
         .from("user_despachos")
         .select("*")
@@ -492,9 +491,6 @@ export class UserService {
         console.error("❌ Error obteniendo asignaciones:", assignedError);
         throw assignedError;
       }
-
-      console.log("📋 Asignaciones encontradas:", assignedDespachos);
-      console.log("📊 Total asignaciones:", assignedDespachos?.length || 0);
 
       // 2b. Para cada asignación, obtener los datos del despacho
       const assignedDespachosWithData = await Promise.all(
@@ -511,8 +507,6 @@ export class UserService {
           };
         })
       );
-
-      console.log("📋 Asignaciones con datos:", assignedDespachosWithData);
 
       // 3. Obtener despachos donde el usuario es propietario (owner_email)
       const { data: ownedDespachos, error: ownedError } = await supabase
@@ -581,7 +575,6 @@ export class UserService {
 
     // Si ya existe, actualizar en lugar de insertar
     if (existing) {
-      console.log("⚠️ Asignación ya existe, actualizando...");
       const { data, error } = await supabase
         .from("user_despachos")
         .update({
@@ -622,8 +615,6 @@ export class UserService {
     despachoId: string
   ): Promise<void> {
     try {
-      console.log("🗑️ Eliminando propiedad/asignación:", { userId, despachoId });
-
       // 1. Obtener email del usuario
       const { data: userData, error: userError } = await supabase
         .from("users")
@@ -643,8 +634,7 @@ export class UserService {
       if (unassignError) {
         console.warn("⚠️ No se encontró asignación manual:", unassignError);
       } else {
-        console.log("✅ Asignación manual desactivada");
-      }
+        }
 
       // 3. Eliminar owner_email del despacho (si el usuario es propietario)
       const { error: ownerError } = await supabase
@@ -656,11 +646,9 @@ export class UserService {
       if (ownerError) {
         console.warn("⚠️ No se pudo eliminar owner_email:", ownerError);
       } else {
-        console.log("✅ Propiedad (owner_email) eliminada");
-      }
+        }
 
-      console.log("✅ Propiedad/asignación eliminada correctamente");
-    } catch (error) {
+      } catch (error) {
       console.error("❌ Error en unassignDespachoFromUser:", error);
       throw error;
     }
@@ -899,27 +887,12 @@ export class UserService {
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    console.log(
-      "[getCurrentUserWithDespachos] Resultado supabase.auth.getUser:",
-      authUser
-    );
     if (!authUser) return null;
 
     const user = await this.getUserById(authUser.id);
-    console.log(
-      "[getCurrentUserWithDespachos] Buscando en tabla users con id:",
-      authUser.id,
-      "Resultado:",
-      user
-    );
     if (!user) return null;
 
     const despachos = await this.getUserDespachos(user.id);
-    console.log(
-      "[getCurrentUserWithDespachos] Despachos encontrados:",
-      despachos
-    );
-
     return { user, despachos };
   }
 
@@ -955,8 +928,6 @@ export class UserService {
         throw despachosError;
       }
 
-      console.log("🔍 DEBUG despachos activos:", activeDespachos);
-
       // Total de leads
       const { count: totalLeads, error: leadsError } = await supabase
         .from("leads")
@@ -966,8 +937,6 @@ export class UserService {
         console.error("🔍 ERROR leads:", leadsError);
         throw leadsError;
       }
-
-      console.log("🔍 DEBUG total leads:", totalLeads);
 
       // Usuarios por rol
       const { data: roleData, error: roleError } = await supabase
@@ -1079,10 +1048,6 @@ export class UserService {
    */
   async updateUserRole(userId: string, newRole: UserRole): Promise<void> {
     try {
-      console.log(
-        `🔄 Intentando actualizar usuario ${userId} a rol: ${newRole}`
-      );
-
       // Primero verificar que el usuario existe
       const { data: existingUser, error: checkError } = await supabase
         .from("users")
@@ -1098,10 +1063,6 @@ export class UserService {
       if (!existingUser) {
         throw new Error("Usuario no encontrado");
       }
-
-      console.log(
-        `👤 Usuario encontrado: ${existingUser.email}, rol actual: ${existingUser.rol}`
-      );
 
       // Actualización simple - SOLO campos básicos que sabemos que existen
       const { data, error } = await supabase
@@ -1130,11 +1091,7 @@ export class UserService {
         );
       }
 
-      console.log(
-        `✅ Usuario ${userId} actualizado correctamente a rol: ${newRole}`
-      );
-      console.log(`✅ Datos actualizados:`, data[0]);
-    } catch (error) {
+      } catch (error) {
       console.error("❌ Error en updateUserRole:", error);
       throw error;
     }
@@ -1211,8 +1168,6 @@ export class UserService {
     approvedBy: string,
     notas?: string
   ): Promise<void> {
-    console.log("🔄 Aprobando solicitud:", solicitudId);
-    
     // Obtener la solicitud
     const { data: solicitud, error: solicitudError } = await supabase
       .from("solicitudes_despacho")
@@ -1225,13 +1180,8 @@ export class UserService {
       throw solicitudError;
     }
     
-    console.log("📋 Solicitud obtenida:", solicitud);
-
     const objectId = solicitud.despacho_id;
-    console.log("📋 Despacho solicitado - object_id:", objectId);
-
     // Obtener el despacho por su ID
-    console.log("🔍 Buscando despacho en Supabase con ID:", objectId);
     const { data: despachoData, error: despachoError } = await supabase
       .from("despachos")
       .select("id")
@@ -1252,7 +1202,6 @@ export class UserService {
           throw new Error(`No se pudo importar el despacho con object_id ${objectId}`);
         }
         
-        console.log("✅ Despacho importado correctamente, ID:", importedDespacho.id);
         despacho = { id: importedDespacho.id };
       } catch (importError) {
         console.error("❌ Error importando despacho:", importError);
@@ -1261,11 +1210,9 @@ export class UserService {
         );
       }
     } else {
-      console.log("✅ Despacho encontrado en Supabase, ID:", despacho.id);
-    }
+      }
 
     // Cambiar rol del usuario a despacho_admin
-    console.log("👤 Cambiando rol del usuario a despacho_admin");
     const { error: roleError } = await supabase
       .from("users")
       .update({ rol: "despacho_admin" })
@@ -1274,21 +1221,16 @@ export class UserService {
     if (roleError) {
       console.error("⚠️ Error cambiando rol:", roleError);
     } else {
-      console.log("✅ Rol actualizado a despacho_admin");
-    }
+      }
 
     // Asignar despacho al usuario usando el ID numérico de Supabase
-    console.log("🔗 Asignando despacho al usuario:", solicitud.user_id);
     await this.assignDespachoToUser(
       solicitud.user_id,
       despacho.id.toString(), // Convertir a string para consistencia
       approvedBy
     );
     
-    console.log("✅ Despacho asignado correctamente");
-
     // Actualizar owner_email en la tabla despachos
-    console.log("📧 Actualizando owner_email del despacho");
     const { error: ownerError } = await supabase
       .from("despachos")
       .update({ owner_email: solicitud.user_email })
@@ -1297,11 +1239,9 @@ export class UserService {
     if (ownerError) {
       console.error("⚠️ Error actualizando owner_email:", ownerError);
     } else {
-      console.log("✅ owner_email actualizado correctamente");
-    }
+      }
 
     // Actualizar solicitud
-    console.log("📝 Actualizando estado de solicitud a 'aprobado'");
     const { error: updateError } = await supabase
       .from("solicitudes_despacho")
       .update({
@@ -1317,8 +1257,6 @@ export class UserService {
       throw updateError;
     }
     
-    console.log("✅ Solicitud aprobada exitosamente");
-
     // Crear notificación para el usuario
     try {
       const { NotificationService } = await import("./notificationService");
@@ -1334,8 +1272,7 @@ export class UserService {
           despachoNombre: solicitud.despacho_nombre,
         },
       });
-      console.log("✅ Notificación creada para el usuario");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error creando notificación:", error);
     }
 
@@ -1392,8 +1329,7 @@ export class UserService {
           </div>
         `,
       });
-      console.log("✅ Email de aprobación enviado al usuario");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error enviando email:", error);
     }
   }
@@ -1406,8 +1342,6 @@ export class UserService {
     rejectedBy: string,
     notas: string
   ): Promise<void> {
-    console.log("❌ Rechazando solicitud:", solicitudId);
-
     // Obtener la solicitud primero
     const { data: solicitud, error: solicitudError } = await supabase
       .from("solicitudes_despacho")
@@ -1436,8 +1370,6 @@ export class UserService {
       throw error;
     }
 
-    console.log("✅ Solicitud rechazada");
-
     // Crear notificación para el usuario
     try {
       const { NotificationService } = await import("./notificationService");
@@ -1453,8 +1385,7 @@ export class UserService {
           motivoRechazo: notas,
         },
       });
-      console.log("✅ Notificación creada para el usuario");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error creando notificación:", error);
     }
 
@@ -1474,8 +1405,7 @@ export class UserService {
           },
         }),
       });
-      console.log("✅ Email enviado al usuario");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error enviando email:", error);
     }
   }
@@ -1484,13 +1414,9 @@ export class UserService {
    * Importar un despacho desde la API de Lexhoy.com usando su object_id
    */
   async importDespachoFromAPI(objectId: string): Promise<{ id: number } | null> {
-    console.log("🔄 Importando despacho desde API, object_id:", objectId);
-    
     try {
       // Llamar a la API de Lexhoy.com para obtener los datos del despacho
       const apiUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`;
-      console.log("📡 Llamando a API:", apiUrl);
-      
       const response = await fetch(apiUrl);
       
       if (!response.ok) {
@@ -1498,8 +1424,6 @@ export class UserService {
       }
       
       const despachoData = await response.json();
-      console.log("📦 Datos del despacho obtenidos:", despachoData.title?.rendered);
-      
       // Extraer datos relevantes
       const nombre = despachoData.title?.rendered || "Despacho sin nombre";
       const slug = despachoData.slug || "";
@@ -1524,7 +1448,6 @@ export class UserService {
         throw insertError;
       }
       
-      console.log("✅ Despacho importado exitosamente, ID:", insertedDespacho.id);
       return insertedDespacho;
     } catch (error) {
       console.error("❌ Error importando despacho desde API:", error);

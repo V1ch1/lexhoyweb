@@ -36,8 +36,6 @@ export class EmailService {
    */
   static async send(data: EmailData): Promise<boolean> {
     try {
-      console.log("📧 Enviando email a:", data.to);
-
       const response = await fetch(`${API_BASE_URL}/api/send-email`, {
         method: 'POST',
         headers: {
@@ -57,7 +55,6 @@ export class EmailService {
         return false;
       }
 
-      console.log("✅ Email enviado correctamente");
       return true;
     } catch (error) {
       console.error("❌ Error inesperado al enviar email:", error);
@@ -73,8 +70,6 @@ export class EmailService {
     html: string;
   }): Promise<boolean> {
     try {
-      console.log("👑 Enviando email a super admins");
-
       // Obtener emails de super admins
       const { data: superAdmins, error } = await supabase
         .from("users")
@@ -106,7 +101,6 @@ export class EmailService {
         return false;
       }
 
-      console.log(`📤 Enviando notificación a ${emails.length} super administradores`);
       return await this.send({
         to: emails,
         subject: data.subject,
@@ -296,8 +290,6 @@ export class EmailService {
     rol: string;
   }): Promise<boolean> {
     try {
-      console.log(`📨 Notificando registro de nuevo usuario: ${userData.email}`);
-      
       const userProfileUrl = `https://despachos.lexhoy.com/admin/users/${userData.id}`;
       const adminPanelUrl = `https://despachos.lexhoy.com/admin/users`;
       

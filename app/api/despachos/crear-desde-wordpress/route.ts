@@ -10,8 +10,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { objectId } = body;
 
-    console.log('📝 Obteniendo despacho desde WordPress:', objectId);
-
     if (!objectId) {
       return NextResponse.json(
         { error: "Falta objectId" },
@@ -23,8 +21,6 @@ export async function POST(request: Request) {
     // El objectId puede ser numérico o con formato lexhoy-XXXXX
     const wpId = objectId.toString().replace('lexhoy-', '');
     const wpUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${wpId}`;
-    console.log('🌐 Consultando WordPress:', wpUrl);
-    
     const wpResponse = await fetch(wpUrl);
     
     if (!wpResponse.ok) {
@@ -36,9 +32,6 @@ export async function POST(request: Request) {
     }
 
     const despachoWP = await wpResponse.json();
-    console.log('✅ Despacho obtenido de WordPress:', despachoWP.id);
-    console.log('📍 Sedes encontradas:', despachoWP.meta?._despacho_sedes?.length || 0);
-
     // 2. Importar usando SyncService (que maneja despacho + sedes)
     const { SyncService } = await import('@/lib/syncService');
     const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
@@ -50,8 +43,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log('✅ Despacho importado correctamente:', result.despachoId);
 
     return NextResponse.json({
       success: true,

@@ -44,16 +44,11 @@ function LoginPageContent() {
     setError("");
     setIsLoading(true);
 
-    console.log("🚀 Iniciando handleSubmit...");
-
     try {
-      console.log("📤 Llamando a AuthSimpleService.login...");
       const { user, error } = await AuthSimpleService.login(
         form.email.trim(),
         form.password
       );
-
-      console.log("📥 Respuesta recibida:", { user, error });
 
       if (error) {
         console.error("❌ Error en login:", error);
@@ -64,8 +59,6 @@ function LoginPageContent() {
       }
 
       if (user) {
-        console.log("🔍 Datos del usuario recibidos:", user);
-        
         // Actualizar el estado de autenticación
         const loginSuccess = login({
           id: user.id,
@@ -74,8 +67,6 @@ function LoginPageContent() {
           role: (user.role as "super_admin" | "despacho_admin" | "usuario") || 'usuario'
         });
 
-        console.log("✅ Login success:", loginSuccess);
-        
         if (!loginSuccess) {
           console.error("❌ Error: login() retornó false");
           setError("Error al procesar la autenticación");
@@ -88,8 +79,6 @@ function LoginPageContent() {
         
         // Redirigir al dashboard o a la página de origen
         const redirectTo = searchParams.get("redirectTo") || "/dashboard";
-        console.log("🔀 Preparando redirección a:", redirectTo);
-        
         // Usar window.location.href para asegurar la recarga completa de la página
         // Sin setTimeout para redirección inmediata
         window.location.href = redirectTo;

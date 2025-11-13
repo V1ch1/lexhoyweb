@@ -26,8 +26,7 @@ export async function GET(request: Request) {
         const categories = await catResponse.json();
         if (categories && categories.length > 0) {
           categoryId = categories[0].id.toString();
-          console.log(`📁 Categoría "${categoria}" encontrada con ID: ${categoryId}`);
-        } else {
+          } else {
           console.warn(`⚠️ No se encontró la categoría con slug: ${categoria}`);
         }
       } catch (err) {
@@ -53,8 +52,6 @@ export async function GET(request: Request) {
       wpApiUrl.searchParams.append("categories", categoryId);
     }
 
-    console.log("🔍 Fetching posts from WordPress:", wpApiUrl.toString());
-
     // Preparar headers
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -71,10 +68,7 @@ export async function GET(request: Request) {
         const cleanPassword = wpPassword.replace(/\s+/g, '');
         const credentials = Buffer.from(`${wpUser}:${cleanPassword}`).toString('base64');
         headers['Authorization'] = `Basic ${credentials}`;
-        console.log(`🔐 Usando autenticación para acceder a borradores`);
-        console.log(`   Usuario: ${wpUser}`);
-        console.log(`   Contraseña limpia: ${cleanPassword.substring(0, 4)}...${cleanPassword.substring(cleanPassword.length - 4)}`);
-      } else {
+        } else {
         console.warn("⚠️ Credenciales de WordPress no configuradas. No se pueden obtener borradores.");
         console.warn(`   WORDPRESS_USERNAME: ${wpUser ? 'configurado' : 'NO configurado'}`);
         console.warn(`   WORDPRESS_APPLICATION_PASSWORD: ${wpPassword ? 'configurado' : 'NO configurado'}`);
@@ -104,8 +98,6 @@ export async function GET(request: Request) {
     // Obtener headers de paginación de WordPress
     const totalPosts = response.headers.get("X-WP-Total");
     const totalPages = response.headers.get("X-WP-TotalPages");
-
-    console.log(`📊 Posts en esta página: ${posts.length}, Total: ${totalPosts}, Páginas: ${totalPages}`);
 
     // Transformar los datos para el frontend
     const entradasFormateadas = posts.map((post: Record<string, unknown>) => {
@@ -176,10 +168,8 @@ export async function GET(request: Request) {
 
     // Log de debug: mostrar categorías de las primeras 3 entradas
     if (entradasFormateadas.length > 0) {
-      console.log("🏷️ Categorías de las primeras entradas:");
       entradasFormateadas.slice(0, 3).forEach((entrada: { titulo: string; categoriaSlugs: string[] }) => {
-        console.log(`  - "${entrada.titulo}": [${entrada.categoriaSlugs.join(", ")}]`);
-      });
+        });
     }
 
     return NextResponse.json({

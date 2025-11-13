@@ -45,8 +45,7 @@ export function validateEnv(): void {
     throw new Error(errorMessage);
   }
   
-  console.log('✅ Todas las variables de entorno están configuradas correctamente');
-}
+  }
 
 /**
  * Obtiene una variable de entorno de forma segura

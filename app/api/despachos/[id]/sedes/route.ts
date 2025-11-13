@@ -18,8 +18,6 @@ export async function GET(
   try {
     const { id: despachoId } = await context.params;
 
-    console.log('📋 Listando sedes del despacho:', despachoId);
-
     // Obtener token de autenticación
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
@@ -112,9 +110,6 @@ export async function POST(
   try {
     const { id: despachoId } = await context.params;
 
-    console.log('📝 Creando nueva sede para despacho:', despachoId);
-    console.log('📦 Headers:', request.headers.get('content-type'));
-
     // Obtener token de autenticación
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
@@ -170,8 +165,6 @@ export async function POST(
 
     // Obtener datos del body
     const body = await request.json();
-    console.log('📦 Body recibido:', JSON.stringify(body, null, 2));
-    
     const {
       nombre,
       descripcion,
@@ -264,11 +257,7 @@ export async function POST(
       );
     }
 
-    console.log('✅ Sede creada en Supabase:', result.data.id);
-
     // Intentar sincronizar con WordPress
-    console.log('🔄 Sincronizando sede con WordPress...');
-    
     try {
       // Obtener información del despacho
       const { data: despacho } = await supabase
@@ -280,7 +269,6 @@ export async function POST(
       if (despacho?.object_id) {
         // Aquí deberías implementar la sincronización con WordPress
         // Por ahora solo lo registramos
-        console.log('⚠️ Sincronización con WordPress pendiente de implementar');
         // TODO: Implementar SyncService.sincronizarSedeAWordPress(result.data.id)
       }
     } catch (syncError) {

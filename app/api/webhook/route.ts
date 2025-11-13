@@ -24,13 +24,9 @@ interface DespachoData {
 }
 
 export async function POST(request: Request) {
-  console.log('🔍 ===== INICIO DE SOLICITUD DE WEBHOOK =====');
-  
   try {
     // 1. Log de headers para depuración
     const requestHeaders = Object.fromEntries(request.headers.entries());
-    console.log('🔍 Headers recibidos:', JSON.stringify(requestHeaders, null, 2));
-    
     // 2. Verificar el método HTTP
     if (request.method !== 'POST') {
       console.error(`❌ Método no permitido: ${request.method}`);
@@ -56,8 +52,7 @@ export async function POST(request: Request) {
     let payload;
     try {
       payload = await request.json();
-      console.log('📦 Payload recibido:', JSON.stringify(payload, null, 2));
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Error al parsear el JSON:', error);
       return NextResponse.json(
         { error: 'Formato de JSON inválido' },
@@ -86,10 +81,8 @@ export async function POST(request: Request) {
         await handleDespachoDelete(data.id);
         break;
       default:
-        console.log(`⚠️ Evento no manejado: ${eventType}`);
-    }
+        }
 
-    console.log('✅ Webhook procesado correctamente');
     return NextResponse.json({ 
       success: true,
       message: 'Webhook procesado correctamente',
@@ -115,13 +108,10 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   } finally {
-    console.log('🔍 ===== FIN DE SOLICITUD DE WEBHOOK =====\n');
-  }
+    }
 }
 
 async function handleDespachoUpdate(despachoData: DespachoData) {
-  console.log('🔄 Sincronizando despacho:', despachoData.id);
-  
   try {
     // Validar datos requeridos
     if (!despachoData.id) {
@@ -152,8 +142,6 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
       activo: true
     };
 
-    console.log('📤 Datos a guardar en Supabase:', JSON.stringify(updateData, null, 2));
-
     // Buscamos si ya existe un despacho con este object_id
     const { data: existingDespacho } = await supabase
       .from('despachos')
@@ -163,7 +151,6 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
 
     let result;
     if (existingDespacho) {
-      console.log(`🔄 Actualizando despacho existente con ID: ${existingDespacho.id}`);
       const { data, error } = await supabase
         .from('despachos')
         .update(updateData)
@@ -174,10 +161,8 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
         console.error('❌ Error de Supabase al actualizar:', error);
         throw error;
       }
-      console.log(`✅ Despacho ${despachoData.id} actualizado en Supabase`);
       result = data;
     } else {
-      console.log('➕ Creando nuevo registro de despacho');
       const { data, error } = await supabase
         .from('despachos')
         .insert([updateData])
@@ -187,11 +172,9 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
         console.error('❌ Error de Supabase al crear:', error);
         throw error;
       }
-      console.log(`✅ Nuevo despacho ${despachoData.id} creado en Supabase`);
       result = data;
     }
 
-    console.log(`✅ Despacho ${despachoData.id} sincronizado correctamente`);
     return result;
   } catch (error) {
     console.error('❌ Error al actualizar despacho:', error);
@@ -200,8 +183,6 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
 }
 
 async function handleDespachoDelete(despachoId: number | string) {
-  console.log(`🗑️ Eliminando despacho: ${despachoId}`);
-  
   const { error } = await supabase
     .from('despachos')
     .delete()
@@ -211,6 +192,5 @@ async function handleDespachoDelete(despachoId: number | string) {
     throw error;
   }
 
-  console.log(`✅ Despacho ${despachoId} eliminado correctamente`);
   return true;
 }

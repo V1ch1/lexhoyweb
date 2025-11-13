@@ -103,12 +103,6 @@ const ModalAsignarPropietario = ({
     setUserError(null);
 
     try {
-      console.log('🔄 Asignando propietario:', {
-        user_id: selectedUser.id,
-        despacho_id: despachoId,
-        email: selectedUser.email
-      });
-
       // Crear relación en user_despachos (solo columnas obligatorias)
       const { data: insertData, error: relationError } = await supabase
         .from("user_despachos")
@@ -124,8 +118,6 @@ const ModalAsignarPropietario = ({
         throw new Error(`Error al crear relación: ${relationError.message}`);
       }
 
-      console.log('✅ Relación creada:', insertData);
-
       // Actualizar owner_email en despachos
       const { error: updateError } = await supabase
         .from("despachos")
@@ -139,8 +131,6 @@ const ModalAsignarPropietario = ({
         console.error('❌ Error al actualizar owner_email:', updateError);
         throw new Error(`Error al actualizar owner_email: ${updateError.message}`);
       }
-
-      console.log('✅ Propietario asignado exitosamente');
 
       // Enviar email de notificación al usuario asignado
       try {
@@ -185,8 +175,7 @@ const ModalAsignarPropietario = ({
         if (!emailResponse.ok) {
           console.error('⚠️ Error al enviar email de notificación');
         } else {
-          console.log('📧 Email de notificación enviado exitosamente');
-        }
+          }
       } catch (emailError) {
         console.error('⚠️ Error al enviar email:', emailError);
         // No bloqueamos el flujo si falla el email

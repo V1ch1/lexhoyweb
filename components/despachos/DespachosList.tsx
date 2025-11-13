@@ -91,8 +91,6 @@ export function DespachosList({
         throw new Error(data.error || 'No se pudo completar la eliminación.');
       }
 
-      console.log('✅ Despacho eliminado correctamente:', data);
-
       // 4. Actualizamos la lista
       await fetchDespachos();
       setShowDeleteConfirm(false);

@@ -16,8 +16,6 @@ export async function GET(
   try {
     const { id: despachoId, sedeId } = await context.params;
 
-    console.log('📖 Obteniendo sede:', sedeId, 'del despacho:', despachoId);
-
     // Obtener la sede
     const { data: sede, error } = await supabase
       .from('sedes')
@@ -33,8 +31,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    console.log('✅ Sede obtenida:', sede.nombre);
 
     return NextResponse.json({ sede }, { status: 200 });
   } catch (error) {
@@ -56,8 +52,6 @@ export async function PUT(
   try {
     const { id: despachoId, sedeId } = await context.params;
     const body = await request.json();
-
-    console.log('✏️ Actualizando sede:', sedeId);
 
     // Validar que la sede pertenece al despacho
     const { data: sedeExistente, error: checkError } = await supabase
@@ -90,8 +84,6 @@ export async function PUT(
       );
     }
 
-    console.log('✅ Sede actualizada:', sedeActualizada.nombre);
-
     return NextResponse.json({ sede: sedeActualizada }, { status: 200 });
   } catch (error) {
     console.error('❌ Error en PUT sede:', error);
@@ -111,8 +103,6 @@ export async function DELETE(
 ) {
   try {
     const { id: despachoId, sedeId } = await context.params;
-
-    console.log('🗑️ Eliminando sede:', sedeId, 'del despacho:', despachoId);
 
     // Obtener token de autenticación
     const authHeader = request.headers.get('authorization');
@@ -135,8 +125,6 @@ export async function DELETE(
       );
     }
 
-    console.log('👤 Usuario autenticado:', user.email);
-
     // Verificar que la sede existe y pertenece al despacho
     const { data: sede, error: sedeError } = await supabase
       .from('sedes')
@@ -153,8 +141,6 @@ export async function DELETE(
       );
     }
 
-    console.log('📍 Sede encontrada:', sede.nombre);
-
     // Verificar permisos: usuario debe estar en user_despachos o ser super_admin
     const isSuperAdmin = user.user_metadata?.role === 'super_admin';
     
@@ -167,12 +153,6 @@ export async function DELETE(
       .maybeSingle();
 
     const hasAccess = isSuperAdmin || !!userDespacho;
-
-    console.log('🔐 Verificación de permisos:', {
-      isSuperAdmin,
-      hasUserDespacho: !!userDespacho,
-      hasAccess
-    });
 
     if (!hasAccess) {
       return NextResponse.json(
@@ -234,8 +214,6 @@ export async function DELETE(
       console.error('⚠️ Error al actualizar contador de sedes:', updateCountError);
       // No es crítico, continuar
     }
-
-    console.log('✅ Sede eliminada exitosamente');
 
     return NextResponse.json(
       { 

@@ -10,8 +10,6 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "10");
 
-    console.log("🔍 [Búsqueda Unificada] Query:", query);
-
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -21,8 +19,6 @@ export async function GET(request: Request) {
     try {
       // Hacer una petición mínima para obtener solo el header con el total
       const wpTotalUrl = `${WORDPRESS_API_URL}/despacho?per_page=1&page=1&_fields=id`;
-      console.log("🔍 [WordPress] Obteniendo total desde:", wpTotalUrl);
-      
       const wpTotalResponse = await fetch(wpTotalUrl);
       if (wpTotalResponse.ok) {
         // WordPress devuelve el total en el header X-WP-Total
@@ -31,12 +27,7 @@ export async function GET(request: Request) {
         
         totalWordPress = totalHeader ? parseInt(totalHeader) : 0;
         
-        console.log(`📊 [WordPress] Headers recibidos:`, {
-          'X-WP-Total': totalHeader,
-          'X-WP-TotalPages': totalPagesHeader,
-          totalCalculado: totalWordPress
-        });
-      } else {
+        } else {
         console.error("❌ [WordPress] Error en respuesta:", wpTotalResponse.status, wpTotalResponse.statusText);
       }
     } catch (error) {
@@ -109,16 +100,12 @@ export async function GET(request: Request) {
       });
     }
 
-    console.log(`✅ [Supabase] ${supabaseResults.length} resultados`);
-
     // 2. Buscar en WordPress con paginación real
     let wordpressResults: DespachoResult[] = [];
     let totalWordPressFiltered = 0;
     try {
       // Paginar directamente en WordPress
       const wpUrl = `${WORDPRESS_API_URL}/despacho?search=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}&_fields=id,title,slug,meta`;
-      console.log("🔍 [WordPress] URL:", wpUrl);
-
       const wpResponse = await fetch(wpUrl);
       if (wpResponse.ok) {
         const wpData = await wpResponse.json();
@@ -127,8 +114,6 @@ export async function GET(request: Request) {
         const totalFilteredHeader = wpResponse.headers.get('X-WP-Total');
         totalWordPressFiltered = totalFilteredHeader ? parseInt(totalFilteredHeader) : 0;
         
-        console.log(`📊 [WordPress] Total filtrados: ${totalWordPressFiltered}`);
-
         // Filtrar los que YA están en Supabase
         const wordpressIdsEnSupabase = new Set(
           supabaseResults
@@ -164,15 +149,11 @@ export async function GET(request: Request) {
       console.error("❌ [WordPress] Error:", wpError);
     }
 
-    console.log(`✅ [WordPress] ${wordpressResults.length} resultados (no importados)`);
-
     // 3. Combinar resultados (Supabase primero, luego WordPress)
     const allResults = [...supabaseResults, ...wordpressResults];
 
     // 4. Usar el total de WordPress para calcular las páginas totales
     const totalResults = query ? totalWordPressFiltered : totalWordPress;
-
-    console.log(`📊 [Total] ${totalResults} resultados totales, mostrando ${allResults.length} en esta página`);
 
     return NextResponse.json({
       data: allResults, // Ya vienen paginados de WordPress

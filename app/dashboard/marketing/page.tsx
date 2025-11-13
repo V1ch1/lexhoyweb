@@ -65,10 +65,6 @@ export default function MarketingPage() {
   );
 
   // Debug
-  console.log("User role:", userRole);
-  console.log("Marketing options:", marketingOptions.length);
-  console.log("Options:", marketingOptions.map(o => o.title));
-
   const getColorClasses = (color: string) => {
     const colors = {
       blue: {

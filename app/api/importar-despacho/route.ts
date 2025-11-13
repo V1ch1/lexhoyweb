@@ -42,8 +42,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('📥 Importando despacho:', despachoWP.id, 'para usuario:', user.id);
-
     // Importar usando SyncService
     const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
 
@@ -55,8 +53,6 @@ export async function POST(request: Request) {
     }
 
     // Crear relación en user_despachos
-    console.log('👤 Creando relación user_despachos para:', user.id, result.despachoId);
-    
     const { error: relationError } = await supabase
       .from('user_despachos')
       .insert({
@@ -69,8 +65,7 @@ export async function POST(request: Request) {
       console.error('⚠️ Error al crear relación user_despachos:', relationError);
       // No es crítico, el despacho ya se importó
     } else {
-      console.log('✅ Relación user_despachos creada exitosamente');
-    }
+      }
 
     return NextResponse.json({
       success: true,

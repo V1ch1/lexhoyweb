@@ -42,12 +42,6 @@ export default function AdminDespachosPage() {
         // Primero intentar obtener el rol de los metadatos del usuario (desde authContext)
         let role = user.role;
         
-        console.log('🔍 Verificando permisos de administración:', {
-          userId: user.id,
-          email: user.email,
-          roleFromContext: user.role,
-        });
-        
         // Si no está en el contexto, buscar en la tabla users
         if (!role) {
           const { data: userData, error } = await supabase
@@ -58,19 +52,13 @@ export default function AdminDespachosPage() {
           
           role = userData?.rol;
           
-          console.log('🔍 Rol desde tabla users:', {
-            rol: userData?.rol,
-            error: error
-          });
-        }
+          }
 
         if (!role || role !== 'super_admin') {
-          console.log('❌ Usuario no es super admin. Rol actual:', role);
           setUserRole('not_admin');
           return;
         }
 
-        console.log('✅ Usuario verificado como super_admin');
         setUserRole(role);
       } catch (error) {
         console.error('Error verificando permisos:', error);

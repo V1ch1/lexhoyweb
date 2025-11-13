@@ -88,14 +88,10 @@ export default function SettingsPage() {
 
     const updateSection = () => {
       const hash = window.location.hash.replace('#', '');
-      console.log('🔍 Hash detectado:', hash);
-      
       if (hash && hashToSection[hash]) {
-        console.log('✅ Cambiando a sección:', hashToSection[hash]);
         setActiveSection(hashToSection[hash]);
         setCurrentHash(hash);
       } else {
-        console.log('🏠 Mostrando overview');
         setActiveSection('overview');
         setCurrentHash('');
       }
@@ -106,7 +102,6 @@ export default function SettingsPage() {
 
     // Escuchar cambios en el hash
     const handleHashChange = () => {
-      console.log('🔄 Hash change event');
       updateSection();
     };
 
@@ -114,7 +109,6 @@ export default function SettingsPage() {
     const interval = setInterval(() => {
       const hash = window.location.hash.replace('#', '');
       if (hash !== currentHash) {
-        console.log('⏱️ Polling detectó cambio de hash');
         updateSection();
       }
     }, 100);

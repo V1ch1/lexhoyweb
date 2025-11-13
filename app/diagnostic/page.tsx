@@ -72,12 +72,7 @@ export default function DiagnosticPage() {
   };
 
   useEffect(() => {
-    console.log('🔍 Diagnostic Page Loaded');
-    console.log('👤 User:', user);
-    console.log('⏳ Loading:', isLoading);
-    console.log('🌍 Window location:', window.location.href);
-    console.log('📍 Router pathname:', window.location.pathname);
-  }, [user, isLoading]);
+    }, [user, isLoading]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">

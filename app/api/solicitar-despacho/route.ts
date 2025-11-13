@@ -5,7 +5,6 @@ export async function POST(request: Request) {
   let debugBody = null;
   try {
     // Debug: log incoming request
-    console.log("POST /api/solicitar-despacho called");
     // Leer el JWT del header Authorization
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -53,8 +52,7 @@ export async function POST(request: Request) {
 
       if (importarRes.ok) {
         const importarData = await importarRes.json();
-        console.log("✅ Despacho importado desde WordPress:", importarData);
-      } else {
+        } else {
         const errorData = await importarRes.json();
         console.warn("⚠️ No se pudo importar despacho:", errorData);
         // Continuamos con objectId como fallback
@@ -139,8 +137,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    console.log("Solicitud creada correctamente para", userId, objectId);
-
     // Notificar a todos los super admins
     try {
       const { NotificationService } = await import("@/lib/notificationService");
@@ -156,8 +152,7 @@ export async function POST(request: Request) {
           userEmail,
         },
       });
-      console.log("✅ Notificaciones enviadas a super admins");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error creando notificaciones:", error);
     }
 
@@ -177,8 +172,7 @@ export async function POST(request: Request) {
           url: `${baseUrl}/admin/users?tab=solicitudes`,
         }),
       });
-      console.log("✅ Emails enviados a super admins");
-    } catch (error) {
+      } catch (error) {
       console.error("⚠️ Error enviando emails:", error);
     }
 

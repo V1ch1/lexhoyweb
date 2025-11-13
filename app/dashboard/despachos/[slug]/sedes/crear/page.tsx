@@ -160,7 +160,6 @@ export default function CrearSedePage() {
         throw new Error(data.error || 'Error al crear la sede');
       }
 
-      console.log('✅ Sede creada:', data.sede);
       setSuccess(true);
 
       // Redirigir al despacho después de 2 segundos

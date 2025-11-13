@@ -28,8 +28,6 @@ export async function GET(
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    console.log('📊 Obteniendo solicitudes para usuario:', userId);
-
     // Obtener solicitudes del usuario
     const { data: solicitudes, error } = await supabase
       .from('solicitudes_despacho')
@@ -44,8 +42,6 @@ export async function GET(
         { status: 500 }
       );
     }
-
-    console.log('✅ Solicitudes encontradas:', solicitudes?.length || 0);
 
     return NextResponse.json(solicitudes || [], { status: 200 });
     

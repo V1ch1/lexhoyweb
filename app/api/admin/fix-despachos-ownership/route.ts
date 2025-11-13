@@ -12,8 +12,6 @@ const supabase = createClient(
  */
 export async function POST() {
   try {
-    console.log('🔧 Iniciando corrección de propiedad de despachos...');
-
     // 1. Obtener todos los despachos con owner_email
     const { data: despachos, error: despachosError } = await supabase
       .from('despachos')
@@ -24,8 +22,6 @@ export async function POST() {
       console.error('Error al obtener despachos:', despachosError);
       throw despachosError;
     }
-
-    console.log(`📊 Encontrados ${despachos.length} despachos con owner_email`);
 
     const results = {
       total: despachos.length,
@@ -52,7 +48,6 @@ export async function POST() {
           .single();
 
         if (userError || !userData) {
-          console.log(`⚠️ Usuario no encontrado para ${despacho.owner_email}`);
           results.errores++;
           results.detalles.push({
             despacho_id: despacho.id,
@@ -72,7 +67,6 @@ export async function POST() {
           .single();
 
         if (existingAssignment) {
-          console.log(`✓ Asignación ya existe para ${despacho.nombre}`);
           results.detalles.push({
             despacho_id: despacho.id,
             nombre: despacho.nombre,
@@ -102,7 +96,6 @@ export async function POST() {
             error: assignError.message
           });
         } else {
-          console.log(`✅ Asignado: ${despacho.nombre} → ${despacho.owner_email}`);
           results.asignados++;
           results.detalles.push({
             despacho_id: despacho.id,
@@ -125,8 +118,6 @@ export async function POST() {
         });
       }
     }
-
-    console.log('✅ Corrección completada:', results);
 
     return NextResponse.json({
       success: true,

@@ -96,8 +96,6 @@ export class SyncService {
    */
   static async importarDespachoDesdeWordPress(despachoWP: DespachoWordPress) {
     try {
-      console.log('🔄 Importando despacho desde WordPress:', despachoWP.id);
-      
       const objectId = String(despachoWP.id);
       const nombre = despachoWP.title?.rendered || 'Sin título';
       const descripcion = despachoWP.content?.rendered || '';
@@ -113,8 +111,6 @@ export class SyncService {
       let despachoId: string;
 
       if (existente) {
-        console.log('✅ Despacho ya existe, actualizando...');
-        
         // Actualizar despacho existente
         const { data: updated, error: updateError } = await supabase
           .from('despachos')
@@ -132,8 +128,6 @@ export class SyncService {
         despachoId = updated.id;
         
       } else {
-        console.log('📝 Creando nuevo despacho...');
-        
         // Crear nuevo despacho
         const { data: created, error: createError } = await supabase
           .from('despachos')
@@ -154,20 +148,12 @@ export class SyncService {
           throw createError;
         }
         despachoId = created.id;
-        console.log('✅ Despacho creado con ID:', despachoId);
-      }
+        }
 
       // Importar sedes si existen
-      console.log('🔍 Meta completo:', JSON.stringify(despachoWP.meta, null, 2));
       const sedes = despachoWP.meta?._despacho_sedes;
-      console.log('🔍 Sedes encontradas:', JSON.stringify(sedes, null, 2));
-      
       // También verificar otros campos del meta que podrían tener info adicional
-      console.log('📋 Año fundación en meta:', despachoWP.meta?.ano_fundacion || despachoWP.meta?.year_founded);
-      console.log('📋 Redes sociales en meta:', despachoWP.meta?.redes_sociales || despachoWP.meta?.social_media);
       if (sedes && Array.isArray(sedes) && sedes.length > 0) {
-        console.log(`📍 Importando ${sedes.length} sede(s)...`);
-        
         // Eliminar sedes existentes primero
         const { error: deleteError } = await supabase
           .from('sedes')
@@ -177,8 +163,7 @@ export class SyncService {
         if (deleteError) {
           console.warn('⚠️ Error al eliminar sedes antiguas:', deleteError);
         } else {
-          console.log('🗑️ Sedes antiguas eliminadas');
-        }
+          }
         
         // Importar nuevas sedes
         await this.importarSedes(despachoId, sedes);
@@ -190,8 +175,6 @@ export class SyncService {
           .eq('id', despachoId);
       }
 
-      console.log('✅ Despacho importado correctamente:', despachoId);
-      
       return {
         success: true,
         despachoId,
@@ -218,8 +201,6 @@ export class SyncService {
         const sede = sedes[i];
         const esPrincipal = i === 0 || sede.es_principal === true;
         
-        console.log(`📍 Importando sede ${i + 1}:`, JSON.stringify(sede, null, 2));
-
         // Parsear dirección completa desde WordPress
         // Formato: "C/ Fonseca 6 4º, A Coruña, A Coruña, (15004)"
         let calle = sede.calle || '';
@@ -323,7 +304,6 @@ export class SyncService {
         }
       }
 
-      console.log(`✅ ${sedes.length} sede(s) importada(s)`);
       return { success: true };
       
     } catch (error) {
@@ -342,8 +322,6 @@ export class SyncService {
    */
   static async enviarDespachoAWordPress(despachoId: string, forzarEstado: boolean = false) {
     try {
-      console.log('🔄 Enviando despacho a WordPress:', despachoId);
-
       // Obtener datos del despacho
       const { data: despacho, error: despachoError } = await supabase
         .from('despachos')
@@ -474,17 +452,12 @@ export class SyncService {
       }
       
       const auth = Buffer.from(`${username}:${appPassword}`).toString('base64');
-      console.log('🔑 Autenticando con WordPress como:', username);
-      console.log('📝 Payload a enviar:', JSON.stringify(payload, null, 2));
-
       let wpResponse;
       let objectIdToUse = despacho.object_id;
       let currentWpPost = null;
       
       // Si no tiene object_id, buscar en WordPress por slug
       if (!objectIdToUse && despacho.slug) {
-        console.log('🔍 Buscando despacho en WordPress por slug:', despacho.slug);
-        
         const searchResponse = await fetch(
           `https://lexhoy.com/wp-json/wp/v2/despacho?slug=${despacho.slug}`,
           {
@@ -499,9 +472,6 @@ export class SyncService {
           if (searchResults && searchResults.length > 0) {
             objectIdToUse = searchResults[0].id;
             currentWpPost = searchResults[0];
-            console.log('✅ Despacho encontrado en WordPress con ID:', objectIdToUse);
-            console.log('📊 Estado actual en WordPress:', currentWpPost.status);
-            
             // Guardar el object_id en Supabase para futuras sincronizaciones
             await supabase
               .from('despachos')
@@ -514,7 +484,6 @@ export class SyncService {
       // Obtener el estado actual si el despacho existe en WordPress
       // Solo mantener el estado de WordPress si NO estamos forzando el estado
       if (objectIdToUse && !forzarEstado) {
-        console.log('🔍 Obteniendo estado actual del despacho en WordPress...');
         const postResponse = await fetch(
           `https://lexhoy.com/wp-json/wp/v2/despacho/${objectIdToUse}`,
           {
@@ -526,20 +495,15 @@ export class SyncService {
         
         if (postResponse.ok) {
           currentWpPost = await postResponse.json();
-          console.log('📊 Estado actual en WordPress:', currentWpPost.status);
           // Mantener el estado actual
           payload.status = currentWpPost.status;
-          console.log('✅ Manteniendo estado:', currentWpPost.status);
-        }
+          }
       } else if (forzarEstado) {
-        console.log('🔄 Forzando estado desde Supabase:', payload.status);
-      }
+        }
       
       if (objectIdToUse) {
         // Actualizar despacho existente
         const url = `https://lexhoy.com/wp-json/wp/v2/despacho/${objectIdToUse}?force=true`;
-        console.log('🔄 URL de actualización:', url);
-        
         wpResponse = await fetch(url, {
           method: 'PUT',
           headers: {
@@ -549,10 +513,8 @@ export class SyncService {
           body: JSON.stringify(payload),
         });
         
-        console.log('📊 Respuesta de WordPress:', wpResponse.status, wpResponse.statusText);
-      } else {
+        } else {
         // Crear nuevo despacho
-        console.log('➕ Creando nuevo despacho en WordPress');
         wpResponse = await fetch(
           'https://lexhoy.com/wp-json/wp/v2/despacho',
           {
@@ -584,8 +546,6 @@ export class SyncService {
           ultima_sincronizacion: new Date().toISOString(),
         })
         .eq('id', despachoId);
-
-      console.log('✅ Despacho enviado a WordPress:', objectId);
 
       return {
         success: true,
@@ -622,8 +582,6 @@ export class SyncService {
    */
   static async eliminarDespachoCompleto(despachoId: string) {
     try {
-      console.log('🗑️ Iniciando eliminación completa de despacho:', despachoId);
-
       // Obtener token de autenticación
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -645,7 +603,6 @@ export class SyncService {
         throw new Error(data.error || 'Error al eliminar el despacho');
       }
 
-      console.log('✅ Despacho eliminado completamente');
       return {
         success: true,
         message: 'Despacho eliminado correctamente',
@@ -767,7 +724,6 @@ export class SyncService {
         throw new Error(`Algolia sync failed: ${response.status} - ${errorText}`);
       }
 
-      console.log('✅ Registro sincronizado con Algolia:', algoliaRecord);
       return { success: true };
 
     } catch (error) {

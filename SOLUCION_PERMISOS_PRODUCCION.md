@@ -34,7 +34,11 @@ password: process.env.WORDPRESS_APPLICATION_PASSWORD || "",
 - ✅ Corregida URL en `.env.production`
 - ✅ Corregida referencia de variable en `lib/config.ts`
 
-### 2. Variables de entorno necesarias para Vercel
+### 2. Errores de Content Security Policy (CSP)
+**Problema:** CSP muy restrictiva bloqueaba Google Fonts y Vercel Live
+**Solución:** Actualizada CSP en `next.config.ts` para permitir dominios necesarios
+
+### 3. Variables de entorno necesarias para Vercel
 
 Asegurar que estas variables estén configuradas en el dashboard de Vercel:
 
@@ -48,6 +52,9 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 WORDPRESS_API_URL=https://lexhoy.com/wp-json/wp/v2/despacho
 WORDPRESS_USERNAME=admin
 WORDPRESS_APPLICATION_PASSWORD=PExdZ9XXIam3avERP97uBLeU
+
+# Google Analytics
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9PK4PR55DN
 
 # Webhooks
 WEBHOOK_AUTH_USER=admin

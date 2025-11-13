@@ -9,11 +9,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     
-    if (isDev) console.log('🔍 Parámetros de la solicitud:', { userId });
-    
-    if (!userId) {
-      if (isDev) console.log('⚠️ No se proporcionó userId');
-      return NextResponse.json([], { status: 200 });
+    if (isDev) if (!userId) {
+      if (isDev) return NextResponse.json([], { status: 200 });
     }
 
     // Leer el JWT del header Authorization
@@ -52,9 +49,7 @@ export async function GET(request: Request) {
       },
     });
 
-    if (isDev) console.log('🔌 Cliente Supabase creado');
-
-    // Consultar las solicitudes
+    if (isDev) // Consultar las solicitudes
     const { data, error, status } = await supabase
       .from("solicitudes_despacho")
       .select("*")
@@ -79,8 +74,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (isDev) console.log(`✅ ${data?.length || 0} solicitudes encontradas`);
-    return NextResponse.json(data || [], { status: 200 });
+    if (isDev) return NextResponse.json(data || [], { status: 200 });
     
   } catch (error) {
     console.error('🔥 Error inesperado en la API:', error);

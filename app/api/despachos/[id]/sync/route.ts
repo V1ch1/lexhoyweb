@@ -19,10 +19,6 @@ export async function POST(
   try {
     const { id: despachoId } = await context.params;
     
-    console.log('🔄 Iniciando sincronización para despacho:', despachoId);
-    console.log('🔑 Usando Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('🔑 Service Role Key disponible:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-    
     // 1. Verificar que el despacho existe
     const { data: despacho, error: despachoError } = await supabase
       .from('despachos')
@@ -49,8 +45,6 @@ export async function POST(
       );
     }
     
-    console.log('📝 Despacho encontrado:', despacho.nombre);
-    
     // 2. Sincronizar a WordPress
     const wpResult = await SyncService.enviarDespachoAWordPress(despachoId);
     
@@ -67,8 +61,7 @@ export async function POST(
           ultimo_error: wpResult.error,
           proximo_intento_at: new Date(Date.now() + 2 * 60 * 1000).toISOString() // +2 minutos
         });
-        console.log('📥 Tarea encolada para reintento');
-      } catch (error) {
+        } catch (error) {
         console.warn('⚠️ No se pudo encolar (tabla sync_queue no existe aún):', error);
       }
       
@@ -83,9 +76,6 @@ export async function POST(
       );
     }
     
-    console.log('✅ Sincronización exitosa con WordPress');
-    console.log('📝 Object ID:', wpResult.objectId);
-    
     // 3. Actualizar estado de sincronización en Supabase
     await supabase
       .from('despachos')
@@ -94,8 +84,6 @@ export async function POST(
         ultima_sincronizacion: new Date().toISOString()
       })
       .eq('id', despachoId);
-    
-    console.log('✅ Estado actualizado en Supabase');
     
     return NextResponse.json({
       success: true,

@@ -89,8 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const userData = JSON.parse(storedUser);
             setUser(userData);
-            console.log("⚠️ Usando usuario de localStorage por error");
-          } catch (e) {
+            } catch (e) {
             console.error("❌ Error al analizar el usuario guardado:", e);
             setUser(null);
             localStorage.removeItem("lexhoy_user");
@@ -226,29 +225,22 @@ export function useRequireAuth(
   useEffect(() => {
     // DESHABILITADO TEMPORALMENTE: Evitar redirects automáticos entre dashboard/admin
     // Esto estaba causando recargas de página al navegar entre secciones
-    console.log(
-      "⏸️ useRequireAuth: Redirects automáticos deshabilitados para mejorar navegación SPA"
-    );
-
     // if (!isLoading && !isPublicPage) {
     //   if (!user) {
-    //     console.log('🚨 useRequireAuth: No user found, redirecting to login from:', pathname);
-    //     router.push('/login');
+    //     //     router.push('/login');
     //     return;
     //   }
 
     //   if (requiredRole && user.role !== requiredRole) {
     //     // Si requiere super_admin pero es despacho_admin o usuario, redirigir a su dashboard
     //     if (requiredRole === 'super_admin' && (user.role === 'despacho_admin' || user.role === 'usuario')) {
-    //       console.log('🚨 useRequireAuth: Insufficient permissions (super_admin required), redirecting to dashboard');
-    //       router.push('/dashboard');
+    //       //       router.push('/dashboard');
     //       return;
     //     }
 
     //     // Si requiere despacho_admin pero es solo usuario, redirigir a dashboard
     //     if (requiredRole === 'despacho_admin' && user.role === 'usuario') {
-    //       console.log('🚨 useRequireAuth: Insufficient permissions (despacho_admin required), redirecting to dashboard');
-    //       router.push('/dashboard');
+    //       //       router.push('/dashboard');
     //       return;
     //     }
     //   }

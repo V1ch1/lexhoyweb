@@ -40,18 +40,9 @@ export async function DELETE(
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
 
-    console.log('🔐 Usuario autenticado:', {
-      id: user.id,
-      email: user.email,
-      user_metadata: user.user_metadata,
-      app_metadata: user.app_metadata
-    });
-
     // Verificar que el usuario es super admin
     // Primero intentar obtener el rol de los metadatos del usuario
     let userRole = user.user_metadata?.role || user.app_metadata?.role;
-    
-    console.log('📋 Rol desde metadatos:', userRole);
     
     // Si no está en los metadatos, buscar en la tabla users
     if (!userRole) {
@@ -63,15 +54,7 @@ export async function DELETE(
       
       userRole = userData?.rol;
       
-      console.log('🔍 Verificación de rol:', {
-        userId: user.id,
-        email: user.email,
-        roleFromMetadata: user.user_metadata?.role || user.app_metadata?.role,
-        roleFromTable: userData?.rol,
-        finalRole: userRole,
-        error: userError
-      });
-    }
+      }
 
     if (!userRole || userRole !== 'super_admin') {
       console.error('❌ Acceso denegado. Rol del usuario:', userRole);
@@ -86,11 +69,7 @@ export async function DELETE(
       }, { status: 403 });
     }
     
-    console.log('✅ Usuario verificado como super_admin:', user.email);
-
     const despachoId = id;
-    console.log('🗑️ Iniciando eliminación de despacho:', despachoId);
-
     // Obtener datos del despacho antes de eliminarlo
     const { data: despacho, error: despachoError } = await supabase
       .from('despachos')
@@ -104,14 +83,10 @@ export async function DELETE(
       }, { status: 404 });
     }
 
-    console.log('📋 Despacho encontrado:', despacho.nombre, 'Object ID:', despacho.object_id);
-
     // 1. Eliminar de WordPress si tiene object_id
     let wpDeleted = false;
     if (despacho.object_id) {
       try {
-        console.log('🔄 Eliminando de WordPress...');
-        
         const username = process.env.WORDPRESS_USERNAME;
         const appPassword = process.env.WORDPRESS_APPLICATION_PASSWORD;
         
@@ -131,8 +106,7 @@ export async function DELETE(
 
           if (wpResponse.ok) {
             wpDeleted = true;
-            console.log('✅ Despacho eliminado de WordPress');
-          } else {
+            } else {
             console.error('⚠️ Error al eliminar de WordPress:', wpResponse.status, wpResponse.statusText);
           }
         }
@@ -144,8 +118,6 @@ export async function DELETE(
     // 2. Eliminar de Algolia (usando el object_id o el id del despacho)
     let algoliaDeleted = false;
     try {
-      console.log('🔄 Eliminando de Algolia...');
-      
       // Usar el object_id para eliminar de Algolia
       
       // Hacer llamada a WordPress para que elimine de Algolia
@@ -170,8 +142,7 @@ export async function DELETE(
 
           if (algoliaResponse.ok) {
             algoliaDeleted = true;
-            console.log('✅ Despacho eliminado de Algolia');
-          } else {
+            } else {
             console.error('⚠️ Error al eliminar de Algolia:', algoliaResponse.status);
           }
         }
@@ -189,8 +160,7 @@ export async function DELETE(
     if (sedesError) {
       console.error('⚠️ Error al eliminar sedes:', sedesError);
     } else {
-      console.log('✅ Sedes eliminadas de NextJS');
-    }
+      }
 
     // 4. Eliminar relaciones user_despachos
     const { error: userDespachoError } = await supabase
@@ -201,8 +171,7 @@ export async function DELETE(
     if (userDespachoError) {
       console.error('⚠️ Error al eliminar relaciones user_despachos:', userDespachoError);
     } else {
-      console.log('✅ Relaciones user_despachos eliminadas');
-    }
+      }
 
     // 5. Eliminar notificaciones relacionadas
     const { error: notificacionesError } = await supabase
@@ -213,8 +182,7 @@ export async function DELETE(
     if (notificacionesError) {
       console.error('⚠️ Error al eliminar notificaciones:', notificacionesError);
     } else {
-      console.log('✅ Notificaciones eliminadas');
-    }
+      }
 
     // 6. Finalmente, eliminar el despacho de NextJS
     const { error: deleteError } = await supabase
@@ -228,8 +196,6 @@ export async function DELETE(
         error: "Error al eliminar despacho de la base de datos" 
       }, { status: 500 });
     }
-
-    console.log('✅ Despacho eliminado completamente');
 
     // Crear notificación para otros super admins
     const { data: superAdmins } = await supabase

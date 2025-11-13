@@ -12,11 +12,6 @@ export async function POST(request: Request) {
     
     // Caso 1: Sincronizar DESDE Next.js HACIA WordPress
     if (payload.despachoId && payload.objectId) {
-      console.log('\n===== SINCRONIZACIÓN NEXT.JS → WORDPRESS =====');
-      console.log(`Timestamp: ${new Date().toISOString()}`);
-      console.log(`Despacho ID: ${payload.despachoId}`);
-      console.log(`Object ID: ${payload.objectId}`);
-      
       const result = await SyncService.enviarDespachoAWordPress(payload.despachoId);
       
       if (!result.success) {
@@ -30,7 +25,6 @@ export async function POST(request: Request) {
         );
       }
       
-      console.log('✅ Despacho enviado a WordPress exitosamente');
       return NextResponse.json(
         { 
           status: 'success',
@@ -42,10 +36,6 @@ export async function POST(request: Request) {
     }
     
     // Caso 2: Recibir webhook DESDE WordPress HACIA Next.js
-    console.log('\n===== WEBHOOK DE WORDPRESS → NEXT.JS =====');
-    console.log(`Timestamp: ${new Date().toISOString()}`);
-    console.log('Payload recibido:', JSON.stringify(payload, null, 2));
-    
     // Validar que tenemos los datos mínimos necesarios
     if (!payload || !payload.id) {
       console.error('❌ Payload inválido: falta ID');
@@ -59,7 +49,6 @@ export async function POST(request: Request) {
     }
 
     // Sincronizar el despacho usando SyncService
-    console.log(`🔄 Sincronizando despacho ID: ${payload.id}`);
     const result = await SyncService.sincronizarDesdeWebhook(payload);
 
     if (!result.success) {
@@ -74,10 +63,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('✅ Sincronización exitosa');
-    console.log(`Despacho ID: ${result.despachoId}`);
-    console.log(`Object ID: ${result.objectId}`);
-    
     return NextResponse.json(
       { 
         status: 'success',

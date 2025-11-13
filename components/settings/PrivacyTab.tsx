@@ -11,14 +11,12 @@ export default function PrivacyTab({ loading }: PrivacyTabProps) {
 
   const handleExportData = async () => {
     // TODO: Implement data export
-    console.log(`Exporting data as ${exportFormat}`);
-  };
+    };
 
   const handleRequestDataDeletion = () => {
     if (deleteConfirmation === 'DELETE MY DATA') {
       // TODO: Implement data deletion request
-      console.log('Requesting data deletion');
-    }
+      }
   };
 
   return (

@@ -73,15 +73,12 @@ export class AuthLoginService {
       // 3. Permisos insuficientes para el usuario autenticado
       
       /* CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
-      console.log('🔍 Consultando tabla users para:', credentials.email);
       try {
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
           .eq('email', credentials.email)
           .single();
-
-        console.log('🔍 Resultado de consulta users:', { userData, userError });
 
         if (userError) {
           console.warn('⚠️ No se encontraron datos adicionales del usuario, usando datos básicos:', userError);
@@ -96,14 +93,11 @@ export class AuthLoginService {
             error: null,
           };
           
-          console.log('✅ Retornando datos básicos del usuario:', basicUserData);
           return basicUserData;
         }
 
         // Si encontramos datos adicionales, usarlos
         if (userData) {
-          console.log('📊 Datos adicionales encontrados en la tabla users:', userData);
-          
           // Actualizar último acceso
           await this.updateLastAccess(userData.id);
 
@@ -121,7 +115,6 @@ export class AuthLoginService {
             error: null,
           };
           
-          console.log('✅ Retornando datos completos del usuario:', fullUserData);
           return fullUserData;
         }
       } catch (error) {
@@ -139,7 +132,6 @@ export class AuthLoginService {
         error: null,
       };
       
-      console.log('✅ Retornando datos de fallback:', fallbackUserData);
       return fallbackUserData;
       */
     } catch (error) {

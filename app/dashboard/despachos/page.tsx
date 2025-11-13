@@ -32,13 +32,6 @@ export default function DespachosPage() {
   const isSuperAdmin = user?.role === 'super_admin';
   
   // Debug: mostrar información del usuario
-  console.log('Usuario actual:', {
-    id: user?.id,
-    email: user?.email,
-    role: user?.role,
-    isSuperAdmin
-  });
-
   // Despachos cards configuration
   const despachosCards: DespachosCard[] = [
     {

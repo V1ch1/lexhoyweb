@@ -22,14 +22,12 @@ export default function ProtectedRoute({
     if (!isLoading) {
       // Si no hay usuario, redirigir al login
       if (!user) {
-        console.log('🚨 ProtectedRoute: No user found, redirecting to:', redirectTo);
         router.push(redirectTo);
         return;
       }
 
       // Si se requiere un rol específico, verificar
       if (requiredRole && user.role !== requiredRole && user.role !== 'super_admin') {
-        console.log('🚨 ProtectedRoute: Insufficient permissions, redirecting to dashboard');
         router.push('/dashboard');
         return;
       }

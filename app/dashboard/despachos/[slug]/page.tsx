@@ -127,7 +127,6 @@ const decodeHtmlEntities = (text: string): string => {
   return textarea.value;
 };
 
-
 export default function DespachoPage() {
   const params = useParams();
   const router = useRouter();
@@ -186,11 +185,6 @@ export default function DespachoPage() {
           .eq('id', user.id)
           .single();
         
-        console.log('🔍 Usuario ID:', user.id);
-        console.log('🔍 Datos usuario:', userData);
-        console.log('🔍 Error:', error);
-        console.log('🔍 Rol obtenido:', userData?.rol);
-        
         setUserRole(userData?.rol || null);
       }
     };
@@ -227,21 +221,11 @@ export default function DespachoPage() {
         // Intentar con el slug actual y también normalizando el nombre del despacho
         const despachoData = allDespachos?.find(d => {
           const despachoSlug = slugify(d.nombre);
-          console.log('Comparando:', { 
-            nombre: d.nombre, 
-            slugGenerado: despachoSlug, 
-            slugBuscado: slug,
-            coincide: despachoSlug === slug 
-          });
           return despachoSlug === slug;
         });
         
         if (!despachoData) {
           console.error('No se encontró despacho con slug:', slug);
-          console.log('Slugs disponibles:', allDespachos?.map(d => ({ 
-            nombre: d.nombre, 
-            slug: slugify(d.nombre) 
-          })));
           setError("No se encontró el despacho. Verifica que el nombre sea correcto.");
           return;
         }
@@ -278,15 +262,6 @@ export default function DespachoPage() {
         
         // Buscar la sede principal para obtener datos faltantes
         const sedePrincipal = processedDespacho.sedes?.find(s => s.es_principal) || processedDespacho.sedes?.[0];
-        
-        console.log('📍 Sede Principal:', sedePrincipal);
-        console.log('📋 Áreas de práctica del despacho:', processedDespacho.areas_practica);
-        console.log('📋 Áreas de práctica de la sede:', sedePrincipal?.areas_practica);
-        console.log('📝 Descripción del despacho:', processedDespacho.descripcion);
-        console.log('📝 Descripción de la sede:', sedePrincipal?.descripcion);
-        console.log('✅ Estado del despacho:', processedDespacho.estado);
-        console.log('✅ Estado de publicación:', processedDespacho.estado_publicacion);
-        console.log('✅ Estado de verificación:', processedDespacho.estado_verificacion);
         
         // Inicializar el formulario con los datos del despacho, usando la sede principal como fallback
         setFormData({
@@ -407,7 +382,6 @@ export default function DespachoPage() {
 
       // Sincronizar con WordPress (y luego Algolia via plugin)
       if (despacho?.id) {
-        console.log('🔄 Sincronizando cambios con WordPress...');
         try {
           const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
             method: 'POST',
@@ -417,9 +391,7 @@ export default function DespachoPage() {
           const syncResult = await syncResponse.json();
 
           if (syncResult.success) {
-            console.log('✅ Sincronizado con WordPress correctamente');
-            console.log('📝 WordPress actualizará Algolia via plugin');
-          } else {
+            } else {
             console.warn('⚠️ Advertencia: No se pudo sincronizar con WordPress');
             console.warn('Los cambios se guardaron en la base de datos pero no en WordPress');
             console.warn('Detalles:', syncResult.error);
@@ -584,7 +556,6 @@ export default function DespachoPage() {
 
       // Sincronizar con WordPress (y luego Algolia via plugin)
       if (despacho?.id) {
-        console.log('🔄 Sincronizando nueva sede con WordPress...');
         try {
           const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
             method: 'POST',
@@ -594,8 +565,7 @@ export default function DespachoPage() {
           const syncResult = await syncResponse.json();
 
           if (syncResult.success) {
-            console.log('✅ Nueva sede sincronizada con WordPress');
-          } else {
+            } else {
             console.warn('⚠️ No se pudo sincronizar con WordPress');
           }
         } catch (syncError) {
@@ -637,8 +607,6 @@ export default function DespachoPage() {
       setDeletingSede(true);
       setFormError(null);
 
-      console.log('🗑️ Eliminando sede:', sedeToDelete.nombre);
-
       // Obtener token de sesión
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -661,8 +629,6 @@ export default function DespachoPage() {
         throw new Error(errorData.error || 'Error al eliminar la sede');
       }
 
-      console.log('✅ Sede eliminada exitosamente');
-
       // Actualizar estado local
       const sedesActualizadas = sedes.filter(s => s.id !== sedeToDelete.id);
       setSedes(sedesActualizadas);
@@ -675,7 +641,6 @@ export default function DespachoPage() {
 
       // Sincronizar con WordPress (y luego Algolia via plugin)
       if (despacho?.id) {
-        console.log('🔄 Sincronizando eliminación de sede con WordPress...');
         try {
           const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
             method: 'POST',
@@ -685,8 +650,7 @@ export default function DespachoPage() {
           const syncResult = await syncResponse.json();
 
           if (syncResult.success) {
-            console.log('✅ Eliminación sincronizada con WordPress');
-          } else {
+            } else {
             console.warn('⚠️ No se pudo sincronizar con WordPress');
           }
         } catch (syncError) {
@@ -1027,8 +991,6 @@ export default function DespachoPage() {
                     onChange={async (e) => {
                       const nuevaSedeId = e.target.value; // UUID es string, no número
                       try {
-                        console.log('🔄 Cambiando sede principal a:', nuevaSedeId);
-                        
                         // Actualizar en la base de datos
                         const { error } = await supabase
                           .from('sedes')
@@ -1039,8 +1001,6 @@ export default function DespachoPage() {
                           console.error('❌ Error al actualizar sede principal:', error);
                           throw error;
                         }
-
-                        console.log('✅ Sede principal actualizada en BD');
 
                         // Actualizar estado local y reordenar (principal primero)
                         const sedesActualizadas = sedes.map(sede => ({

@@ -56,13 +56,9 @@ interface DespachoWP {
  * POST /api/despachos/wordpress/importar
  */
 export async function POST(request: Request) {
-  console.log("🔄 [WordPress] Iniciando importación de despacho...");
-
   try {
     const requestData = await request.json();
     const objectId = requestData?.objectId;
-
-    console.log("📥 [WordPress] Datos recibidos:", { objectId });
 
     if (!objectId) {
       return NextResponse.json(
@@ -98,7 +94,6 @@ export async function POST(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 1. Obtener el despacho de WordPress
-    console.log("🌐 [WordPress] Obteniendo datos del despacho...");
     const wpResponse = await fetch(
       `https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`
     );
@@ -121,11 +116,6 @@ export async function POST(request: Request) {
     }
 
     const despacho: DespachoWP = await wpResponse.json();
-    console.log("✅ [WordPress] Despacho obtenido:", {
-      id: despacho.id,
-      titulo: despacho.title?.rendered,
-    });
-
     // La función obtenerDescripcionSede ha sido eliminada ya que no se estaba utilizando
 
     // Generar slug, usando el de WordPress si existe, o generarlo del título
@@ -216,12 +206,6 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log('📝 [Debug] Datos finales del despacho a guardar:', {
-      ...despachoFiltrado
-    });
-
-    console.log('📝 [Debug] Datos del despacho a guardar:', despachoFiltrado);
-
     // Solo incluir featured_media_url si existe el campo en la tabla
     if (despacho.featured_media) {
       despachoData.featured_media_url = `https://lexhoy.com/wp-content/uploads/${despacho.featured_media}.jpg`;
@@ -246,8 +230,6 @@ export async function POST(request: Request) {
         .eq('wordpress_id', despacho.id)
         .single();
 
-      console.log('🔍 [Supabase] Despacho existente:', existingDespacho);
-
       let result;
       const isNewDespacho = !existingDespacho;
       
@@ -260,8 +242,6 @@ export async function POST(request: Request) {
           status: existingDespacho.status || despachoFiltrado.status || 'draft'
         };
         
-        console.log('🔄 [Supabase] Actualizando despacho existente con datos:', updateData);
-        
         const { data, error } = await supabase
           .from('despachos')
           .update(updateData)
@@ -270,8 +250,7 @@ export async function POST(request: Request) {
         
         if (error) throw error;
         result = { data, error: null };
-        console.log('✅ [Supabase] Despacho actualizado:', data);
-      } else {
+        } else {
         // Crear nuevo despacho
         const insertData = {
           ...despachoFiltrado, // Usar los datos filtrados
@@ -280,8 +259,6 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString()
         };
         
-        console.log('✨ [Supabase] Creando nuevo despacho con datos:', insertData);
-        
         const { data, error } = await supabase
           .from('despachos')
           .insert([insertData])
@@ -289,8 +266,7 @@ export async function POST(request: Request) {
         
         if (error) throw error;
         result = { data, error: null };
-        console.log('✨ [Supabase] Nuevo despacho creado:', data);
-      }
+        }
 
       if (result.error) {
         console.error('❌ [Error] Error al guardar el despacho:', result.error);
@@ -302,10 +278,6 @@ export async function POST(request: Request) {
       let processedCount = 0;
 
       if (sedesData.length > 0 && result?.data?.[0]?.id) {
-        console.log(
-          `🏢 [WordPress] Procesando ${sedesData.length} sedes del despacho...`
-        );
-
         for (const sede of sedesData) {
           try {
             // Preparar datos completos de la sede según la estructura de la tabla 'sedes'
@@ -401,15 +373,12 @@ export async function POST(request: Request) {
                 });
                 
                 // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
-                console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(cleanSedeData, null, 2));
-                
                 const { error: updateError } = await supabase
                   .from("sedes")
                   .update(cleanSedeData)
                   .eq("id", existingSede.id);
 
                 if (updateError) throw updateError;
-                console.log(`🔄 [Sede] Actualizada por wp_sede_id: ${sedeData.nombre}`, { id: existingSede.id });
                 processedCount++;
                 continue; // Pasamos a la siguiente sede
               }
@@ -438,23 +407,18 @@ export async function POST(request: Request) {
               });
               
               // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
-              console.log('🔄 [Debug] Actualizando sede existente con datos:', JSON.stringify(cleanSedeData, null, 2));
-              
               const { error: updateError } = await supabase
                 .from("sedes")
                 .update(cleanSedeData)
                 .eq("id", sedePorNombre.id);
 
               if (updateError) throw updateError;
-              console.log(`🔄 [Sede] Actualizada por nombre: ${sedeData.nombre}`, { id: sedePorNombre.id });
               processedCount++;
               continue; // Pasamos a la siguiente sede
             }
 
             // 3. Si no existe, la creamos con todos los campos necesarios
             // Usamos el objeto completo de sedeData que ya tiene todos los campos mapeados correctamente
-            console.log('📝 [Debug] Insertando nueva sede con datos:', JSON.stringify(sedeData, null, 2));
-            
             const { data: nuevaSede, error: insertError } = await supabase
               .from('sedes')
               .insert(sedeData)
@@ -470,17 +434,12 @@ export async function POST(request: Request) {
               throw insertError;
             }
 
-            console.log(`✨ [Sede] Creada: ${sedeData.nombre}`, { id: nuevaSede?.id });
             processedCount++;
           } catch (error) {
             console.error(`❌ [Error] Error al procesar sede ${sede.nombre || 'sin nombre'}:`, error);
           }
         }
       }
-
-      console.log(
-        `✅ [Sedes] Procesamiento completado: ${processedCount} de ${sedesData.length} sedes procesadas correctamente`
-      );
 
       return NextResponse.json({
         success: true,

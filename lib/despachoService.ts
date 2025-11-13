@@ -12,8 +12,6 @@ export class DespachoService {
    */
   static async buscarDespacho(id: string) {
     try {
-      console.log(`Buscando despacho con ID: ${id}`);
-      
       // 1. Buscar en Supabase
       const { data: despachoLocal } = await supabase
         .from('despachos')
@@ -22,7 +20,6 @@ export class DespachoService {
         .single();
 
       if (despachoLocal) {
-        console.log('✅ Despacho encontrado en Supabase');
         return { 
           success: true, 
           data: despachoLocal, 
@@ -31,7 +28,6 @@ export class DespachoService {
       }
 
       // 2. Si no está en Supabase, buscar en WordPress
-      console.log('🔍 Despacho no encontrado localmente, buscando en WordPress...');
       const wpResponse = await fetch(
         `${process.env.WORDPRESS_API_URL}/${id}`,
         {
@@ -54,8 +50,6 @@ export class DespachoService {
       }
 
       const wpDespacho = await wpResponse.json();
-      console.log('✅ Despacho encontrado en WordPress:', wpDespacho.id);
-      
       return { 
         success: true,
         data: wpDespacho, 
@@ -105,8 +99,6 @@ export class DespachoService {
     [key: string]: unknown;
   }) {
     try {
-      console.log('Importando despacho desde WordPress:', despachoWP.id);
-      
       // Usar SyncService para importación completa
       const { SyncService } = await import('./syncService');
       const result = await SyncService.importarDespachoDesdeWordPress(despachoWP);
@@ -124,7 +116,6 @@ export class DespachoService {
 
       if (error) throw error;
       
-      console.log('✅ Despacho importado correctamente:', data.id);
       return { 
         success: true, 
         data,

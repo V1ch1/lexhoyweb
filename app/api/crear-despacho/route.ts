@@ -37,16 +37,11 @@ export async function POST(request: Request) {
 
     // Obtener datos del body
     const body = await request.json();
-    console.log('📦 Body recibido:', JSON.stringify(body, null, 2));
-    
     const {
       nombre,
       sedes,
     } = body;
     
-    console.log('📋 Sedes recibidas:', sedes?.length || 0);
-    console.log('📝 Datos de sedes:', JSON.stringify(sedes, null, 2));
-
     // Validar campos requeridos
     if (!nombre) {
       return NextResponse.json(
@@ -71,8 +66,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    console.log('📝 Creando nuevo despacho:', nombre);
 
     // Generar slug único
     const baseSlug = nombre
@@ -129,8 +122,6 @@ export async function POST(request: Request) {
       throw despachoError;
     }
 
-    console.log('✅ Despacho creado en Next.js:', despacho.id);
-
     // Obtener el user_id de la tabla users usando el email
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -140,9 +131,6 @@ export async function POST(request: Request) {
 
     if (userError || !userData) {
       console.error('⚠️ No se encontró el usuario en la tabla users:', userError);
-      console.log('📧 Email buscado:', userEmail);
-      console.log('🔑 Auth user.id:', user.id);
-      
       // Intentar crear el usuario en la tabla users si no existe
       const { data: newUser, error: createUserError } = await supabase
         .from('users')
@@ -159,8 +147,7 @@ export async function POST(request: Request) {
       if (createUserError) {
         console.error('❌ Error al crear usuario en tabla users:', createUserError);
       } else {
-        console.log('✅ Usuario creado en tabla users:', newUser.id);
-      }
+        }
     }
 
     const finalUserId = userData?.id || user.id;
@@ -176,14 +163,8 @@ export async function POST(request: Request) {
 
     if (userDespachoError) {
       console.error('❌ Error al asignar despacho al usuario:', userDespachoError);
-      console.log('📝 Datos intentados:', {
-        user_id: finalUserId,
-        despacho_id: despacho.id,
-        rol: 'propietario'
-      });
-    } else {
-      console.log('✅ Despacho asignado al usuario:', finalUserId);
-    }
+      } else {
+      }
 
     // Obtener TODOS los super_admin para notificar
     const { data: superAdmins } = await supabase
@@ -216,8 +197,7 @@ export async function POST(request: Request) {
       if (notifError) {
         console.error('Error al crear notificaciones:', notifError);
       } else {
-        console.log(`✅ Notificaciones enviadas a ${superAdmins.length} super_admin(s)`);
-      }
+        }
     }
 
     // Crear todas las sedes
@@ -293,8 +273,6 @@ export async function POST(request: Request) {
       estado_verificacion: 'pendiente',
     }));
 
-    console.log('📝 Intentando crear sedes:', JSON.stringify(sedesData, null, 2));
-    
     const { error: sedesError } = await supabase
       .from('sedes')
       .insert(sedesData);
@@ -304,15 +282,12 @@ export async function POST(request: Request) {
       console.error('📋 Datos que causaron el error:', JSON.stringify(sedesData, null, 2));
       // No lanzamos error, el despacho ya está creado
     } else {
-      console.log(`✅ ${sedes.length} sede(s) creada(s)`);
-    }
+      }
 
     // Esperar 1 segundo para asegurar que las sedes estén completamente guardadas
-    console.log('⏳ Esperando 1 segundo antes de sincronizar con WordPress...');
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Sincronización con WordPress
-    console.log('🔄 Sincronizando despacho con WordPress...');
     let wpResult: { success: boolean; objectId?: string | null; error?: string; message?: string } = { success: false, objectId: null, error: 'No ejecutado' };
     
     try {
@@ -320,8 +295,7 @@ export async function POST(request: Request) {
       wpResult = await SyncService.enviarDespachoAWordPress(despacho.id);
       
       if (wpResult.success) {
-        console.log('✅ Despacho sincronizado con WordPress. Object ID:', wpResult.objectId);
-      } else {
+        } else {
         console.error('⚠️ Error al sincronizar con WordPress:', wpResult.error);
         // No fallar la creación, el despacho ya está en Supabase
         // Se puede sincronizar manualmente después

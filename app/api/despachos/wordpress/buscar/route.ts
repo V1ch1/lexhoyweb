@@ -27,15 +27,6 @@ export async function GET(request: Request) {
   
   const { query, id, provincia, localidad } = params;
   
-  console.log('🔍 [WordPress] Búsqueda de despacho:', { 
-    query, 
-    id, 
-    provincia, 
-    localidad, 
-    page, 
-    perPage 
-  });
-  
   // Si no hay query ni id, devolver lista vacía en lugar de error
   if (!query && !id) {
     return NextResponse.json({
@@ -52,7 +43,6 @@ export async function GET(request: Request) {
   try {
     // Si busca por ID, obtener el despacho completo de WordPress
     if (id) {
-      console.log('🌐 [WordPress] Buscando por ID:', id);
       const despacho = await buscarDespachoPorId(id);
       const response: BusquedaDespachosResponse = {
         data: despacho ? [despacho] : [],
@@ -67,7 +57,6 @@ export async function GET(request: Request) {
     }
     
     // Búsqueda por texto
-    console.log('🔎 [WordPress] Buscando por texto:', { query, provincia, localidad });
     // Asegurarse de que query sea string (aunque ya tiene valor por defecto '')
     const searchQuery = query || '';
     let resultados = await buscarDespachosPorTexto(searchQuery);
@@ -136,8 +125,6 @@ async function buscarDespachoPorId(id: string) {
   const auth = Buffer.from(`${username}:${appPassword}`).toString("base64");
   const wpUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${id}`;
   
-  console.log('🌐 [WordPress] Consultando:', wpUrl);
-  
   const response = await fetch(wpUrl, {
     headers: {
       Authorization: `Basic ${auth}`,
@@ -168,8 +155,6 @@ async function buscarDespachosPorTexto(query: string): Promise<DespachoWP[]> {
 
   const auth = Buffer.from(`${username}:${appPassword}`).toString("base64");
   const searchUrl = `https://lexhoy.com/wp-json/wp/v2/despacho?search=${encodeURIComponent(query)}&per_page=50&_fields=id,title,content,meta`;
-  
-  console.log('🔍 [WordPress] Buscando:', searchUrl);
   
   try {
     const controller = new AbortController();

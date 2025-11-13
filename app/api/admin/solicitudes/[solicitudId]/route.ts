@@ -146,11 +146,9 @@ export async function PATCH(
         if (userDespachoError.code !== '23505') {
           console.error("Error creando relación user_despachos:", userDespachoError);
         } else {
-          console.log("✅ Relación user_despachos ya existía");
-        }
+          }
       } else {
-        console.log("✅ Relación user_despachos creada correctamente");
-      }
+        }
     }
 
     // Enviar notificación al usuario
@@ -176,8 +174,6 @@ export async function PATCH(
       });
 
       // Enviar email al usuario
-      console.log(`📧 Enviando email de ${accion === "aprobar" ? "aprobación" : "rechazo"} a:`, solicitud.user_email);
-      
       const emailSent = await EmailService.send({
         to: solicitud.user_email,
         subject:
@@ -201,8 +197,7 @@ export async function PATCH(
       });
 
       if (emailSent) {
-        console.log("✅ Notificación y email enviados al usuario correctamente");
-      } else {
+        } else {
         console.error("⚠️ El email no se pudo enviar, pero la notificación en app se creó");
       }
     } catch (notifError) {

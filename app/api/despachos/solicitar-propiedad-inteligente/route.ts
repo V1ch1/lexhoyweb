@@ -15,8 +15,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { despachoId, origen, wordpressId } = body;
 
-    console.log("📋 [Solicitud Inteligente]", { despachoId, origen, wordpressId });
-
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -43,8 +41,6 @@ export async function POST(request: Request) {
 
     // Si el despacho viene de WordPress, importarlo primero
     if (origen === "wordpress" && wordpressId) {
-      console.log("📥 [Importar] Despacho desde WordPress:", wordpressId);
-
       try {
         // Obtener datos completos del despacho desde WordPress
         const wpResponse = await fetch(`${WORDPRESS_API_URL}/despacho/${wordpressId}`);
@@ -72,7 +68,6 @@ export async function POST(request: Request) {
           .single();
 
         if (existingDespacho) {
-          console.log("✅ [Importar] Despacho ya existe:", existingDespacho.id);
           finalDespachoId = existingDespacho.id;
         } else {
           // Insertar despacho
@@ -87,7 +82,6 @@ export async function POST(request: Request) {
             throw despachoError;
           }
 
-          console.log("✅ [Importar] Despacho creado:", newDespacho.id);
           finalDespachoId = newDespacho.id;
 
           // Importar sedes si existen
@@ -96,8 +90,6 @@ export async function POST(request: Request) {
             : [];
 
           if (sedesData.length > 0) {
-            console.log(`📍 [Importar] Importando ${sedesData.length} sedes...`);
-
             const sedesToInsert = sedesData.map((sede: Record<string, unknown>) => ({
               despacho_id: newDespacho.id,
               wp_sede_id: sede.id_sede || null,
@@ -142,8 +134,7 @@ export async function POST(request: Request) {
             if (sedesError) {
               console.error("❌ [Importar] Error al crear sedes:", sedesError);
             } else {
-              console.log(`✅ [Importar] ${sedesData.length} sedes importadas`);
-            }
+              }
           }
         }
       } catch (importError) {
@@ -249,16 +240,12 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("✅ Solicitud creada:", solicitud.id);
-
     // Notificar a super admins
     try {
       // En desarrollo local, usar localhost; en producción usar la URL configurada
       const baseUrl = process.env.NODE_ENV === 'development' 
         ? 'http://localhost:3000'
         : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-      
-      console.log("📧 Enviando notificación a:", `${baseUrl}/api/notificar-solicitud`);
       
       const notifResponse = await fetch(`${baseUrl}/api/notificar-solicitud`, {
         method: "POST",
@@ -278,8 +265,7 @@ export async function POST(request: Request) {
         console.error("⚠️ Error en respuesta de notificación:", errorData);
       } else {
         const responseData = await notifResponse.json();
-        console.log("✅ Notificación enviada correctamente:", responseData);
-      }
+        }
     } catch (notifError) {
       console.error("⚠️ Error al notificar:", notifError);
     }

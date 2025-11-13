@@ -19,8 +19,6 @@ export async function PUT(
     const { id: despachoId } = await context.params;
     const { estado } = await request.json();
 
-    console.log('🔄 Cambiando estado del despacho:', despachoId, 'a:', estado);
-
     // Validar estado
     if (!['publish', 'draft', 'trash'].includes(estado)) {
       return NextResponse.json(
@@ -43,10 +41,7 @@ export async function PUT(
       );
     }
 
-    console.log('✅ Estado actualizado en Supabase');
-
     // 2. Sincronizar con WordPress (forzando el nuevo estado)
-    console.log('🔄 Sincronizando con WordPress...');
     const wpResult = await SyncService.enviarDespachoAWordPress(despachoId, true);
 
     if (!wpResult.success) {
@@ -58,8 +53,6 @@ export async function PUT(
         wpError: wpResult.error
       });
     }
-
-    console.log('✅ Sincronizado con WordPress correctamente');
 
     return NextResponse.json({
       success: true,

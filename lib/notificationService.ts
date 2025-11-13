@@ -57,8 +57,6 @@ export class NotificationService {
    */
   static async create(data: CreateNotificationData): Promise<{ notification: Notification | null; error: Error | null }> {
     try {
-      console.log("📬 Creando notificación:", data.titulo);
-      
       // Usar service_role client para bypass RLS
       const client = getServiceRoleClient();
       
@@ -81,7 +79,6 @@ export class NotificationService {
         throw error;
       }
 
-      console.log("✅ Notificación creada:", notification.id);
       return { notification, error: null };
     } catch (error) {
       console.error("💥 Error en NotificationService.create:", error);
@@ -100,8 +97,6 @@ export class NotificationService {
     data: Omit<CreateNotificationData, "userId">
   ): Promise<void> {
     try {
-      console.log(`📬 Creando ${userIds.length} notificaciones:`, data.titulo);
-
       const notifications = userIds.map((userId) => ({
         user_id: userId,
         tipo: data.tipo,
@@ -121,8 +116,7 @@ export class NotificationService {
         throw error;
       }
 
-      console.log(`✅ ${userIds.length} notificaciones creadas`);
-    } catch (error) {
+      } catch (error) {
       console.error("💥 Error en NotificationService.createMany:", error);
     }
   }
@@ -134,8 +128,6 @@ export class NotificationService {
     data: Omit<CreateNotificationData, "userId">
   ): Promise<void> {
     try {
-      console.log("👑 Notificando a super admins:", data.titulo);
-
       // Obtener todos los super admins
       const { data: superAdmins, error } = await supabase
         .from("users")

@@ -70,7 +70,6 @@ export default function EstadoPublicacion({
         throw new Error(data.error || "Error al cambiar el estado");
       }
 
-      console.log("✅ Estado cambiado correctamente");
       setMostrarConfirmacion(false);
       onEstadoCambiado();
     } catch (err) {

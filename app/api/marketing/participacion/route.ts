@@ -48,8 +48,6 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    console.log("✅ Participación guardada:", data);
-
     // TODO: Enviar email de notificación al equipo de marketing
     // await EmailService.send({...})
 
