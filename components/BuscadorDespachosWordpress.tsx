@@ -24,7 +24,20 @@ import { LocalDespachoWP, BuscadorDespachosProps } from "@/types/despachos";
  *     // Lógica de importación
  *     return { success: true };
  *   }}
- *   onClose={() => // Estado para la paginación
+ *   onClose={() => console.log('Buscador cerrado')}
+ * />
+ * ```
+ *
+ * @param {BuscadorDespachosProps} props - Propiedades del componente
+ * @returns {JSX.Element} Componente de búsqueda de despachos
+ */
+export default function BuscadorDespachosWordpress({
+  onImport,
+  onClose,
+  onImportSuccess,
+}: BuscadorDespachosProps) {
+  const [query, setQuery] = useState("");
+  // Estado para la paginación
   const [pagination, setPagination] = useState({
     page: 1,
     perPage: 10,
@@ -96,6 +109,7 @@ import { LocalDespachoWP, BuscadorDespachosProps } from "@/types/despachos";
         }
 
         const response: BusquedaDespachosResponse = await res.json();
+
         // Actualizar la paginación con la respuesta del servidor
         const paginationData = response.pagination || {
           page,
