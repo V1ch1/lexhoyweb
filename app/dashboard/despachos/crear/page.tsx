@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/authContext";
 import { SedeFormData } from "@/types/despachos";
 import { supabase } from "@/lib/supabase";
+import { ImageOptimizer } from "@/lib/imageOptimizer";
 
 const AREAS_PRACTICA = [
   "Administrativo",
@@ -981,9 +983,11 @@ export default function CrearDespachoPage() {
                     {/* Preview de la foto */}
                     {sede.foto_perfil && (
                       <div className="flex items-center space-x-4">
-                        <img
+                        <Image
                           src={sede.foto_perfil}
                           alt="Preview"
+                          width={96}
+                          height={96}
                           className="h-24 w-24 object-cover rounded-lg border-2 border-gray-200"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
@@ -1029,37 +1033,41 @@ export default function CrearDespachoPage() {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                // Validar tamaño (max 5MB)
-                                if (file.size > 5 * 1024 * 1024) {
-                                  alert("La imagen no puede superar los 5MB");
-                                  return;
-                                }
+                                try {
+                                  // Validar imagen
+                                  const validation = ImageOptimizer.validateImage(file);
+                                  if (!validation.valid) {
+                                    alert(validation.error);
+                                    return;
+                                  }
 
-                                // Validar tipo
-                                if (!file.type.startsWith("image/")) {
-                                  alert("Solo se permiten archivos de imagen");
-                                  return;
-                                }
+                                  // Mostrar información original
+                                  const originalInfo = await ImageOptimizer.getImageInfo(file);
+                                  console.log(`📸 Imagen original: ${originalInfo.width}x${originalInfo.height}, ${ImageOptimizer.formatFileSize(originalInfo.size)}`);
 
-                                // Convertir a base64 para preview temporal
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
+                                  // Optimizar imagen manteniendo proporción
+                                  const optimized = await ImageOptimizer.optimizeProfileImage(file);
+                                  
+                                  const reduction = ((originalInfo.size - optimized.size) / originalInfo.size * 100).toFixed(1);
+                                  console.log(`✨ Imagen optimizada: ${optimized.width}x${optimized.height}, ${ImageOptimizer.formatFileSize(optimized.size)} (reducida ${reduction}%), ${optimized.format}`);
+
+                                  // Usar la imagen optimizada
                                   handleSedeChange(
                                     index,
                                     "foto_perfil",
-                                    reader.result as string
+                                    optimized.dataUrl
                                   );
-                                };
-                                reader.readAsDataURL(file);
 
-                                // TODO: Aquí deberías subir a tu storage (Supabase Storage, Cloudinary, etc.)
-                                // Por ahora usamos base64 como placeholder
+                                } catch (error) {
+                                  console.error('Error al optimizar imagen:', error);
+                                  alert(`❌ Error al procesar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                                }
                               }
                             }}
                           />
                         </label>
                         <span className="text-sm text-gray-500">
-                          JPG, PNG, GIF (máx. 5MB)
+                          JPG, PNG, GIF, WebP (máx. 5MB) - Se optimizará automáticamente a WebP
                         </span>
                       </div>
                     </div>
@@ -1143,6 +1151,25 @@ export default function CrearDespachoPage() {
           ))}
         </div>
 
+        {/* Success Message Bottom */}
+        {success && (
+          <div className="mb-6 p-4 rounded-lg flex items-center bg-green-50 text-green-800 border border-green-200">
+            <svg
+              className="h-5 w-5 mr-2 flex-shrink-0"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="font-medium">¡Despacho creado correctamente! Redirigiendo...</span>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
           <button
@@ -1156,7 +1183,7 @@ export default function CrearDespachoPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center"
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center min-w-[140px] justify-center"
           >
             {loading ? (
               <>

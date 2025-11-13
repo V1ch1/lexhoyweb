@@ -7,11 +7,12 @@ import {
   MagnifyingGlassIcon,
   PlusCircleIcon,
   ArrowRightIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 // Types
-type DespachosSection = 'overview' | 'ver-despachos' | 'mis-despachos' | 'crear' | 'mis-solicitudes';
+type DespachosSection = 'overview' | 'ver-despachos' | 'mis-despachos' | 'crear' | 'mis-solicitudes' | 'admin';
 
 interface DespachosCard {
   id: DespachosSection;
@@ -26,6 +27,17 @@ interface DespachosCard {
 export default function DespachosPage() {
   const { user } = useAuth();
   const router = useRouter();
+
+  // Verificar si el usuario es super admin
+  const isSuperAdmin = user?.role === 'super_admin';
+  
+  // Debug: mostrar información del usuario
+  console.log('Usuario actual:', {
+    id: user?.id,
+    email: user?.email,
+    role: user?.role,
+    isSuperAdmin
+  });
 
   // Despachos cards configuration
   const despachosCards: DespachosCard[] = [
@@ -64,6 +76,15 @@ export default function DespachosPage() {
       color: 'yellow',
       visible: true,
       path: '/dashboard/despachos/mis-solicitudes'
+    },
+    {
+      id: 'admin',
+      name: 'Administración',
+      description: 'Panel de administración para super admins - Gestión completa de despachos',
+      icon: ShieldCheckIcon,
+      color: 'red',
+      visible: isSuperAdmin,
+      path: '/dashboard/despachos/admin'
     }
   ];
 

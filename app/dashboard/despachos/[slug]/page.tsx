@@ -187,12 +187,18 @@ export default function DespachoPage() {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: userData } = await supabase
+        const { data: userData, error } = await supabase
           .from('users')
-          .select('role')
+          .select('rol')
           .eq('id', user.id)
           .single();
-        setUserRole(userData?.role || null);
+        
+        console.log('🔍 Usuario ID:', user.id);
+        console.log('🔍 Datos usuario:', userData);
+        console.log('🔍 Error:', error);
+        console.log('🔍 Rol obtenido:', userData?.rol);
+        
+        setUserRole(userData?.rol || null);
       }
     };
     fetchUserRole();

@@ -68,21 +68,30 @@ export function DespachosList({
     
     setIsDeleting(true);
     try {
-      // Usamos la función RPC segura
-      const { data, error } = await supabase
-        .rpc('eliminar_despacho_seguro', { 
-          despacho_id_param: despachoToDelete.id 
-        });
-
-      if (error) {
-        console.error('Error al llamar a la función de eliminación segura:', error);
-        throw new Error('No se pudo completar la eliminación.');
+      // Obtener token de autenticación
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No hay sesión activa');
       }
 
-      if (data && !data.success) {
-        console.error('Error en la función de eliminación segura:', data.error);
-        throw new Error(data.error || 'Error al eliminar el despacho.');
+      // Usar nuestra API REST de eliminación
+      const response = await fetch(`/api/despachos/${despachoToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Error al eliminar despacho:', data);
+        throw new Error(data.error || 'No se pudo completar la eliminación.');
       }
+
+      console.log('✅ Despacho eliminado correctamente:', data);
 
       // 4. Actualizamos la lista
       await fetchDespachos();
@@ -480,9 +489,22 @@ export function DespachosList({
         onConfirm={confirmDelete}
         title="¿Eliminar despacho?"
         message={
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p>¿Estás seguro de que deseas eliminar el despacho <span className="font-semibold">{despachoToDelete?.nombre}</span>?</p>
-            <p className="text-red-600 text-sm">Esta acción no se puede deshacer y eliminará todas las sedes asociadas.</p>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-800 font-semibold text-sm mb-2">⚠️ ATENCIÓN: Esta acción es IRREVERSIBLE</p>
+              <p className="text-red-700 text-sm mb-2">Se eliminará COMPLETAMENTE de:</p>
+              <ul className="text-red-700 text-sm space-y-1 ml-4">
+                <li>• Base de datos de NextJS (Supabase)</li>
+                <li>• WordPress (si está sincronizado)</li>
+                <li>• Algolia (índice de búsqueda)</li>
+                <li>• Todas las sedes asociadas</li>
+                <li>• Todas las relaciones de usuario</li>
+                <li>• Todas las notificaciones relacionadas</li>
+              </ul>
+            </div>
+            
             <p className="text-sm text-gray-600 mt-2">Escribe <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">Eliminar</span> para confirmar la eliminación.</p>
           </div>
         }

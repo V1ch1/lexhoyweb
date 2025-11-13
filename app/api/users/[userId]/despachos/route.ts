@@ -55,7 +55,23 @@ export async function GET(
         throw despachosError;
       }
 
-      // 4. Transformar los datos para que coincidan con la interfaz esperada
+      // 4. Contar las sedes activas de cada despacho
+      const sedesCount: Record<string, number> = {};
+      for (const despachoId of despachoIds) {
+        const { count, error: countError } = await supabase
+          .from('sedes')
+          .select('*', { count: 'exact', head: true })
+          .eq('despacho_id', despachoId)
+          .eq('activa', true);
+        
+        if (!countError) {
+          sedesCount[despachoId] = count || 0;
+        } else {
+          sedesCount[despachoId] = 0;
+        }
+      }
+
+      // 5. Transformar los datos para que coincidan con la interfaz esperada
       const transformedDespachos = userDespachos.map(ud => {
         const despacho = despachos.find(d => d.id === ud.despacho_id);
         return {
@@ -67,7 +83,7 @@ export async function GET(
           email: despacho?.email,
           web: despacho?.web,
           descripcion: despacho?.descripcion,
-          num_sedes: despacho?.num_sedes || 0,
+          num_sedes: sedesCount[ud.despacho_id] || 0,  // Usar el conteo real de sedes activas
           estado: 'verificado', // Asumimos que si está en la tabla, está verificado
           created_at: ud.fecha_asignacion || despacho?.created_at,
         };
