@@ -151,7 +151,7 @@ export const INTEGRATIONS = {
   wordpress: {
     apiUrl: process.env.WORDPRESS_API_URL || "",
     username: process.env.WORDPRESS_USERNAME || "",
-    password: process.env.WORDPRESS_PASSWORD || "",
+    password: process.env.WORDPRESS_APPLICATION_PASSWORD || "",
   },
 };
 
