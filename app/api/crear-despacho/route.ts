@@ -307,10 +307,34 @@ export async function POST(request: Request) {
       console.log(`✅ ${sedes.length} sede(s) creada(s)`);
     }
 
-    // TODO: Sincronización con WordPress (Fase 2)
-    // Por ahora solo almacenamos en Supabase
-    console.log('ℹ️ Sincronización con WordPress deshabilitada (Fase 2)');
-    const wpResult = { success: false, objectId: null, error: 'Deshabilitado' };
+    // Esperar 1 segundo para asegurar que las sedes estén completamente guardadas
+    console.log('⏳ Esperando 1 segundo antes de sincronizar con WordPress...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Sincronización con WordPress
+    console.log('🔄 Sincronizando despacho con WordPress...');
+    let wpResult: { success: boolean; objectId?: string | null; error?: string; message?: string } = { success: false, objectId: null, error: 'No ejecutado' };
+    
+    try {
+      const { SyncService } = await import('@/lib/syncService');
+      wpResult = await SyncService.enviarDespachoAWordPress(despacho.id);
+      
+      if (wpResult.success) {
+        console.log('✅ Despacho sincronizado con WordPress. Object ID:', wpResult.objectId);
+      } else {
+        console.error('⚠️ Error al sincronizar con WordPress:', wpResult.error);
+        // No fallar la creación, el despacho ya está en Supabase
+        // Se puede sincronizar manualmente después
+      }
+    } catch (syncError) {
+      console.error('❌ Excepción al sincronizar con WordPress:', syncError);
+      wpResult = { 
+        success: false, 
+        objectId: null, 
+        error: syncError instanceof Error ? syncError.message : 'Error desconocido' 
+      };
+      // No lanzar error, continuar con la respuesta
+    }
 
     return NextResponse.json({
       success: true,

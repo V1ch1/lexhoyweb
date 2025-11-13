@@ -402,6 +402,7 @@ export class SyncService {
               provincia: sede.provincia || '',
               pais: sede.pais || 'España',
               direccion: direccionPartes.join(', '),
+              direccion_completa: direccionPartes.join(', '), // Campo adicional para compatibilidad
               calle: sede.calle || '',
               numero: sede.numero || '',
               piso: sede.piso || '',
@@ -412,7 +413,9 @@ export class SyncService {
               web: sede.web || '',
               persona_contacto: sede.persona_contacto || '',
               ano_fundacion: sede.ano_fundacion || null,
+              año_fundacion: sede.ano_fundacion || null, // Campo con tilde para compatibilidad
               tamano_despacho: sede.tamano_despacho || '',
+              tamaño_despacho: sede.tamano_despacho || '', // Campo con tilde para compatibilidad
               numero_colegiado: sede.numero_colegiado || '',
               colegio: sede.colegio || '',
               experiencia: sede.experiencia || '',
@@ -425,8 +428,39 @@ export class SyncService {
               redes_sociales: sede.redes_sociales || {},
               observaciones: sede.observaciones || '',
               es_principal: sede.es_principal || false,
+              activa: true,
+              estado_verificacion: 'pendiente',
+              estado_registro: 'activo',
+              is_verified: false,
             };
           }) || [],
+          // También agregar campos legacy para compatibilidad con WordPress
+          _despacho_nombre: despacho.nombre,
+          _despacho_localidad: despacho.sedes?.[0]?.localidad || '',
+          _despacho_provincia: despacho.sedes?.[0]?.provincia || '',
+          _despacho_codigo_postal: despacho.sedes?.[0]?.codigo_postal || '',
+          _despacho_direccion: despacho.sedes?.[0] ? [
+            despacho.sedes[0].calle && despacho.sedes[0].numero ? `${despacho.sedes[0].calle} ${despacho.sedes[0].numero}` : despacho.sedes[0].calle,
+            despacho.sedes[0].piso,
+            despacho.sedes[0].localidad,
+            despacho.sedes[0].provincia,
+            despacho.sedes[0].codigo_postal ? `(${despacho.sedes[0].codigo_postal})` : ''
+          ].filter(Boolean).join(', ') : '',
+          _despacho_telefono: despacho.sedes?.[0]?.telefono || '',
+          _despacho_email: despacho.sedes?.[0]?.email_contacto || '',
+          _despacho_web: despacho.sedes?.[0]?.web || '',
+          _despacho_descripcion: sedePrincipal?.descripcion || despacho.descripcion || '',
+          _despacho_numero_colegiado: despacho.sedes?.[0]?.numero_colegiado || '',
+          _despacho_colegio: despacho.sedes?.[0]?.colegio || '',
+          _despacho_experiencia: despacho.sedes?.[0]?.experiencia || '',
+          _despacho_tamaño: despacho.sedes?.[0]?.tamano_despacho || '',
+          _despacho_año_fundacion: despacho.sedes?.[0]?.ano_fundacion || '',
+          _despacho_estado_registro: 'activo',
+          _despacho_foto_perfil: despacho.sedes?.[0]?.foto_perfil && despacho.sedes[0].foto_perfil.length < 100000 
+            ? despacho.sedes[0].foto_perfil 
+            : '', // Omitir imágenes base64 muy grandes para evitar problemas de sincronización
+          _despacho_horario: despacho.sedes?.[0]?.horarios || {},
+          _despacho_redes_sociales: despacho.sedes?.[0]?.redes_sociales || {},
         },
       };
 
@@ -540,11 +574,12 @@ export class SyncService {
       const wpData = await wpResponse.json();
       const objectId = String(wpData.id);
 
-      // Actualizar despacho en Next.js con object_id
+      // Actualizar despacho en Next.js con object_id y wordpress_id
       await supabase
         .from('despachos')
         .update({
           object_id: objectId,
+          wordpress_id: parseInt(objectId), // Sincronizar wordpress_id para evitar duplicados
           sincronizado_wp: true,
           ultima_sincronizacion: new Date().toISOString(),
         })
@@ -579,5 +614,168 @@ export class SyncService {
    */
   static async sincronizarDesdeWebhook(payload: DespachoWordPress) {
     return await this.importarDespachoDesdeWordPress(payload);
+  }
+
+  /**
+   * Elimina un despacho completamente (NextJS, WordPress y Algolia)
+   * Solo para super admins
+   */
+  static async eliminarDespachoCompleto(despachoId: string) {
+    try {
+      console.log('🗑️ Iniciando eliminación completa de despacho:', despachoId);
+
+      // Obtener token de autenticación
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`/api/despachos/${despachoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al eliminar el despacho');
+      }
+
+      console.log('✅ Despacho eliminado completamente');
+      return {
+        success: true,
+        message: 'Despacho eliminado correctamente',
+        details: data.details,
+      };
+
+    } catch (error) {
+      console.error('❌ Error al eliminar despacho:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
+  }
+
+  /**
+   * Sincroniza un despacho directamente con Algolia desde Next.js
+   * Obtiene los datos de Supabase y los envía a Algolia
+   */
+  static async sincronizarConAlgolia(despachoId: string, algoliaObjectId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Obtener datos del despacho desde Supabase
+      const { data: despacho, error: despachoError } = await supabase
+        .from('despachos')
+        .select('*')
+        .eq('id', despachoId)
+        .single();
+
+      if (despachoError || !despacho) {
+        throw new Error(`Error al obtener despacho: ${despachoError?.message}`);
+      }
+
+      // Obtener sedes del despacho
+      const { data: sedes, error: sedesError } = await supabase
+        .from('sedes')
+        .select('*')
+        .eq('despacho_id', despachoId)
+        .eq('activa', true)
+        .order('es_principal', { ascending: false });
+
+      if (sedesError) {
+        throw new Error(`Error al obtener sedes: ${sedesError.message}`);
+      }
+
+      // Construir el registro para Algolia
+      const algoliaRecord = {
+        objectID: algoliaObjectId,
+        nombre: despacho.nombre,
+        descripcion: despacho.descripcion || '',
+        sedes: (sedes || []).map(sede => ({
+          nombre: sede.nombre || '',
+          descripcion: sede.descripcion || '',
+          web: sede.web || '',
+          ano_fundacion: sede.ano_fundacion || '',
+          tamano_despacho: sede.tamano_despacho || '',
+          persona_contacto: sede.persona_contacto || '',
+          email_contacto: sede.email_contacto || '',
+          telefono: sede.telefono || '',
+          numero_colegiado: sede.numero_colegiado || '',
+          colegio: sede.colegio || '',
+          experiencia: sede.experiencia || '',
+          calle: sede.calle || '',
+          numero: sede.numero || '',
+          piso: sede.piso || '',
+          localidad: sede.localidad || '',
+          provincia: sede.provincia || '',
+          codigo_postal: sede.codigo_postal || '',
+          pais: sede.pais || 'España',
+          direccion_completa: [
+            sede.calle && sede.numero ? `${sede.calle} ${sede.numero}` : sede.calle,
+            sede.piso,
+            sede.localidad,
+            sede.provincia,
+            sede.codigo_postal ? `(${sede.codigo_postal})` : ''
+          ].filter(Boolean).join(', '),
+          especialidades: sede.especialidades || '',
+          servicios_especificos: sede.servicios_especificos || '',
+          estado_verificacion: sede.estado_verificacion || 'pendiente',
+          estado_registro: sede.estado_registro || 'activo',
+          foto_perfil: sede.foto_perfil || '',
+          is_verified: sede.estado_verificacion === 'verificado',
+          observaciones: sede.observaciones || '',
+          es_principal: sede.es_principal || false,
+          activa: sede.activa !== false,
+          horarios: sede.horarios || {},
+          redes_sociales: sede.redes_sociales || {},
+          areas_practica: sede.areas_practica || [],
+        })),
+        num_sedes: sedes?.length || 0,
+        areas_practica: despacho.areas_practica || [],
+        ultima_actualizacion: new Date().toLocaleDateString('es-ES'),
+        slug: despacho.slug || despacho.nombre.toLowerCase().replace(/\s+/g, '-'),
+      };
+
+      // Enviar a Algolia
+      const algoliaAppId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
+      const algoliaApiKey = process.env.ALGOLIA_ADMIN_API_KEY;
+      const algoliaIndex = process.env.NEXT_PUBLIC_ALGOLIA_INDEX || 'despachos_v3';
+
+      if (!algoliaAppId || !algoliaApiKey) {
+        throw new Error('Algolia credentials not configured');
+      }
+
+      const response = await fetch(
+        `https://${algoliaAppId}-dsn.algolia.net/1/indexes/${algoliaIndex}/${algoliaObjectId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'X-Algolia-API-Key': algoliaApiKey,
+            'X-Algolia-Application-Id': algoliaAppId,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(algoliaRecord),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Algolia sync failed: ${response.status} - ${errorText}`);
+      }
+
+      console.log('✅ Registro sincronizado con Algolia:', algoliaRecord);
+      return { success: true };
+
+    } catch (error) {
+      console.error('❌ Error al sincronizar con Algolia:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido',
+      };
+    }
   }
 }
