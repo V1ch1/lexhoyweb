@@ -6,15 +6,8 @@ import { supabase } from "@/lib/supabase";
 import Image from 'next/image';
 import { slugify } from "@/lib/slugify";
 import {
-  UserIcon,
   BuildingOfficeIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  GlobeAltIcon,
-  MapPinIcon,
   PencilIcon,
-  TrashIcon,
-  PlusIcon,
   XMarkIcon,
   ArrowLeftIcon,
   CheckCircleIcon,
