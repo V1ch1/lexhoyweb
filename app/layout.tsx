@@ -6,6 +6,7 @@ import Footer from "@/components/Footer"; // Footer
 import { AuthProvider } from "@/lib/authContext"; // Contexto de autenticación
 import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
 import { Toaster } from 'sonner';
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import "./globals.css";
 
 // Fuentes
@@ -41,6 +42,9 @@ export default function RootLayout({
 
   return (
     <html lang="es" className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}>
+      <head>
+        <GoogleAnalytics />
+      </head>
       <body
         suppressHydrationWarning={true}
         className={`${inter.className} font-sans bg-gray-50`}
