@@ -12,9 +12,11 @@ const supabase = createClient(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params en Next.js 15
+    const { id } = await params;
     // Obtener token de autenticación
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
@@ -86,7 +88,7 @@ export async function DELETE(
     
     console.log('✅ Usuario verificado como super_admin:', user.email);
 
-    const despachoId = params.id;
+    const despachoId = id;
     console.log('🗑️ Iniciando eliminación de despacho:', despachoId);
 
     // Obtener datos del despacho antes de eliminarlo
