@@ -5,7 +5,9 @@ import { useRouter, useParams } from "next/navigation";
 import { UserService } from "@/lib/userService";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
+import { supabase } from "@/lib/supabase";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const userService = new UserService();
 
@@ -37,6 +39,11 @@ export default function EditUserPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showModalAsignar, setShowModalAsignar] = useState(false);
+  
+  // Estados para el modal de confirmación de desasignación
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [despachoToUnassign, setDespachoToUnassign] = useState<{id: string, titulo: string} | null>(null);
+  const [unassigningDespacho, setUnassigningDespacho] = useState<string | null>(null);
 
   // Recargar despachos después de asignar desde el modal
   const handleAsignarDespacho = async () => {
@@ -153,30 +160,69 @@ export default function EditUserPage() {
     router.push("/admin/users");
   };
 
-  const handleDesasignarDespacho = async (despachoId: string) => {
+  const handleDesasignarDespacho = (despachoId: string) => {
     if (!user) return;
 
-    if (
-      !confirm(
-        "¿Estás seguro de que quieres desasignar este despacho del usuario?"
-      )
-    ) {
-      return;
-    }
+    const despachoNombre = userDespachos.find(d => d.despachoId === despachoId)?.despachos?.nombre || "este despacho";
+    
+    // Configurar el modal de confirmación
+    setDespachoToUnassign({ id: despachoId, titulo: despachoNombre });
+    setShowConfirmDialog(true);
+  };
+
+  const confirmDesasignarDespacho = async () => {
+    if (!user || !despachoToUnassign) return;
 
     try {
-      await userService.unassignDespachoFromUser(user.id, despachoId);
+      setUnassigningDespacho(despachoToUnassign.id);
+      setShowConfirmDialog(false);
+      
+      // Obtener el token de la sesión actual
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      // Usar el nuevo endpoint de admin
+      const response = await fetch(`/api/admin/users/${user.id}/despachos/${despachoToUnassign.id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al desasignar despacho");
+      }
+
+      const result = await response.json();
 
       // Recargar la lista completa de despachos del usuario
       const updatedDespachos = await userService.getUserDespachos(user.id);
       setUserDespachos(updatedDespachos.filter((d) => d.activo));
 
-      setSuccessMessage("Despacho desasignado exitosamente");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      const successMsg = result.despacho?.available_for_claim 
+        ? `Despacho "${despachoToUnassign.titulo}" desasignado exitosamente. Ahora está disponible para solicitud de propiedad.`
+        : `Despacho "${despachoToUnassign.titulo}" desasignado exitosamente.`;
+
+      setSuccessMessage(successMsg);
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
-      console.error("Error al desasignar despacho:", error);
-      setError("Error al desasignar el despacho");
+      setError(error instanceof Error ? error.message : "Error al desasignar el despacho");
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setUnassigningDespacho(null);
+      setDespachoToUnassign(null);
     }
+  };
+
+  const cancelDesasignarDespacho = () => {
+    setShowConfirmDialog(false);
+    setDespachoToUnassign(null);
+    setUnassigningDespacho(null);
   };
 
   if (error) {
@@ -542,12 +588,25 @@ export default function EditUserPage() {
                         </div>
                         <button
                           onClick={() => handleDesasignarDespacho(despacho.despachoId)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                          disabled={unassigningDespacho === despacho.despachoId}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Desasignar
+                          {unassigningDespacho === despacho.despachoId ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Desasignando...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              Desasignar
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -610,6 +669,18 @@ export default function EditUserPage() {
           }}
         />
       )}
+
+      {/* Modal de confirmación de desasignación */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        title="Confirmar desasignación"
+        message={`¿Estás seguro de que quieres desasignar "${despachoToUnassign?.titulo}" del usuario ${user?.nombre} ${user?.apellidos}?\n\nEsto permitirá que otros usuarios puedan solicitar la propiedad de este despacho.`}
+        confirmText="Desasignar"
+        cancelText="Cancelar"
+        onConfirm={confirmDesasignarDespacho}
+        onCancel={cancelDesasignarDespacho}
+        type="warning"
+      />
     </>
   );
 }

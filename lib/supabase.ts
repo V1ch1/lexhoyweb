@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import './logger'; // Importar configuración de logs globales
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
@@ -17,7 +18,7 @@ export const supabase = createClient(
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: 'pkce',
-      debug: process.env.NODE_ENV === 'development',
+      debug: false, // Deshabilitar logs verbosos de Supabase
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       storageKey: 'sb-oepcitgbnqylfpdryffx-auth-token'
     },

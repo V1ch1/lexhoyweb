@@ -609,6 +609,7 @@ export class UserService {
   /**
    * Quitar asignación de despacho
    * Maneja AMBOS casos: asignación manual (user_despachos) Y propiedad (owner_email)
+   * Después de desasignar, el despacho queda disponible para solicitud de propiedad
    */
   async unassignDespachoFromUser(
     userId: string,
@@ -624,33 +625,89 @@ export class UserService {
 
       if (userError) throw userError;
 
+      let assignmentRemoved = false;
+      let ownershipRemoved = false;
+
       // 2. Desactivar asignación manual en user_despachos (si existe)
-      const { error: unassignError } = await supabase
+      const { data: unassignData, error: unassignError } = await supabase
         .from("user_despachos")
         .update({ activo: false })
         .eq("user_id", userId)
-        .eq("despacho_id", despachoId);
+        .eq("despacho_id", despachoId)
+        .select();
 
-      if (unassignError) {
-        console.warn("⚠️ No se encontró asignación manual:", unassignError);
-      } else {
-        }
+      if (!unassignError && unassignData && unassignData.length > 0) {
+        assignmentRemoved = true;
+      }
 
       // 3. Eliminar owner_email del despacho (si el usuario es propietario)
-      const { error: ownerError } = await supabase
+      const { data: ownerData, error: ownerError } = await supabase
         .from("despachos")
         .update({ owner_email: null })
         .eq("id", despachoId)
-        .eq("owner_email", userData.email);
+        .eq("owner_email", userData.email)
+        .select();
 
-      if (ownerError) {
-        console.warn("⚠️ No se pudo eliminar owner_email:", ownerError);
-      } else {
+      if (!ownerError && ownerData && ownerData.length > 0) {
+        ownershipRemoved = true;
+      }
+
+      // Verificar que al menos una operación fue exitosa
+      if (!assignmentRemoved && !ownershipRemoved) {
+        throw new Error("No se encontró ninguna asignación o propiedad para eliminar");
+      }
+
+      // 4. Actualizar el rol del usuario si ya no tiene despachos asignados
+      const remainingDespachos = await this.getUserDespachos(userId);
+      if (remainingDespachos.length === 0) {
+        // Si el usuario ya no tiene despachos, cambiar rol a 'usuario'
+        const { error: roleError } = await supabase
+          .from("users")
+          .update({ role: "usuario" })
+          .eq("id", userId);
+
+        if (roleError) {
+          // No es crítico, solo log
+          console.warn("⚠️ No se pudo actualizar el rol del usuario:", roleError);
         }
+      }
 
-      } catch (error) {
-      console.error("❌ Error en unassignDespachoFromUser:", error);
+    } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Verificar si un despacho está disponible para solicitud de propiedad
+   * Un despacho está disponible si no tiene owner_email y no tiene asignaciones activas
+   */
+  async isDespachoAvailableForClaim(despachoId: string): Promise<boolean> {
+    try {
+      // Verificar si el despacho tiene owner_email
+      const { data: despacho, error: despachoError } = await supabase
+        .from("despachos")
+        .select("owner_email")
+        .eq("id", despachoId)
+        .single();
+
+      if (despachoError || !despacho) return false;
+
+      // Si tiene owner_email, no está disponible
+      if (despacho.owner_email) return false;
+
+      // Verificar si tiene asignaciones activas
+      const { data: assignments, error: assignError } = await supabase
+        .from("user_despachos")
+        .select("id")
+        .eq("despacho_id", despachoId)
+        .eq("activo", true);
+
+      if (assignError) return false;
+
+      // Si no tiene asignaciones activas, está disponible
+      return assignments.length === 0;
+    } catch {
+      return false;
     }
   }
 
