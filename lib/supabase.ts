@@ -1,12 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import './logger'; // Importar configuración de logs globales
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
 }
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
 export const supabase = createClient(
@@ -17,16 +16,16 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      flowType: 'pkce',
-      debug: false, // Deshabilitar logs verbosos de Supabase
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      storageKey: 'sb-oepcitgbnqylfpdryffx-auth-token'
+      flowType: "pkce",
+      debug: false, // Desactivado para evitar logs verbosos
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      storageKey: "sb-oepcitgbnqylfpdryffx-auth-token",
     },
     global: {
       headers: {
-        'Content-Type': 'application/json',
-      }
-    }
+        "Content-Type": "application/json",
+      },
+    },
   }
 );
 
