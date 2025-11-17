@@ -1034,10 +1034,22 @@ export default function CrearDespachoPage() {
                               const file = e.target.files?.[0];
                               if (file) {
                                 try {
+                                  // Mostrar estado de carga
+                                  const loadingText = e.target.parentElement?.querySelector('.text-sm.text-gray-500');
+                                  const originalText = loadingText?.textContent;
+                                  if (loadingText) {
+                                    loadingText.textContent = '⏳ Subiendo y optimizando imagen...';
+                                    loadingText.className = 'text-sm text-blue-600 font-medium';
+                                  }
+
                                   // Validar imagen
                                   const validation = ImageOptimizer.validateImage(file);
                                   if (!validation.valid) {
                                     alert(validation.error);
+                                    if (loadingText && originalText) {
+                                      loadingText.textContent = originalText;
+                                      loadingText.className = 'text-sm text-gray-500';
+                                    }
                                     return;
                                   }
 
@@ -1050,11 +1062,27 @@ export default function CrearDespachoPage() {
                                   // Usar la URL pública de Supabase
                                   handleSedeChange(index, "foto_perfil", url);
 
-                                  alert('✅ Imagen subida correctamente');
+                                  // Mostrar éxito
+                                  if (loadingText) {
+                                    loadingText.textContent = '✅ Imagen subida correctamente';
+                                    loadingText.className = 'text-sm text-green-600 font-medium';
+                                    setTimeout(() => {
+                                      if (originalText) {
+                                        loadingText.textContent = originalText;
+                                        loadingText.className = 'text-sm text-gray-500';
+                                      }
+                                    }, 3000);
+                                  }
 
                                 } catch (error) {
                                   console.error('Error al subir imagen:', error);
-                                  alert(`❌ Error al subir la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                                  const loadingText = e.target.parentElement?.querySelector('.text-sm');
+                                  if (loadingText) {
+                                    loadingText.textContent = `❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`;
+                                    loadingText.className = 'text-sm text-red-600 font-medium';
+                                  } else {
+                                    alert(`❌ Error al subir la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                                  }
                                 }
                               }
                             }}
