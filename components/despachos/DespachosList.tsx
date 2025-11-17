@@ -187,7 +187,7 @@ export function DespachosList({
           </div>
           <div className="flex gap-2 items-center">
             <button
-              className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-black font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page === 1}
               onClick={() => setPage(Math.max(1, page - 1))}
             >
@@ -197,7 +197,7 @@ export function DespachosList({
               Página {page} de {totalPages || 1}
             </span>
             <button
-              className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-black font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={page === totalPages || totalPages === 0}
               onClick={() => setPage(Math.min(totalPages, page + 1))}
             >
@@ -477,6 +477,29 @@ export function DespachosList({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Paginación inferior - Solo visible si hay despachos */}
+        {despachos.length > 0 && (
+          <div className="flex justify-center gap-2 items-center mt-6 pb-4">
+            <button
+              className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-black font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === 1}
+              onClick={() => setPage(Math.max(1, page - 1))}
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-600 font-medium">
+              Página {page} de {totalPages || 1}
+            </span>
+            <button
+              className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-black font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={page === totalPages || totalPages === 0}
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+            >
+              Siguiente
+            </button>
           </div>
         )}
       </div>
