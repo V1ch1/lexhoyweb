@@ -5,9 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { UserService } from "@/lib/userService";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
-import { supabase } from "@/lib/supabase";
-import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const userService = new UserService();
 
@@ -22,9 +19,9 @@ function decodeHtml(html: string): string {
 // Utilidad para formatear el rol
 function formatRole(rol: UserRole): string {
   const roleMap: Record<UserRole, string> = {
-    super_admin: 'Super Admin',
-    despacho_admin: 'Admin Despacho',
-    usuario: 'Usuario'
+    super_admin: "Super Admin",
+    despacho_admin: "Admin Despacho",
+    usuario: "Usuario",
   };
   return roleMap[rol] || rol;
 }
@@ -38,26 +35,6 @@ export default function EditUserPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showModalAsignar, setShowModalAsignar] = useState(false);
-  
-  // Estados para el modal de confirmación de desasignación
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [despachoToUnassign, setDespachoToUnassign] = useState<{id: string, titulo: string} | null>(null);
-  const [unassigningDespacho, setUnassigningDespacho] = useState<string | null>(null);
-
-  // Recargar despachos después de asignar desde el modal
-  const handleAsignarDespacho = async () => {
-    if (!user) return;
-    try {
-      setSuccessMessage("Despacho asignado exitosamente");
-      // Actualizar despachos asignados
-      const despachos = await userService.getUserDespachos(user.id);
-      setUserDespachos(despachos);
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      console.error("Error al recargar despachos:", err);
-    }
-  };
 
   // Estados para los campos del formulario
   const [formData, setFormData] = useState({
@@ -160,85 +137,35 @@ export default function EditUserPage() {
     router.push("/admin/users");
   };
 
-  const handleDesasignarDespacho = (despachoId: string) => {
+  const handleDesasignarDespacho = async (despachoId: string) => {
     if (!user) return;
 
-    const despachoNombre = userDespachos.find(d => d.despachoId === despachoId)?.despachos?.nombre || "este despacho";
-    
-    // Configurar el modal de confirmación
-    setDespachoToUnassign({ id: despachoId, titulo: despachoNombre });
-    setShowConfirmDialog(true);
-  };
-
-  const confirmDesasignarDespacho = async () => {
-    if (!user || !despachoToUnassign) return;
+    if (
+      !confirm(
+        "¿Estás seguro de que quieres desasignar este despacho del usuario?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      setUnassigningDespacho(despachoToUnassign.id);
-      setShowConfirmDialog(false);
-      
-      // Obtener el token de la sesión actual
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        throw new Error('No hay sesión activa');
-      }
-
-      // Usar el nuevo endpoint de admin
-      const response = await fetch(`/api/admin/users/${user.id}/despachos/${despachoToUnassign.id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al desasignar despacho");
-      }
-
-      const result = await response.json();
+      await userService.unassignDespachoFromUser(user.id, despachoId);
 
       // Recargar la lista completa de despachos del usuario
       const updatedDespachos = await userService.getUserDespachos(user.id);
       setUserDespachos(updatedDespachos.filter((d) => d.activo));
 
-      const successMsg = result.despacho?.available_for_claim 
-        ? `Despacho "${despachoToUnassign.titulo}" desasignado exitosamente. Ahora está disponible para solicitud de propiedad.`
-        : `Despacho "${despachoToUnassign.titulo}" desasignado exitosamente.`;
-
-      setSuccessMessage(successMsg);
-      setTimeout(() => setSuccessMessage(null), 5000);
+      setSuccessMessage("Despacho desasignado exitosamente");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Error al desasignar el despacho");
-      setTimeout(() => setError(null), 3000);
-    } finally {
-      setUnassigningDespacho(null);
-      setDespachoToUnassign(null);
+      console.error("Error al desasignar despacho:", error);
+      setError("Error al desasignar el despacho");
     }
-  };
-
-  const cancelDesasignarDespacho = () => {
-    setShowConfirmDialog(false);
-    setDespachoToUnassign(null);
-    setUnassigningDespacho(null);
   };
 
   if (error) {
     return (
       <>
-        {showModalAsignar && (
-          <ModalAsignarPropietario
-            despachoId={userDespachos[0]?.despachoId || null}
-            show={showModalAsignar}
-            onClose={() => setShowModalAsignar(false)}
-            onAsignar={() => {
-              handleAsignarDespacho();
-              setShowModalAsignar(false);
-            }}
-          />
-        )}
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow p-8 max-w-md text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -266,30 +193,45 @@ export default function EditUserPage() {
     <>
       {/* Breadcrumb y botón volver */}
       <div className="mb-6 flex items-center justify-between">
-          <nav className="flex items-center space-x-2 text-sm text-gray-500">
-            <button onClick={() => router.push("/admin/users")} className="hover:text-gray-700">
-              Usuarios
-            </button>
-            <span>/</span>
-            <span className="text-gray-900 font-medium">{user.nombre} {user.apellidos}</span>
-          </nav>
+        <nav className="flex items-center space-x-2 text-sm text-gray-500">
           <button
-            onClick={handleCancel}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            onClick={() => router.push("/admin/users")}
+            className="hover:text-gray-700"
           >
-            ← Volver
+            Usuarios
           </button>
-        </div>
+          <span>/</span>
+          <span className="text-gray-900 font-medium">
+            {user.nombre} {user.apellidos}
+          </span>
+        </nav>
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+        >
+          ← Volver
+        </button>
+      </div>
 
       {/* Mensaje de Éxito */}
       {successMessage && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-fade-in">
           <div className="flex items-center">
-            <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            <svg
+              className="h-5 w-5 text-green-400"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">✅ {successMessage}</p>
+              <p className="text-sm font-medium text-green-800">
+                ✅ {successMessage}
+              </p>
             </div>
           </div>
         </div>
@@ -301,17 +243,31 @@ export default function EditUserPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                <svg
+                  className="w-10 h-10 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{user.nombre} {user.apellidos}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {user.nombre} {user.apellidos}
+                </h2>
                 <p className="text-sm text-gray-600">{user.email}</p>
                 <div className="mt-2 flex gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    formData.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      formData.activo
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
                     {formData.activo ? "Activo" : "Inactivo"}
                   </span>
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
@@ -330,10 +286,16 @@ export default function EditUserPage() {
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Despacho asignado</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {decodeHtml(userDespachos[0]?.despachos?.nombre || "Despacho")}
+                    {decodeHtml(
+                      userDespachos[0]?.despachos?.nombre || "Despacho"
+                    )}
                   </p>
                   <button
-                    onClick={() => setShowModalAsignar(true)}
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                      )
+                    }
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700"
                   >
                     Cambiar despacho
@@ -341,10 +303,14 @@ export default function EditUserPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowModalAsignar(true)}
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                    )
+                  }
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  Asignar despacho
+                  Buscar Despacho
                 </button>
               )}
             </div>
@@ -355,171 +321,218 @@ export default function EditUserPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Columna izquierda */}
         <div className="space-y-6">
-            {/* Información Básica */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Información Básica</h2>
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nombre *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.nombre}
-                      onChange={(e) => handleInputChange("nombre", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nombre del usuario"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Apellidos *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.apellidos}
-                      onChange={(e) => handleInputChange("apellidos", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Apellidos del usuario"
-                    />
-                  </div>
-                </div>
+          {/* Información Básica */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Información Básica
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                    Nombre *
                   </label>
                   <input
-                    type="email"
-                    value={formData.email}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
-                    disabled
-                  />
-                  <p className="text-xs text-gray-500 mt-1 flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    El email no se puede modificar por seguridad
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.telefono}
-                    onChange={(e) => handleInputChange("telefono", e.target.value)}
-                    placeholder="+34 600 123 456"
+                    type="text"
+                    value={formData.nombre}
+                    onChange={(e) =>
+                      handleInputChange("nombre", e.target.value)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nombre del usuario"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apellidos *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.apellidos}
+                    onChange={(e) =>
+                      handleInputChange("apellidos", e.target.value)
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Apellidos del usuario"
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Configuración de cuenta */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Configuración de Cuenta</h2>
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rol
-                    </label>
-                    <select
-                      value={formatRole(formData.rol)}
-                      onChange={(e) => handleInputChange("rol", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="usuario">Usuario</option>
-                      <option value="despacho_admin">Admin Despacho</option>
-                      <option value="super_admin">Super Admin</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estado
-                    </label>
-                    <select
-                      value={formData.estado}
-                      onChange={(e) => handleInputChange("estado", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="activo">Activo</option>
-                      <option value="inactivo">Inactivo</option>
-                      <option value="suspendido">Suspendido</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-6">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.activo}
-                      onChange={(e) => handleInputChange("activo", e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+                  disabled
+                />
+                <p className="text-xs text-gray-500 mt-1 flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Cuenta activa</span>
+                  </svg>
+                  El email no se puede modificar por seguridad
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={formData.telefono}
+                  onChange={(e) =>
+                    handleInputChange("telefono", e.target.value)
+                  }
+                  placeholder="+34 600 123 456"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Configuración de cuenta */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Configuración de Cuenta
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rol
                   </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.emailVerificado}
-                      onChange={(e) => handleInputChange("emailVerificado", e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Email verificado</span>
+                  <select
+                    value={formatRole(formData.rol)}
+                    onChange={(e) => handleInputChange("rol", e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="usuario">Usuario</option>
+                    <option value="despacho_admin">Admin Despacho</option>
+                    <option value="super_admin">Super Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estado
                   </label>
+                  <select
+                    value={formData.estado}
+                    onChange={(e) =>
+                      handleInputChange("estado", e.target.value)
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                    <option value="suspendido">Suspendido</option>
+                  </select>
                 </div>
               </div>
+              <div className="flex items-center space-x-6">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.activo}
+                    onChange={(e) =>
+                      handleInputChange("activo", e.target.checked)
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    Cuenta activa
+                  </span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.emailVerificado}
+                    onChange={(e) =>
+                      handleInputChange("emailVerificado", e.target.checked)
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    Email verificado
+                  </span>
+                </label>
+              </div>
             </div>
+          </div>
 
-            {/* Notas del administrador */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Notas Internas</h2>
-              </div>
-              <div className="p-6">
-                <textarea
-                  value={formData.notasAdmin}
-                  onChange={(e) => handleInputChange("notasAdmin", e.target.value)}
-                  rows={5}
-                  placeholder="Añade notas internas sobre este usuario (solo visible para administradores)..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                ></textarea>
-              </div>
+          {/* Notas del administrador */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Notas Internas
+              </h2>
             </div>
+            <div className="p-6">
+              <textarea
+                value={formData.notasAdmin}
+                onChange={(e) =>
+                  handleInputChange("notasAdmin", e.target.value)
+                }
+                rows={5}
+                placeholder="Añade notas internas sobre este usuario (solo visible para administradores)..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              ></textarea>
+            </div>
+          </div>
 
           {/* Botones de acción */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-end space-x-4">
-                <button
-                  onClick={handleCancel}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {saving ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Guardando...
-                    </>
-                  ) : (
-                    "Guardar cambios"
-                  )}
-                </button>
+              <button
+                onClick={handleCancel}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {saving ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Guardando...
+                  </>
+                ) : (
+                  "Guardar cambios"
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -529,7 +542,9 @@ export default function EditUserPage() {
           {/* Despachos Asignados */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Despachos Asignados</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Despachos Asignados
+              </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Despachos que este usuario puede gestionar
               </p>
@@ -537,17 +552,31 @@ export default function EditUserPage() {
             <div className="p-6">
               {userDespachos.length === 0 ? (
                 <div className="text-center py-8">
-                  <svg className="h-12 w-12 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  <svg
+                    className="h-12 w-12 text-gray-400 mx-auto mb-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
                   </svg>
                   <p className="text-gray-500 mb-4">
                     Este usuario no tiene despachos asignados.
                   </p>
                   <button
-                    onClick={() => setShowModalAsignar(true)}
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                      )
+                    }
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    Asignar Despacho
+                    Buscar Despacho
                   </button>
                 </div>
               ) : (
@@ -560,14 +589,16 @@ export default function EditUserPage() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 mb-1">
-                            {decodeHtml(despacho.despachos?.nombre || "Despacho")}
+                            {decodeHtml(
+                              despacho.despachos?.nombre || "Despacho"
+                            )}
                           </h4>
                           <p className="text-sm text-gray-600">
                             {despacho.despachos?.slug || ""}
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div className="flex gap-2">
                           {despacho.permisos?.leer && (
@@ -587,39 +618,52 @@ export default function EditUserPage() {
                           )}
                         </div>
                         <button
-                          onClick={() => handleDesasignarDespacho(despacho.despachoId)}
-                          disabled={unassigningDespacho === despacho.despachoId}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() =>
+                            handleDesasignarDespacho(despacho.despachoId)
+                          }
+                          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
                         >
-                          {unassigningDespacho === despacho.despachoId ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Desasignando...
-                            </>
-                          ) : (
-                            <>
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Desasignar
-                            </>
-                          )}
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                          Desasignar
                         </button>
                       </div>
                     </div>
                   ))}
-                  
+
                   <button
-                    onClick={() => setShowModalAsignar(true)}
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                      )
+                    }
                     className="w-full mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors font-medium flex items-center justify-center gap-2"
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
-                    Asignar Otro Despacho
+                    Buscar Otro Despacho
                   </button>
                 </div>
               )}
@@ -629,15 +673,23 @@ export default function EditUserPage() {
           {/* Estadísticas del Usuario */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Estadísticas</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Estadísticas
+              </h2>
             </div>
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Despachos asignados:</span>
-                <span className="text-lg font-bold text-blue-600">{userDespachos.length}</span>
+                <span className="text-sm text-gray-600">
+                  Despachos asignados:
+                </span>
+                <span className="text-lg font-bold text-blue-600">
+                  {userDespachos.length}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Fecha de registro:</span>
+                <span className="text-sm text-gray-600">
+                  Fecha de registro:
+                </span>
                 <span className="text-sm font-medium text-gray-900">
                   {user.fechaRegistro
                     ? new Date(user.fechaRegistro).toLocaleDateString("es-ES")
@@ -656,31 +708,6 @@ export default function EditUserPage() {
           </div>
         </div>
       </div>
-
-      {/* Modal de asignar despacho */}
-      {showModalAsignar && (
-        <ModalAsignarPropietario
-          despachoId={userDespachos[0]?.despachoId || null}
-          show={showModalAsignar}
-          onClose={() => setShowModalAsignar(false)}
-          onAsignar={() => {
-            handleAsignarDespacho();
-            setShowModalAsignar(false);
-          }}
-        />
-      )}
-
-      {/* Modal de confirmación de desasignación */}
-      <ConfirmDialog
-        isOpen={showConfirmDialog}
-        title="Confirmar desasignación"
-        message={`¿Estás seguro de que quieres desasignar "${despachoToUnassign?.titulo}" del usuario ${user?.nombre} ${user?.apellidos}?\n\nEsto permitirá que otros usuarios puedan solicitar la propiedad de este despacho.`}
-        confirmText="Desasignar"
-        cancelText="Cancelar"
-        onConfirm={confirmDesasignarDespacho}
-        onCancel={cancelDesasignarDespacho}
-        type="warning"
-      />
     </>
   );
 }
