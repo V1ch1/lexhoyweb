@@ -13,9 +13,19 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
   images: {
-    domains: [
-      "oepcitgbnqylfpdryffx.supabase.co", // Supabase storage
-      "lexhoy.com", // WordPress images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "oepcitgbnqylfpdryffx.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lexhoy.com",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {
