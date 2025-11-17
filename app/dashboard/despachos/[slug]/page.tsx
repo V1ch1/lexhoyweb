@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Image from 'next/image';
 import { slugify } from "@/lib/slugify";
+import { ImageOptimizer } from "@/lib/imageOptimizer";
 import {
   BuildingOfficeIcon,
   PencilIcon,
@@ -1583,32 +1584,40 @@ export default function DespachoPage() {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           
-                          // Validar tamaño del archivo (máximo 2MB)
-                          if (file.size > 2 * 1024 * 1024) {
-                            alert('La imagen no debe superar 2MB');
+                          try {
+                            // Validar imagen
+                            const validation = ImageOptimizer.validateImage(file);
+                            if (!validation.valid) {
+                              alert(validation.error);
+                              if (e.target) {
+                                (e.target as HTMLInputElement).value = '';
+                              }
+                              return;
+                            }
+
+                            // Optimizar imagen (convierte a WebP 500x500px, calidad 85%)
+                            const optimized = await ImageOptimizer.optimizeProfileImage(file);
+                            
+                            console.log('Imagen optimizada:', {
+                              formatoOriginal: file.type,
+                              formatoOptimizado: optimized.format,
+                              tamañoOriginal: ImageOptimizer.formatFileSize(file.size),
+                              tamañoOptimizado: ImageOptimizer.formatFileSize(optimized.size),
+                              dimensiones: `${optimized.width}x${optimized.height}px`
+                            });
+
+                            setEditSedeData(prev => prev ? {...prev, foto_perfil: optimized.dataUrl} : null);
+                          } catch (error) {
+                            console.error('Error al procesar la imagen:', error);
+                            alert('Error al procesar la imagen. Por favor, intenta con otra imagen.');
                             if (e.target) {
                               (e.target as HTMLInputElement).value = '';
                             }
-                            return;
                           }
-                          
-                          // Convertir a base64 directamente sin validar dimensiones
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setEditSedeData(prev => prev ? {...prev, foto_perfil: reader.result as string} : null);
-                          };
-                          reader.onerror = () => {
-                            console.error('Error al cargar la imagen');
-                            alert('Error al procesar la imagen');
-                            if (e.target) {
-                              (e.target as HTMLInputElement).value = '';
-                            }
-                          };
-                          reader.readAsDataURL(file);
                         }}
                         className="text-sm"
                       />
-                      <p className="text-xs text-gray-500">JPG, PNG o GIF. Máximo 2MB. Se ajustará automáticamente.</p>
+                      <p className="text-xs text-gray-500">JPG, PNG o GIF. Máximo 5MB. Se convertirá a WebP y optimizará automáticamente.</p>
                     </div>
                   ) : (
                     sedes[activeSedeTab].foto_perfil ? (
