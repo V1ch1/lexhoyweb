@@ -3,6 +3,8 @@
  * Redimensiona a 500x500px y convierte a WebP para mejor rendimiento
  */
 
+import { supabase } from './supabase';
+
 export interface ImageOptimizationOptions {
   maxWidth?: number;
   maxHeight?: number;
@@ -224,5 +226,105 @@ export class ImageOptimizer {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Optimiza y sube una imagen a Supabase Storage
+   * Retorna la URL pública de la imagen
+   */
+  static async uploadToSupabase(
+    file: File,
+    options: {
+      bucket?: string;
+      path?: string;
+      despachoId?: string;
+    } = {}
+  ): Promise<{ url: string; size: number }> {
+    const {
+      bucket = 'despachos-fotos',
+      path = 'perfiles',
+      despachoId
+    } = options;
+
+    try {
+      // Optimizar la imagen primero
+      const optimized = await this.optimizeProfileImage(file);
+
+      // Generar nombre único para el archivo
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
+      const fileName = despachoId 
+        ? `${path}/${despachoId}-${timestamp}.webp`
+        : `${path}/${timestamp}-${random}.webp`;
+
+      // Subir a Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, optimized.blob, {
+          contentType: 'image/webp',
+          cacheControl: '3600',
+          upsert: true // Sobrescribir si ya existe
+        });
+
+      if (error) {
+        console.error('❌ Error al subir imagen a Supabase:', error);
+        throw new Error(`Error al subir imagen: ${error.message}`);
+      }
+
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
+
+      console.log('✅ Imagen subida a Supabase:', {
+        url: publicUrl,
+        size: this.formatFileSize(optimized.size),
+        dimensions: `${optimized.width}x${optimized.height}px`
+      });
+
+      return {
+        url: publicUrl,
+        size: optimized.size
+      };
+    } catch (error) {
+      console.error('❌ Error en uploadToSupabase:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Elimina una imagen de Supabase Storage
+   */
+  static async deleteFromSupabase(
+    url: string,
+    bucket: string = 'despachos-fotos'
+  ): Promise<boolean> {
+    try {
+      // Extraer el path del archivo desde la URL
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split(`/storage/v1/object/public/${bucket}/`);
+      
+      if (pathParts.length < 2) {
+        console.warn('⚠️ URL no válida para eliminar:', url);
+        return false;
+      }
+
+      const filePath = pathParts[1];
+
+      const { error } = await supabase.storage
+        .from(bucket)
+        .remove([filePath]);
+
+      if (error) {
+        console.error('❌ Error al eliminar imagen:', error);
+        return false;
+      }
+
+      console.log('✅ Imagen eliminada de Supabase:', filePath);
+      return true;
+    } catch (error) {
+      console.error('❌ Error en deleteFromSupabase:', error);
+      return false;
+    }
   }
 }

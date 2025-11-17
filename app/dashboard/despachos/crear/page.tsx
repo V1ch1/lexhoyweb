@@ -1041,22 +1041,20 @@ export default function CrearDespachoPage() {
                                     return;
                                   }
 
-                                  // Mostrar información original
-                                  const originalInfo = await ImageOptimizer.getImageInfo(file);
-                                  // Optimizar imagen manteniendo proporción
-                                  const optimized = await ImageOptimizer.optimizeProfileImage(file);
-                                  
-                                  const reduction = ((originalInfo.size - optimized.size) / originalInfo.size * 100).toFixed(1);
-                                  // Usar la imagen optimizada
-                                  handleSedeChange(
-                                    index,
-                                    "foto_perfil",
-                                    optimized.dataUrl
-                                  );
+                                  // Subir a Supabase y obtener URL
+                                  const { url } = await ImageOptimizer.uploadToSupabase(file, {
+                                    path: 'perfiles',
+                                    bucket: 'despachos-fotos'
+                                  });
+
+                                  // Usar la URL pública de Supabase
+                                  handleSedeChange(index, "foto_perfil", url);
+
+                                  alert('✅ Imagen subida correctamente');
 
                                 } catch (error) {
-                                  console.error('Error al optimizar imagen:', error);
-                                  alert(`❌ Error al procesar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                                  console.error('Error al subir imagen:', error);
+                                  alert(`❌ Error al subir la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
                                 }
                               }
                             }}
