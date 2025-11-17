@@ -758,8 +758,9 @@ Escribe "ELIMINAR" para confirmar:`;
                             {despacho.nombre}
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
-                            ID: {despacho.id.startsWith("wp-") 
-                              ? `WP-${despacho.id.replace("wp-", "")}` 
+                            ID:{" "}
+                            {despacho.id.startsWith("wp-")
+                              ? `WP-${despacho.id.replace("wp-", "")}`
                               : `${despacho.id.substring(0, 8)}...`}
                           </div>
                         </div>
@@ -770,12 +771,12 @@ Escribe "ELIMINAR" para confirmar:`;
                         <div className="text-sm text-gray-700">
                           <div className="text-xs text-gray-400">
                             {despacho.num_sedes
-                              ? `${despacho.num_sedes} ${despacho.num_sedes === 1 ? 'sede' : 'sedes'}`
-                              : "Sin sedes registradas"
-                            }
+                              ? `${despacho.num_sedes} ${despacho.num_sedes === 1 ? "sede" : "sedes"}`
+                              : "Sin sedes registradas"}
                           </div>
                           <div className="text-xs text-gray-400 mt-1">
-                            Creado: {new Date(despacho.created_at).toLocaleDateString()}
+                            Creado:{" "}
+                            {new Date(despacho.created_at).toLocaleDateString()}
                           </div>
                         </div>
                       </td>
@@ -844,7 +845,10 @@ Escribe "ELIMINAR" para confirmar:`;
                           {/* Última actualización */}
                           {despacho.last_sync_at && (
                             <div className="text-xs text-gray-700">
-                              Actualizado: {new Date(despacho.last_sync_at).toLocaleDateString()}
+                              Actualizado:{" "}
+                              {new Date(
+                                despacho.last_sync_at
+                              ).toLocaleDateString()}
                             </div>
                           )}
                         </div>

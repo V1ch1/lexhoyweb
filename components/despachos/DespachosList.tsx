@@ -65,58 +65,63 @@ export function DespachosList({
 
   const confirmDelete = async () => {
     if (!despachoToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       // Obtener token de autenticación
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.access_token) {
-        throw new Error('No hay sesión activa');
+        throw new Error("No hay sesión activa");
       }
 
       // Usar nuestra API REST de eliminación
       const response = await fetch(`/api/despachos/${despachoToDelete.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
         },
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Error al eliminar despacho:', data);
-        throw new Error(data.error || 'No se pudo completar la eliminación.');
+        console.error("Error al eliminar despacho:", data);
+        throw new Error(data.error || "No se pudo completar la eliminación.");
       }
 
       // 4. Actualizamos la lista
       await fetchDespachos();
       setShowDeleteConfirm(false);
-      
     } catch (error: unknown) {
-      console.error('Error al eliminar el despacho:', error);
-      
+      console.error("Error al eliminar el despacho:", error);
+
       // Mensaje de error más específico
-      let errorMessage = 'No se pudo eliminar el despacho. ';
-      
-      if (error && typeof error === 'object') {
+      let errorMessage = "No se pudo eliminar el despacho. ";
+
+      if (error && typeof error === "object") {
         const errorObj = error as { message?: string; code?: string };
-        
+
         if (errorObj.message) {
           errorMessage = errorObj.message;
         }
-        
-        if (errorObj.code === '23503') { // Violación de clave foránea
-          errorMessage = 'No se puede eliminar porque hay registros relacionados.';
-        } else if (errorObj.code === '42703') { // Columna no existe
-          errorMessage = 'Error en la base de datos. Contacta al administrador.';
+
+        if (errorObj.code === "23503") {
+          // Violación de clave foránea
+          errorMessage =
+            "No se puede eliminar porque hay registros relacionados.";
+        } else if (errorObj.code === "42703") {
+          // Columna no existe
+          errorMessage =
+            "Error en la base de datos. Contacta al administrador.";
         } else {
           errorMessage = errorObj.message || errorMessage;
         }
       }
-      
+
       alert(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -254,7 +259,7 @@ export function DespachosList({
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                     Nº Sedes
                   </th>
-                  {user?.role === 'super_admin' && (
+                  {user?.role === "super_admin" && (
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                       Propietario
                     </th>
@@ -268,19 +273,29 @@ export function DespachosList({
                 {despachos.map((d) => (
                   <tr key={d.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{d.nombre}</div>
+                      <div className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                        {d.nombre}
+                      </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700 truncate max-w-[100px]">{d.localidad || "-"}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[100px]">
+                        {d.localidad || "-"}
+                      </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700 truncate max-w-[100px]">{d.provincia || "-"}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[100px]">
+                        {d.provincia || "-"}
+                      </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{d.telefono || "-"}</div>
+                      <div className="text-sm text-gray-700">
+                        {d.telefono || "-"}
+                      </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700 truncate max-w-[180px]">{d.email || "-"}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[180px]">
+                        {d.email || "-"}
+                      </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex justify-center">
@@ -290,7 +305,7 @@ export function DespachosList({
                       </div>
                     </td>
 
-                    {user?.role === 'super_admin' && (
+                    {user?.role === "super_admin" && (
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {d.owner_email ? (
@@ -298,19 +313,25 @@ export function DespachosList({
                               <button
                                 onClick={async () => {
                                   try {
-                                    const { data: userData, error } = await supabase
-                                      .from("users")
-                                      .select("id")
-                                      .eq("email", d.owner_email)
-                                      .single();
+                                    const { data: userData, error } =
+                                      await supabase
+                                        .from("users")
+                                        .select("id")
+                                        .eq("email", d.owner_email)
+                                        .single();
 
                                     if (error) throw error;
 
                                     if (userData?.id) {
-                                      router.push(`/admin/users/${userData.id}`);
+                                      router.push(
+                                        `/admin/users/${userData.id}`
+                                      );
                                     }
                                   } catch (error) {
-                                    console.error("Error fetching user data:", error);
+                                    console.error(
+                                      "Error fetching user data:",
+                                      error
+                                    );
                                   }
                                 }}
                                 className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1.5 group"
@@ -344,8 +365,19 @@ export function DespachosList({
                                 className="text-yellow-600 hover:text-yellow-800"
                                 title="Cambiar propietario"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                  />
                                 </svg>
                               </button>
                             </div>
@@ -379,13 +411,17 @@ export function DespachosList({
                     )}
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex justify-end pr-2">
-                        {user?.role === "super_admin" || d.isOwner || (d.owner_email && d.owner_email === user?.email) ? (
+                        {user?.role === "super_admin" ||
+                        d.isOwner ||
+                        (d.owner_email && d.owner_email === user?.email) ? (
                           <div className="flex space-x-3">
                             <button
                               className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
                               onClick={() => {
                                 const slug = d.slug || slugify(d.nombre);
-                                router.push(`/dashboard/despachos/${slug}?edit=true`);
+                                router.push(
+                                  `/dashboard/despachos/${slug}?edit=true`
+                                );
                               }}
                               title="Editar despacho"
                             >
@@ -503,7 +539,7 @@ export function DespachosList({
           </div>
         )}
       </div>
-      
+
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -511,11 +547,18 @@ export function DespachosList({
         title="¿Eliminar despacho?"
         message={
           <div className="space-y-3">
-            <p>¿Estás seguro de que deseas eliminar el despacho <span className="font-semibold">{despachoToDelete?.nombre}</span>?</p>
-            
+            <p>
+              ¿Estás seguro de que deseas eliminar el despacho{" "}
+              <span className="font-semibold">{despachoToDelete?.nombre}</span>?
+            </p>
+
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-800 font-semibold text-sm mb-2">⚠️ ATENCIÓN: Esta acción es IRREVERSIBLE</p>
-              <p className="text-red-700 text-sm mb-2">Se eliminará COMPLETAMENTE de:</p>
+              <p className="text-red-800 font-semibold text-sm mb-2">
+                ⚠️ ATENCIÓN: Esta acción es IRREVERSIBLE
+              </p>
+              <p className="text-red-700 text-sm mb-2">
+                Se eliminará COMPLETAMENTE de:
+              </p>
               <ul className="text-red-700 text-sm space-y-1 ml-4">
                 <li>• Base de datos de NextJS (Supabase)</li>
                 <li>• WordPress (si está sincronizado)</li>
@@ -525,16 +568,22 @@ export function DespachosList({
                 <li>• Todas las notificaciones relacionadas</li>
               </ul>
             </div>
-            
-            <p className="text-sm text-gray-600 mt-2">Escribe <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">Eliminar</span> para confirmar la eliminación.</p>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Escribe{" "}
+              <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                Eliminar
+              </span>{" "}
+              para confirmar la eliminación.
+            </p>
           </div>
         }
-        confirmText={isDeleting ? 'Eliminando...' : 'Confirmar eliminación'}
+        confirmText={isDeleting ? "Eliminando..." : "Confirmar eliminación"}
         cancelText="Cancelar"
         isProcessing={isDeleting}
         requireConfirmationText={{
-          textToMatch: 'Eliminar',
-          placeholder: 'Escribe "Eliminar" para confirmar'
+          textToMatch: "Eliminar",
+          placeholder: 'Escribe "Eliminar" para confirmar',
         }}
       />
     </div>

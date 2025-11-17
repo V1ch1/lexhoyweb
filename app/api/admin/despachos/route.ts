@@ -10,10 +10,14 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "50");
 
-    console.log(`🔍 Admin API - Búsqueda: "${query}", Página: ${page}, Por página: ${perPage}`);
+    console.log(
+      `🔍 Admin API - Búsqueda: "${query}", Página: ${page}, Por página: ${perPage}`
+    );
 
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const SUPABASE_SERVICE_KEY =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // 1. Obtener total de despachos en WordPress
@@ -22,7 +26,7 @@ export async function GET(request: Request) {
       const wpTotalUrl = `${WORDPRESS_API_URL}/despacho?per_page=1&page=1&_fields=id`;
       const wpTotalResponse = await fetch(wpTotalUrl);
       if (wpTotalResponse.ok) {
-        const totalHeader = wpTotalResponse.headers.get('X-WP-Total');
+        const totalHeader = wpTotalResponse.headers.get("X-WP-Total");
         totalWordPress = totalHeader ? parseInt(totalHeader) : 0;
       }
     } catch (error) {
@@ -30,9 +34,8 @@ export async function GET(request: Request) {
     }
 
     // 2. Obtener TODOS los despachos de Supabase (con información completa)
-    const { data: allSupabaseDespachos, error: supabaseError } = await supabase
-      .from("despachos")
-      .select(`
+    const { data: allSupabaseDespachos, error: supabaseError } =
+      await supabase.from("despachos").select(`
         id,
         nombre,
         slug,
@@ -53,7 +56,7 @@ export async function GET(request: Request) {
     // 3. Crear mapa de despachos de Supabase por wordpress_id y slug
     const supabaseByWpId = new Map();
     const supabaseBySlug = new Map();
-    
+
     (allSupabaseDespachos || []).forEach((despacho) => {
       if (despacho.wordpress_id) {
         supabaseByWpId.set(despacho.wordpress_id, despacho);
@@ -71,7 +74,7 @@ export async function GET(request: Request) {
       const limit = query === "*" ? perPage : 500; // Para búsquedas específicas, obtenemos más resultados
       const wpUrl = `${WORDPRESS_API_URL}/despacho?search=${encodeURIComponent(searchQuery)}&per_page=${limit}&page=${query === "*" ? page : 1}&_fields=id,title,slug,status,date,modified,meta`;
       const wpResponse = await fetch(wpUrl);
-      
+
       if (wpResponse.ok) {
         allWordpressDespachos = await wpResponse.json();
       }
@@ -84,12 +87,13 @@ export async function GET(request: Request) {
 
     for (const wpDespacho of allWordpressDespachos) {
       // Buscar si este despacho existe en Supabase
-      const supabaseDespacho = supabaseByWpId.get(wpDespacho.id) || 
-                               supabaseBySlug.get(wpDespacho.slug);
+      const supabaseDespacho =
+        supabaseByWpId.get(wpDespacho.id) ||
+        supabaseBySlug.get(wpDespacho.slug);
 
       if (supabaseDespacho) {
         // Existe en ambos sistemas - SINCRONIZADO
-        
+
         // Obtener conteo de sedes
         const { data: sedesData } = await supabase
           .from("sedes")
@@ -162,17 +166,24 @@ export async function GET(request: Request) {
     }
 
     // 6. Añadir despachos que están SOLO en Supabase (no tienen wordpress_id)
-    const wpIds = new Set(allWordpressDespachos.map((wp: Record<string, unknown>) => wp.id));
-    
-    for (const supabaseDespacho of (allSupabaseDespachos || [])) {
+    const wpIds = new Set(
+      allWordpressDespachos.map((wp: Record<string, unknown>) => wp.id)
+    );
+
+    for (const supabaseDespacho of allSupabaseDespachos || []) {
       // Si no tiene wordpress_id O si su wordpress_id no está en la lista actual de WordPress
-      if (!supabaseDespacho.wordpress_id || !wpIds.has(supabaseDespacho.wordpress_id)) {
+      if (
+        !supabaseDespacho.wordpress_id ||
+        !wpIds.has(supabaseDespacho.wordpress_id)
+      ) {
         // Verificar si coincide con la búsqueda
         if (query !== "*") {
-          const nombreMatch = supabaseDespacho.nombre?.toLowerCase().includes(query.toLowerCase());
+          const nombreMatch = supabaseDespacho.nombre
+            ?.toLowerCase()
+            .includes(query.toLowerCase());
           if (!nombreMatch) continue; // Skip si no coincide con la búsqueda
         }
-        
+
         // Obtener información adicional
         const { data: sedesData } = await supabase
           .from("sedes")
@@ -206,7 +217,7 @@ export async function GET(request: Request) {
           algolia_indexed: supabaseDespacho.verificado,
           // Datos de ubicación
           localidad: sede.localidad || "-",
-          provincia: sede.provincia || "-", 
+          provincia: sede.provincia || "-",
           telefono: sede.telefono || "-",
           email: sede.email_contacto || "-",
         });
@@ -229,7 +240,6 @@ export async function GET(request: Request) {
       page,
       perPage,
     });
-
   } catch (error) {
     console.error("Error en API admin despachos:", error);
     return NextResponse.json(

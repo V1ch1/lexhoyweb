@@ -10,10 +10,14 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "10");
 
-    console.log(`🔍 API Unificada - Búsqueda: "${query}", Página: ${page}, Por página: ${perPage}`);
+    console.log(
+      `🔍 API Unificada - Búsqueda: "${query}", Página: ${page}, Por página: ${perPage}`
+    );
 
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const SUPABASE_SERVICE_KEY =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // 0. Obtener el total de despachos en WordPress (sin filtros)
@@ -24,12 +28,15 @@ export async function GET(request: Request) {
       const wpTotalResponse = await fetch(wpTotalUrl);
       if (wpTotalResponse.ok) {
         // WordPress devuelve el total en el header X-WP-Total
-        const totalHeader = wpTotalResponse.headers.get('X-WP-Total');
-        
+        const totalHeader = wpTotalResponse.headers.get("X-WP-Total");
+
         totalWordPress = totalHeader ? parseInt(totalHeader) : 0;
-        
-        } else {
-        console.error("❌ [WordPress] Error en respuesta:", wpTotalResponse.status, wpTotalResponse.statusText);
+      } else {
+        console.error(
+          "❌ [WordPress] Error en respuesta:",
+          wpTotalResponse.status,
+          wpTotalResponse.statusText
+        );
       }
     } catch (error) {
       console.error("❌ [WordPress] Error al obtener total:", error);
@@ -47,16 +54,14 @@ export async function GET(request: Request) {
       telefono: string;
       email: string;
       num_sedes: number;
-      origen: 'supabase' | 'wordpress';
+      origen: "supabase" | "wordpress";
       yaImportado: boolean;
     }
-    
+
     let supabaseResults: DespachoResult[] = [];
-    
+
     // Construir la consulta base
-    let supabaseQuery = supabase
-      .from("despachos")
-      .select(`
+    let supabaseQuery = supabase.from("despachos").select(`
         id,
         nombre,
         slug,
@@ -69,35 +74,41 @@ export async function GET(request: Request) {
           email_contacto
         )
       `);
-    
+
     // Aplicar filtro de búsqueda solo si hay query
     if (query) {
       supabaseQuery = supabaseQuery.ilike("nombre", `%${query}%`);
     }
-    
+
     // Para admin, no limitar Supabase para hacer mapeo completo
-    
+
     const { data: supabaseData } = await supabaseQuery;
 
     if (supabaseData) {
-      supabaseResults = supabaseData.map((despacho: Record<string, unknown>) => {
-        const sedes = despacho.sedes as Array<Record<string, unknown>> | undefined;
-        const sede = sedes?.[0] || {};
-        return {
-          id: String(despacho.id),
-          wordpress_id: despacho.wordpress_id as number | undefined,
-          nombre: String(despacho.nombre),
-          slug: String(despacho.slug),
-          owner_email: despacho.owner_email ? String(despacho.owner_email) : null,
-          localidad: String(sede.localidad || "-"),
-          provincia: String(sede.provincia || "-"),
-          telefono: String(sede.telefono || "-"),
-          email: String(sede.email_contacto || "-"),
-          num_sedes: sedes?.length || 0,
-          origen: "supabase" as const,
-          yaImportado: true,
-        };
-      });
+      supabaseResults = supabaseData.map(
+        (despacho: Record<string, unknown>) => {
+          const sedes = despacho.sedes as
+            | Array<Record<string, unknown>>
+            | undefined;
+          const sede = sedes?.[0] || {};
+          return {
+            id: String(despacho.id),
+            wordpress_id: despacho.wordpress_id as number | undefined,
+            nombre: String(despacho.nombre),
+            slug: String(despacho.slug),
+            owner_email: despacho.owner_email
+              ? String(despacho.owner_email)
+              : null,
+            localidad: String(sede.localidad || "-"),
+            provincia: String(sede.provincia || "-"),
+            telefono: String(sede.telefono || "-"),
+            email: String(sede.email_contacto || "-"),
+            num_sedes: sedes?.length || 0,
+            origen: "supabase" as const,
+            yaImportado: true,
+          };
+        }
+      );
     }
 
     // 2. Buscar en WordPress con paginación real
@@ -109,36 +120,59 @@ export async function GET(request: Request) {
       const wpResponse = await fetch(wpUrl);
       if (wpResponse.ok) {
         const wpData = await wpResponse.json();
-        
+
         // Obtener el total de resultados filtrados desde el header
-        const totalFilteredHeader = wpResponse.headers.get('X-WP-Total');
-        totalWordPressFiltered = totalFilteredHeader ? parseInt(totalFilteredHeader) : 0;
-        
+        const totalFilteredHeader = wpResponse.headers.get("X-WP-Total");
+        totalWordPressFiltered = totalFilteredHeader
+          ? parseInt(totalFilteredHeader)
+          : 0;
+
         // Filtrar los que YA están en Supabase
         const wordpressIdsEnSupabase = new Set(
           supabaseResults
-            .filter(r => r.wordpress_id)
-            .map(r => r.wordpress_id)
+            .filter((r) => r.wordpress_id)
+            .map((r) => r.wordpress_id)
         );
 
         wordpressResults = wpData
-          .filter((wp: Record<string, unknown>) => !wordpressIdsEnSupabase.has(Number(wp.id)))
+          .filter(
+            (wp: Record<string, unknown>) =>
+              !wordpressIdsEnSupabase.has(Number(wp.id))
+          )
           .map((wp: Record<string, unknown>) => {
             const meta = wp.meta as Record<string, unknown> | undefined;
-            const sedes = meta?._despacho_sedes as Array<Record<string, unknown>> | undefined;
+            const sedes = meta?._despacho_sedes as
+              | Array<Record<string, unknown>>
+              | undefined;
             const sede = sedes?.[0] || {};
             const title = wp.title as { rendered?: string } | undefined;
-            
+
             return {
               id: String(wp.id),
               wordpress_id: Number(wp.id),
               nombre: title?.rendered || "Sin nombre",
               slug: String(wp.slug || ""),
               owner_email: null,
-              localidad: String(sede.localidad || (meta?._despacho_localidad as string[])?.[0] || "-"),
-              provincia: String(sede.provincia || (meta?._despacho_provincia as string[])?.[0] || "-"),
-              telefono: String(sede.telefono || (meta?._despacho_telefono as string[])?.[0] || "-"),
-              email: String(sede.email_contacto || (meta?._despacho_email as string[])?.[0] || "-"),
+              localidad: String(
+                sede.localidad ||
+                  (meta?._despacho_localidad as string[])?.[0] ||
+                  "-"
+              ),
+              provincia: String(
+                sede.provincia ||
+                  (meta?._despacho_provincia as string[])?.[0] ||
+                  "-"
+              ),
+              telefono: String(
+                sede.telefono ||
+                  (meta?._despacho_telefono as string[])?.[0] ||
+                  "-"
+              ),
+              email: String(
+                sede.email_contacto ||
+                  (meta?._despacho_email as string[])?.[0] ||
+                  "-"
+              ),
               num_sedes: sedes?.length || 0,
               origen: "wordpress" as const,
               yaImportado: false,
@@ -155,8 +189,20 @@ export async function GET(request: Request) {
     // 4. Usar el total de WordPress para calcular las páginas totales
     const totalResults = query ? totalWordPressFiltered : totalWordPress;
 
-    console.log("✅ [Resultado] Supabase:", supabaseResults.length, ", WordPress:", wordpressResults.length, ", Total:", allResults.length);
-    console.log("📄 [Paginación] Devolviendo", allResults.length, "resultados para página", page);
+    console.log(
+      "✅ [Resultado] Supabase:",
+      supabaseResults.length,
+      ", WordPress:",
+      wordpressResults.length,
+      ", Total:",
+      allResults.length
+    );
+    console.log(
+      "📄 [Paginación] Devolviendo",
+      allResults.length,
+      "resultados para página",
+      page
+    );
 
     return NextResponse.json({
       data: allResults, // Ya vienen paginados de WordPress
