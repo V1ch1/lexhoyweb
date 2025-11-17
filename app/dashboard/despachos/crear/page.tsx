@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
 import { useAuth } from "@/lib/authContext";
 import { SedeFormData } from "@/types/despachos";
 import { supabase } from "@/lib/supabase";
@@ -982,25 +981,46 @@ export default function CrearDespachoPage() {
                   <div className="space-y-4">
                     {/* Preview de la foto */}
                     {sede.foto_perfil && (
-                      <div className="flex items-center space-x-4">
-                        <img
-                          src={sede.foto_perfil}
-                          alt="Preview"
-                          className="h-24 w-24 object-cover rounded-lg border-2 border-gray-200"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://via.placeholder.com/150?text=Error";
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleSedeChange(index, "foto_perfil", "")
-                          }
-                          className="text-sm text-red-600 hover:text-red-800"
-                        >
-                          🗑️ Eliminar foto
-                        </button>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <img
+                              src={sede.foto_perfil}
+                              alt="Preview"
+                              className="h-24 w-24 object-cover rounded-lg border-2 border-gray-200 bg-gray-100"
+                              onLoad={(e) => {
+                                console.log(
+                                  "✅ Imagen cargada:",
+                                  sede.foto_perfil
+                                );
+                              }}
+                              onError={(e) => {
+                                console.error(
+                                  "❌ Error al cargar imagen:",
+                                  sede.foto_perfil
+                                );
+                                const target = e.target as HTMLImageElement;
+                                target.alt = "❌ Error al cargar";
+                                target.className =
+                                  "h-24 w-24 flex items-center justify-center rounded-lg border-2 border-red-300 bg-red-50 text-red-500 text-xs p-2";
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-500 font-mono break-all">
+                              {sede.foto_perfil}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleSedeChange(index, "foto_perfil", "")
+                            }
+                            className="text-sm text-red-600 hover:text-red-800 whitespace-nowrap"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -1033,53 +1053,75 @@ export default function CrearDespachoPage() {
                               if (file) {
                                 try {
                                   // Mostrar estado de carga
-                                  const loadingText = e.target.parentElement?.querySelector('.text-sm.text-gray-500');
+                                  const loadingText =
+                                    e.target.parentElement?.querySelector(
+                                      ".text-sm.text-gray-500"
+                                    );
                                   const originalText = loadingText?.textContent;
                                   if (loadingText) {
-                                    loadingText.textContent = '⏳ Subiendo y optimizando imagen...';
-                                    loadingText.className = 'text-sm text-blue-600 font-medium';
+                                    loadingText.textContent =
+                                      "⏳ Subiendo y optimizando imagen...";
+                                    loadingText.className =
+                                      "text-sm text-blue-600 font-medium";
                                   }
 
                                   // Validar imagen
-                                  const validation = ImageOptimizer.validateImage(file);
+                                  const validation =
+                                    ImageOptimizer.validateImage(file);
                                   if (!validation.valid) {
                                     alert(validation.error);
                                     if (loadingText && originalText) {
                                       loadingText.textContent = originalText;
-                                      loadingText.className = 'text-sm text-gray-500';
+                                      loadingText.className =
+                                        "text-sm text-gray-500";
                                     }
                                     return;
                                   }
 
                                   // Subir a Supabase y obtener URL
-                                  const { url } = await ImageOptimizer.uploadToSupabase(file, {
-                                    path: 'perfiles',
-                                    bucket: 'despachos-fotos'
-                                  });
+                                  const { url } =
+                                    await ImageOptimizer.uploadToSupabase(
+                                      file,
+                                      {
+                                        path: "perfiles",
+                                        bucket: "despachos-fotos",
+                                      }
+                                    );
 
                                   // Usar la URL pública de Supabase
                                   handleSedeChange(index, "foto_perfil", url);
 
                                   // Mostrar éxito
                                   if (loadingText) {
-                                    loadingText.textContent = '✅ Imagen subida correctamente';
-                                    loadingText.className = 'text-sm text-green-600 font-medium';
+                                    loadingText.textContent =
+                                      "✅ Imagen subida correctamente";
+                                    loadingText.className =
+                                      "text-sm text-green-600 font-medium";
                                     setTimeout(() => {
                                       if (originalText) {
                                         loadingText.textContent = originalText;
-                                        loadingText.className = 'text-sm text-gray-500';
+                                        loadingText.className =
+                                          "text-sm text-gray-500";
                                       }
                                     }, 3000);
                                   }
-
                                 } catch (error) {
-                                  console.error('Error al subir imagen:', error);
-                                  const loadingText = e.target.parentElement?.querySelector('.text-sm');
+                                  console.error(
+                                    "Error al subir imagen:",
+                                    error
+                                  );
+                                  const loadingText =
+                                    e.target.parentElement?.querySelector(
+                                      ".text-sm"
+                                    );
                                   if (loadingText) {
-                                    loadingText.textContent = `❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`;
-                                    loadingText.className = 'text-sm text-red-600 font-medium';
+                                    loadingText.textContent = `❌ Error: ${error instanceof Error ? error.message : "Error desconocido"}`;
+                                    loadingText.className =
+                                      "text-sm text-red-600 font-medium";
                                   } else {
-                                    alert(`❌ Error al subir la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                                    alert(
+                                      `❌ Error al subir la imagen: ${error instanceof Error ? error.message : "Error desconocido"}`
+                                    );
                                   }
                                 }
                               }
@@ -1087,7 +1129,8 @@ export default function CrearDespachoPage() {
                           />
                         </label>
                         <span className="text-sm text-gray-500">
-                          JPG, PNG, GIF, WebP (máx. 5MB) - Se optimizará automáticamente a WebP
+                          JPG, PNG, GIF, WebP (máx. 5MB) - Se optimizará
+                          automáticamente a WebP
                         </span>
                       </div>
                     </div>
@@ -1186,7 +1229,9 @@ export default function CrearDespachoPage() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-medium">¡Despacho creado correctamente! Redirigiendo...</span>
+            <span className="font-medium">
+              ¡Despacho creado correctamente! Redirigiendo...
+            </span>
           </div>
         )}
 
