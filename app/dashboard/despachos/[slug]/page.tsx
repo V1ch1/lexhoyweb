@@ -1196,7 +1196,7 @@ export default function DespachoPage() {
 
                 {/* Foto de Perfil */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Foto de Perfil (500x500px)</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Foto de Perfil</h4>
                   <div className="flex items-center space-x-6">
                     {/* Preview de la foto */}
                     <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
@@ -1244,10 +1244,7 @@ export default function DespachoPage() {
                         />
                       </label>
                       <p className="text-xs text-gray-500 mt-2">
-                        JPG, PNG o GIF. Máximo 2MB.
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        La imagen debe ser exactamente 500x500 píxeles
+                        JPG, PNG o GIF. Máximo 2MB. Se recomienda formato cuadrado o rectangular horizontal.
                       </p>
                     </div>
                   </div>
@@ -1567,7 +1564,7 @@ export default function DespachoPage() {
 
                 {/* Foto de perfil con uploader */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Foto de Perfil (500x500px)</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Foto de Perfil</h3>
                   {editingSedeId === sedes[activeSedeTab].id ? (
                     <div className="space-y-3">
                       {editSedeData?.foto_perfil && (
@@ -1586,38 +1583,32 @@ export default function DespachoPage() {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           
-                          // Validar dimensiones
-                          const img = document.createElement('img');
-                          img.onload = function() {
-                            if (img.width !== 500 || img.height !== 500) {
-                              alert('La imagen debe ser exactamente 500x500 píxeles');
-                              if (e.target) {
-                                (e.target as HTMLInputElement).value = '';
-                              }
-                              return;
+                          // Validar tamaño del archivo (máximo 2MB)
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert('La imagen no debe superar 2MB');
+                            if (e.target) {
+                              (e.target as HTMLInputElement).value = '';
                             }
-                            
-                            // Convertir a base64 o URL
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setEditSedeData(prev => prev ? {...prev, foto_perfil: reader.result as string} : null);
-                            };
-                            reader.readAsDataURL(file);
-                            
-                            // Liberar el objeto URL creado
-                            URL.revokeObjectURL(img.src);
+                            return;
+                          }
+                          
+                          // Convertir a base64 directamente sin validar dimensiones
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditSedeData(prev => prev ? {...prev, foto_perfil: reader.result as string} : null);
                           };
-                          img.onerror = () => {
+                          reader.onerror = () => {
                             console.error('Error al cargar la imagen');
+                            alert('Error al procesar la imagen');
                             if (e.target) {
                               (e.target as HTMLInputElement).value = '';
                             }
                           };
-                          img.src = URL.createObjectURL(file);
+                          reader.readAsDataURL(file);
                         }}
                         className="text-sm"
                       />
-                      <p className="text-xs text-gray-500">La imagen debe ser exactamente 500x500 píxeles</p>
+                      <p className="text-xs text-gray-500">JPG, PNG o GIF. Máximo 2MB. Se ajustará automáticamente.</p>
                     </div>
                   ) : (
                     sedes[activeSedeTab].foto_perfil ? (
