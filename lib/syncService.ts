@@ -284,8 +284,8 @@ export class SyncService {
           especialidades: sede.especialidades || null,
           servicios_especificos: sede.servicios_especificos || null,
 
-          // Multimedia
-          foto_perfil: sede.foto_perfil || sede.logo || null,
+          // Multimedia (solo enviar URLs, no base64)
+          foto_perfil: sede.foto_perfil?.startsWith('http') ? sede.foto_perfil : null,
 
           // Horarios y redes
           horarios: sede.horarios || {},
@@ -416,8 +416,8 @@ export class SyncService {
                 areas_practica: sede.areas_practica || [],
                 especialidades: sede.especialidades || "",
                 servicios_especificos: sede.servicios_especificos || "",
-                foto_perfil: sede.foto_perfil || null,
-                logo: sede.foto_perfil || null,
+                foto_perfil: sede.foto_perfil?.startsWith('http') ? sede.foto_perfil : null,
+                logo: sede.foto_perfil?.startsWith('http') ? sede.foto_perfil : null,
                 horarios: sede.horarios || {},
                 redes_sociales: sede.redes_sociales || {},
                 observaciones: sede.observaciones || "",
@@ -460,7 +460,11 @@ export class SyncService {
           _despacho_tamaño: despacho.sedes?.[0]?.tamano_despacho || "",
           _despacho_año_fundacion: despacho.sedes?.[0]?.ano_fundacion || "",
           _despacho_estado_registro: "activo",
-          _despacho_foto_perfil: despacho.sedes?.[0]?.foto_perfil || "", // WordPress ahora procesa base64 automáticamente
+          // NO enviar base64 a WordPress - demasiado pesado, causa errores críticos
+          // Solo enviar si es URL (ya procesada por WP)
+          _despacho_foto_perfil: despacho.sedes?.[0]?.foto_perfil?.startsWith('http') 
+            ? despacho.sedes?.[0]?.foto_perfil 
+            : "", 
           _despacho_horario: despacho.sedes?.[0]?.horarios || {},
           _despacho_redes_sociales: despacho.sedes?.[0]?.redes_sociales || {},
         },
@@ -709,7 +713,7 @@ export class SyncService {
           servicios_especificos: sede.servicios_especificos || "",
           estado_verificacion: sede.estado_verificacion || "pendiente",
           estado_registro: sede.estado_registro || "activo",
-          foto_perfil: sede.foto_perfil || "",
+          foto_perfil: sede.foto_perfil?.startsWith('http') ? sede.foto_perfil : "",
           is_verified: sede.estado_verificacion === "verificado",
           observaciones: sede.observaciones || "",
           es_principal: sede.es_principal || false,
