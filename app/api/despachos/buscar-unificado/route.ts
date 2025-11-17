@@ -10,6 +10,8 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("perPage") || "10");
 
+    console.log(`🔍 API Unificada - Búsqueda: "${query}", Página: ${page}, Por página: ${perPage}`);
+
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -23,7 +25,6 @@ export async function GET(request: Request) {
       if (wpTotalResponse.ok) {
         // WordPress devuelve el total en el header X-WP-Total
         const totalHeader = wpTotalResponse.headers.get('X-WP-Total');
-        const totalPagesHeader = wpTotalResponse.headers.get('X-WP-TotalPages');
         
         totalWordPress = totalHeader ? parseInt(totalHeader) : 0;
         
@@ -74,8 +75,7 @@ export async function GET(request: Request) {
       supabaseQuery = supabaseQuery.ilike("nombre", `%${query}%`);
     }
     
-    // Limitar resultados
-    supabaseQuery = supabaseQuery.limit(50);
+    // Para admin, no limitar Supabase para hacer mapeo completo
     
     const { data: supabaseData } = await supabaseQuery;
 
@@ -154,6 +154,9 @@ export async function GET(request: Request) {
 
     // 4. Usar el total de WordPress para calcular las páginas totales
     const totalResults = query ? totalWordPressFiltered : totalWordPress;
+
+    console.log("✅ [Resultado] Supabase:", supabaseResults.length, ", WordPress:", wordpressResults.length, ", Total:", allResults.length);
+    console.log("📄 [Paginación] Devolviendo", allResults.length, "resultados para página", page);
 
     return NextResponse.json({
       data: allResults, // Ya vienen paginados de WordPress
