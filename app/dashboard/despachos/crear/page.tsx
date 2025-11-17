@@ -983,11 +983,9 @@ export default function CrearDespachoPage() {
                     {/* Preview de la foto */}
                     {sede.foto_perfil && (
                       <div className="flex items-center space-x-4">
-                        <Image
+                        <img
                           src={sede.foto_perfil}
                           alt="Preview"
-                          width={96}
-                          height={96}
                           className="h-24 w-24 object-cover rounded-lg border-2 border-gray-200"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
