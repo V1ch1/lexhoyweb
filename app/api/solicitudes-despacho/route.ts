@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       },
     });
 
-    if (isDev) // Consultar las solicitudes
+    // Consultar las solicitudes
     const { data, error, status } = await supabase
       .from("solicitudes_despacho")
       .select("*")

@@ -7,8 +7,10 @@ El proyecto funciona correctamente en local pero falla al crear despachos en pro
 ## ❌ Errores Encontrados
 
 ### 1. Error en URL de WordPress API (CRÍTICO)
+
 **Archivo:** `.env.production`
 **Problema:** URL incorrecta de la API de WordPress
+
 ```bash
 # ❌ INCORRECTO
 WORDPRESS_API_URL=https://lexhoy.com/wp-json/wp-v2/despacho
@@ -18,27 +20,26 @@ WORDPRESS_API_URL=https://lexhoy.com/wp-json/wp/v2/despacho
 ```
 
 ### 2. Variable de contraseña inconsistente
+
 **Archivo:** `lib/config.ts`
 **Problema:** Referencia a variable incorrecta
+
 ```typescript
 // ❌ INCORRECTO
 password: process.env.WORDPRESS_PASSWORD || "",
 
-// ✅ CORRECTO  
+// ✅ CORRECTO
 password: process.env.WORDPRESS_APPLICATION_PASSWORD || "",
 ```
 
 ## 🔧 Soluciones Implementadas
 
 ### 1. Corrección de URL de WordPress API
+
 - ✅ Corregida URL en `.env.production`
 - ✅ Corregida referencia de variable en `lib/config.ts`
 
-### 2. Errores de Content Security Policy (CSP)
-**Problema:** CSP muy restrictiva bloqueaba Google Fonts y Vercel Live
-**Solución:** Actualizada CSP en `next.config.ts` para permitir dominios necesarios
-
-### 3. Variables de entorno necesarias para Vercel
+### 2. Variables de entorno necesarias para Vercel
 
 Asegurar que estas variables estén configuradas en el dashboard de Vercel:
 
@@ -52,9 +53,6 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 WORDPRESS_API_URL=https://lexhoy.com/wp-json/wp/v2/despacho
 WORDPRESS_USERNAME=admin
 WORDPRESS_APPLICATION_PASSWORD=PExdZ9XXIam3avERP97uBLeU
-
-# Google Analytics
-NEXT_PUBLIC_GA_MEASUREMENT_ID=G-9PK4PR55DN
 
 # Webhooks
 WEBHOOK_AUTH_USER=admin
@@ -77,6 +75,7 @@ ALGOLIA_ADMIN_KEY=...
 ## 🚀 Pasos para Desplegar la Corrección
 
 ### 1. En Vercel Dashboard
+
 1. Ir a https://vercel.com/dashboard
 2. Seleccionar el proyecto lexhoyweb
 3. Ir a Settings → Environment Variables
@@ -84,6 +83,7 @@ ALGOLIA_ADMIN_KEY=...
 5. **IMPORTANTE:** Verificar que `WORDPRESS_API_URL` tenga el valor correcto
 
 ### 2. Redespliegue
+
 ```bash
 # Hacer commit de los cambios
 git add .
@@ -94,6 +94,7 @@ git push origin main
 ```
 
 ### 3. Verificación Post-Despliegue
+
 1. Intentar crear un despacho desde https://despachos.lexhoy.com
 2. Revisar logs en Vercel para confirmar que no hay errores de autenticación
 3. Verificar que el despacho se sincroniza correctamente con WordPress
@@ -101,33 +102,37 @@ git push origin main
 ## 🔍 Diagnóstico del Problema
 
 ### Flujo de Creación de Despachos:
+
 1. **Next.js** (`/api/crear-despacho`) → Crea despacho en Supabase
 2. **SyncService** → Envía despacho a WordPress usando REST API
 3. **WordPress** → Recibe y guarda el despacho usando el plugin LexHoy-Despachos
 4. **WordPress** → Sincroniza con Algolia
 
 ### Punto de Falla:
+
 - El paso 2 fallaba porque la URL de WordPress API era incorrecta
 - Esto causaba error 404/403 que se interpretaba como "sin acceso"
 
 ## 🛠 Herramientas de Debugging
 
 ### Para verificar conectividad WordPress:
+
 ```javascript
 // Endpoint de prueba: /api/test-wordpress
-const response = await fetch('/api/test-wordpress');
+const response = await fetch("/api/test-wordpress");
 const result = await response.json();
-console.log('WordPress connectivity:', result);
+console.log("WordPress connectivity:", result);
 ```
 
 ### Para revisar logs en producción:
+
 - Vercel Dashboard → Functions → Ver logs de `/api/crear-despacho`
 - Buscar errores de red o autenticación
 
 ## 📋 Checklist de Verificación
 
 - [x] Corregir URL de WordPress API en `.env.production`
-- [x] Corregir variable de contraseña en `lib/config.ts` 
+- [x] Corregir variable de contraseña en `lib/config.ts`
 - [ ] Verificar variables en Vercel Dashboard
 - [ ] Redesplegar aplicación
 - [ ] Probar creación de despacho en producción
