@@ -124,7 +124,7 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
     const estadoRegistroMeta = despachoData.meta?._despacho_estado_registro;
     
     let estadoVerificacion = 'pendiente';
-    if (estadoVerificacionMeta === 'verificado' || isVerifiedMeta === '1' || isVerifiedMeta === 1) {
+    if (estadoVerificacionMeta === 'verificado' || isVerifiedMeta === '1' || String(isVerifiedMeta) === '1') {
       estadoVerificacion = 'verificado';
     } else if (estadoVerificacionMeta === 'rechazado') {
       estadoVerificacion = 'rechazado';
