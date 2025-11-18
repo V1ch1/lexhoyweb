@@ -41,13 +41,32 @@ export async function PUT(
       );
     }
 
+    // Obtener el object_id para sincronizar con Algolia
+    const { data: despachoData } = await supabase
+      .from('despachos')
+      .select('object_id')
+      .eq('id', despachoId)
+      .single();
+
     // Sincronizar con WordPress
     try {
       const { SyncService } = await import('@/lib/syncService');
       await SyncService.enviarDespachoAWordPress(despachoId, false);
-      } catch (syncError) {
+    } catch (syncError) {
       console.error('⚠️ Error al sincronizar con WordPress:', syncError);
       // No fallar la petición si la sincronización falla
+    }
+
+    // Sincronizar con Algolia
+    if (despachoData?.object_id) {
+      try {
+        const { SyncService } = await import('@/lib/syncService');
+        await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
+        console.log('✅ Sincronizado con Algolia');
+      } catch (algoliaError) {
+        console.error('⚠️ Error al sincronizar con Algolia:', algoliaError);
+        // No fallar la petición si la sincronización con Algolia falla
+      }
     }
 
     return NextResponse.json({

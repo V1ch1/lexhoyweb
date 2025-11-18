@@ -30,7 +30,10 @@ export async function PUT(
     // 1. Actualizar estado en Supabase
     const { error: updateError } = await supabase
       .from('despachos')
-      .update({ estado_publicacion: estado })
+      .update({ 
+        estado_publicacion: estado,
+        status: estado === 'publish' ? 'active' : 'inactive'
+      })
       .eq('id', despachoId);
 
     if (updateError) {
@@ -41,17 +44,28 @@ export async function PUT(
       );
     }
 
+    // Obtener el object_id para Algolia
+    const { data: despachoData } = await supabase
+      .from('despachos')
+      .select('object_id')
+      .eq('id', despachoId)
+      .single();
+
     // 2. Sincronizar con WordPress (forzando el nuevo estado)
     const wpResult = await SyncService.enviarDespachoAWordPress(despachoId, true);
 
     if (!wpResult.success) {
       console.warn('⚠️ Error al sincronizar con WordPress:', wpResult.error);
-      // No fallar si WordPress falla, el cambio ya está en Supabase
-      return NextResponse.json({
-        success: true,
-        message: 'Estado actualizado en base de datos, pero falló la sincronización con WordPress',
-        wpError: wpResult.error
-      });
+    }
+
+    // 3. Sincronizar con Algolia
+    if (despachoData?.object_id) {
+      try {
+        await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
+        console.log('✅ Sincronizado con Algolia');
+      } catch (algoliaError) {
+        console.error('⚠️ Error al sincronizar con Algolia:', algoliaError);
+      }
     }
 
     return NextResponse.json({

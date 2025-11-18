@@ -216,6 +216,11 @@ export async function POST(request: Request) {
     // Campos verificados: id, slug, nombre, created_at, updated_at, wordpress_id,
     // featured_media_url, status, num_sedes, owner_email, object_id,
     // sincronizado_wp, ultima_sincronizacion, estado_publicacion, estado_verificacion
+    //
+    // Mapeo de campos WordPress -> Supabase:
+    // - _despacho_estado_verificacion -> estado_verificacion ("verificado" | "pendiente")
+    // - _despacho_is_verified -> estado_verificacion (1/0 -> "verificado"/"pendiente")
+    // - _despacho_estado_registro -> status ("activo" -> "active", otros -> "inactive")
     interface DespachoData {
       wordpress_id: number;
       object_id: string;
@@ -224,10 +229,27 @@ export async function POST(request: Request) {
       sincronizado_wp: boolean;
       ultima_sincronizacion: string;
       estado_publicacion: string;
-      estado_verificacion: string;
-      status: string;
+      estado_verificacion: string; // "verificado" | "pendiente" | "rechazado"
+      status: string; // "active" | "inactive"
       created_at?: string;
       updated_at?: string;
+    }
+
+    // Obtener el estado de verificación y registro desde WordPress
+    const estadoVerificacionWP = despacho.meta?._despacho_estado_verificacion;
+    const isVerifiedWP = despacho.meta?._despacho_is_verified;
+    const estadoRegistroWP = despacho.meta?._despacho_estado_registro;
+    
+    let estadoVerificacion = "pendiente";
+    if (Array.isArray(estadoVerificacionWP) && estadoVerificacionWP[0]) {
+      estadoVerificacion = estadoVerificacionWP[0] === "verificado" ? "verificado" : "pendiente";
+    } else if (Array.isArray(isVerifiedWP) && (isVerifiedWP[0] === 1 || isVerifiedWP[0] === "1" || isVerifiedWP[0] === true)) {
+      estadoVerificacion = "verificado";
+    }
+    
+    let estadoRegistro = "activo";
+    if (Array.isArray(estadoRegistroWP) && estadoRegistroWP[0]) {
+      estadoRegistro = estadoRegistroWP[0];
     }
 
     const despachoFiltrado: DespachoData = {
@@ -238,8 +260,8 @@ export async function POST(request: Request) {
       sincronizado_wp: true,
       ultima_sincronizacion: new Date().toISOString(),
       estado_publicacion: despacho.status || "publish",
-      estado_verificacion: "pendiente",
-      status: "active",
+      estado_verificacion: estadoVerificacion,
+      status: estadoRegistro === "activo" ? "active" : "inactive",
       created_at:
         typeof despacho.date_gmt === "string"
           ? despacho.date_gmt
