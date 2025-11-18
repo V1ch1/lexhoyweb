@@ -49,7 +49,7 @@ const VerDespachosPage = () => {
   const [totalWordPress, setTotalWordPress] = useState(0); // Total real en WordPress
   
   // Estados para contadores (no cambian con la paginación)
-  const [totalActivos, setTotalActivos] = useState(0);
+  const [totalVerificados, setTotalVerificados] = useState(0);
   const [totalConPropietario, setTotalConPropietario] = useState(0);
   
   // Estado para búsqueda de usuario
@@ -107,11 +107,11 @@ const VerDespachosPage = () => {
     if (!user?.id) return;
     
     try {
-      // Contar despachos activos en Supabase
-      const { count: countActivos } = await supabase
+      // Contar despachos verificados en Supabase
+      const { count: countVerificados } = await supabase
         .from('despachos')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'publish');
+        .eq('estado_verificacion', 'verificado');
       
       // Contar despachos con propietario en Supabase
       const { count: countConPropietario } = await supabase
@@ -119,7 +119,7 @@ const VerDespachosPage = () => {
         .select('*', { count: 'exact', head: true })
         .not('owner_email', 'is', null);
       
-      setTotalActivos(countActivos || 0);
+      setTotalVerificados(countVerificados || 0);
       setTotalConPropietario(countConPropietario || 0);
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
@@ -514,10 +514,10 @@ const VerDespachosPage = () => {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600 mb-1">
-                  Activos
+                  Verificados
                 </p>
                 <p className="text-3xl font-bold text-gray-900">
-                  {totalActivos}
+                  {totalVerificados}
                 </p>
               </div>
               <div className="bg-green-500 p-3 rounded-lg">

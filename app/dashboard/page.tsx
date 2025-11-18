@@ -22,7 +22,7 @@ import {
 // Interfaces
 interface SystemStats {
   totalUsers: number;
-  activeDespachos: number;
+  verifiedDespachos: number;
   totalLeads: number;
   usersByRole: {
     super_admin: number;
@@ -377,8 +377,8 @@ const DashboardPage = () => {
             color="blue"
           />
           <StatCard
-            title="Despachos Activos"
-            value={systemStats.activeDespachos}
+            title="Despachos Verificados"
+            value={systemStats.verifiedDespachos}
             icon={BuildingOfficeIcon}
             color="green"
           />

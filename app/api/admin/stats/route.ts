@@ -25,11 +25,11 @@ export async function GET() {
       usuario: users?.filter(u => u.rol === 'usuario').length || 0,
     };
 
-    // Obtener despachos activos
-    const { count: activeDespachos } = await supabase
+    // Obtener despachos verificados
+    const { count: verifiedDespachos } = await supabase
       .from('despachos')
       .select('*', { count: 'exact', head: true })
-      .eq('activo', true);
+      .eq('estado_verificacion', 'verificado');
 
     // Obtener total de leads
     const { count: totalLeads } = await supabase
@@ -38,7 +38,7 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers: totalUsers || 0,
-      activeDespachos: activeDespachos || 0,
+      verifiedDespachos: verifiedDespachos || 0,
       totalLeads: totalLeads || 0,
       usersByRole,
     });
