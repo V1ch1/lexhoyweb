@@ -50,12 +50,64 @@ export function DespachosList({
   const [despachoToDelete, setDespachoToDelete] =
     useState<DespachoSummary | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const router = useRouter();
   const [localSearch, setLocalSearch] = useState(search);
 
   const handleSearch = () => {
     setSearch(localSearch);
     setPage(1);
+  };
+
+  const handleEditarDespacho = async (despacho: DespachoSummary) => {
+    const slug = despacho.slug || slugify(despacho.nombre);
+
+    // Si el despacho es de WordPress y el usuario es super_admin, importarlo primero
+    if (despacho.origen === "wordpress" && user?.role === "super_admin") {
+      setIsImporting(true);
+      try {
+        // Obtener token de autenticación
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error("No hay sesión activa");
+        }
+
+        // Importar el despacho desde WordPress
+        const response = await fetch("/api/despachos/wordpress/importar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            objectId: despacho.wordpress_id || despacho.id,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Error al importar el despacho");
+        }
+
+        const result = await response.json();
+        console.log("✅ Despacho importado:", result);
+
+        // Usar el slug del despacho importado
+        const importedSlug = result.despacho?.slug || slug;
+        router.push(`/dashboard/despachos/${importedSlug}?edit=true`);
+      } catch (error) {
+        console.error("Error al importar despacho:", error);
+        alert("Error al importar el despacho. Por favor, intenta de nuevo.");
+      } finally {
+        setIsImporting(false);
+      }
+    } else {
+      // Si ya está en Supabase o no es super_admin, ir directamente
+      router.push(`/dashboard/despachos/${slug}?edit=true`);
+    }
   };
 
   const handleDeleteClick = (despacho: DespachoSummary) => {
@@ -416,30 +468,53 @@ export function DespachosList({
                         (d.owner_email && d.owner_email === user?.email) ? (
                           <div className="flex space-x-3">
                             <button
-                              className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center"
-                              onClick={() => {
-                                const slug = d.slug || slugify(d.nombre);
-                                router.push(
-                                  `/dashboard/despachos/${slug}?edit=true`
-                                );
-                              }}
-                              title="Editar despacho"
+                              className="text-gray-600 hover:text-blue-600 p-1.5 rounded-md hover:bg-blue-50 transition-colors text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleEditarDespacho(d)}
+                              disabled={isImporting}
+                              title={
+                                isImporting
+                                  ? "Importando despacho..."
+                                  : "Editar despacho"
+                              }
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 mr-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                />
-                              </svg>
-                              Editar
+                              {isImporting ? (
+                                <svg
+                                  className="animate-spin h-4 w-4 mr-1"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4 mr-1"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                  />
+                                </svg>
+                              )}
+                              {isImporting ? "Importando..." : "Editar"}
                             </button>
                             {user?.role === "super_admin" && (
                               <button

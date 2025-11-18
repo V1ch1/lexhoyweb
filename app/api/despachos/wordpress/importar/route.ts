@@ -1,8 +1,41 @@
-
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { unserialize as phpUnserialize } from "php-serialize";
 
-const WORDPRESS_API_URL = process.env.WORDPRESS_API_URL || 'https://despachos.lexhoy.com/wp-json/wp/v2';
+const WORDPRESS_API_URL =
+  process.env.WORDPRESS_API_URL || "https://despachos.lexhoy.com/wp-json/wp/v2";
+
+/**
+ * Deserializa un string serializado de PHP a objeto JavaScript
+ * Usa la librería php-serialize para manejar correctamente el formato
+ */
+function unserialize(data: string | unknown): unknown {
+  if (!data) return null;
+  
+  // Si ya es un objeto o array, devolverlo
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'object') return data;
+  
+  if (typeof data !== 'string') return null;
+
+  try {
+    const result = phpUnserialize(data);
+    
+    // Convertir objetos con claves numéricas a arrays
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      const keys = Object.keys(result);
+      const isNumericArray = keys.every((k, i) => k === String(i));
+      if (isNumericArray) {
+        return Object.values(result);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Error deserializando PHP:', error, 'Data:', data.substring(0, 200));
+    return null;
+  }
+}
 
 /**
  * Represents a location/office of a law firm
@@ -120,7 +153,7 @@ export async function POST(request: Request) {
 
     // Generar slug, usando el de WordPress si existe, o generarlo del título
     const generateSlug = (str: string) => {
-      if (!str) return '';
+      if (!str) return "";
       return str
         .toString()
         .toLowerCase()
@@ -131,19 +164,26 @@ export async function POST(request: Request) {
         .trim();
     };
 
-    const despachoNombre = despacho.title?.rendered || `Despacho ${despacho.id}`;
-    
+    const despachoNombre =
+      despacho.title?.rendered || `Despacho ${despacho.id}`;
+
     // Asegurarse de que siempre tengamos un slug válido
-    let slug = '';
-    if (despacho.slug && typeof despacho.slug === 'string' && despacho.slug.trim() !== '') {
+    let slug = "";
+    if (
+      despacho.slug &&
+      typeof despacho.slug === "string" &&
+      despacho.slug.trim() !== ""
+    ) {
       slug = generateSlug(despacho.slug);
     } else {
       // Generar slug del título o usar el ID como último recurso
-      slug = despachoNombre ? generateSlug(despachoNombre) : `despacho-${despacho.id}`;
+      slug = despachoNombre
+        ? generateSlug(despachoNombre)
+        : `despacho-${despacho.id}`;
     }
-    
+
     // Asegurarse de que el slug no esté vacío
-    if (!slug || slug.trim() === '') {
+    if (!slug || slug.trim() === "") {
       slug = `despacho-${despacho.id}`;
     }
 
@@ -153,128 +193,125 @@ export async function POST(request: Request) {
     // - foto_perfil
     // - persona_contacto
     // La descripción solo se usará para las sedes, no para el despacho
-    
+
     // Se eliminó la constante camposPermitidos ya que no se estaba utilizando
-    
+
+    // Preparar datos del despacho según la estructura REAL de Supabase
+    // Campos verificados: id, slug, nombre, created_at, updated_at, wordpress_id,
+    // featured_media_url, status, num_sedes, owner_email, object_id,
+    // sincronizado_wp, ultima_sincronizacion, estado_publicacion, estado_verificacion
     interface DespachoData {
       wordpress_id: number;
+      object_id: string;
       nombre: string;
       slug: string;
+      sincronizado_wp: boolean;
+      ultima_sincronizacion: string;
+      estado_publicacion: string;
+      estado_verificacion: string;
       status: string;
-      created_at: string;
-      updated_at: string;
-      featured_media_url?: string;
+      created_at?: string;
+      updated_at?: string;
     }
 
-    const despachoData: DespachoData = {
+    const despachoFiltrado: DespachoData = {
       wordpress_id: despacho.id,
-      nombre: despachoNombre,
-      slug: slug,
-      status: despacho.status || 'draft',
-      created_at: (typeof despacho.date_gmt === 'string' ? despacho.date_gmt : new Date().toISOString()),
-      updated_at: (typeof despacho.modified_gmt === 'string' ? despacho.modified_gmt : new Date().toISOString())
-    };
-    
-    // Definir el tipo DespachoFiltrado sin el campo descripcion
-    type DespachoFiltrado = Omit<DespachoData, 'id' | 'featured_media_url'> & {
-      featured_media_url?: string;
-    };
-    
-    // La interfaz SedeProcesada ha sido eliminada ya que no se estaba utilizando
-    
-    const despachoFiltrado: DespachoFiltrado = {
-      wordpress_id: despacho.id,
+      object_id: String(despacho.id),
       nombre: despachoNombre || `Despacho ${despacho.id}`,
       slug: slug || `despacho-${despacho.id}`,
-      status: despacho.status || 'draft',
-      created_at: (typeof despacho.date_gmt === 'string' ? despacho.date_gmt : new Date().toISOString()),
-      updated_at: (typeof despacho.modified_gmt === 'string' ? despacho.modified_gmt : new Date().toISOString())
+      sincronizado_wp: true,
+      ultima_sincronizacion: new Date().toISOString(),
+      estado_publicacion: despacho.status || "publish",
+      estado_verificacion: "pendiente",
+      status: "active",
+      created_at:
+        typeof despacho.date_gmt === "string"
+          ? despacho.date_gmt
+          : new Date().toISOString(),
+      updated_at:
+        typeof despacho.modified_gmt === "string"
+          ? despacho.modified_gmt
+          : new Date().toISOString(),
     };
 
-    // Añadir featured_media_url si está disponible
-    if (despacho.featured_media) {
-      try {
-        const mediaResponse = await fetch(`${WORDPRESS_API_URL}/media/${despacho.featured_media}`);
-        if (mediaResponse.ok) {
-          const mediaData = await mediaResponse.json();
-          if (mediaData?.source_url) {
-            despachoFiltrado.featured_media_url = mediaData.source_url;
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ No se pudo obtener la imagen destacada:', error);
-      }
-    }
-
-    // Solo incluir featured_media_url si existe el campo en la tabla
-    if (despacho.featured_media) {
-      despachoData.featured_media_url = `https://lexhoy.com/wp-content/uploads/${despacho.featured_media}.jpg`;
-    }
-    
-    // Datos adicionales disponibles para uso futuro si se necesitan
-    // const datosAdicionales = {
-    //   areas_practica: despacho.meta?._despacho_sedes?.[0]?.areas_practica || [],
-    //   verificado: despacho.meta?._despacho_sedes?.[0]?.estado_verificacion === 'verificado',
-    //   num_sedes: despacho.meta?._despacho_sedes?.length || 0,
-    //   sincronizado_wp: true,
-    //   ultima_sincronizacion: new Date().toISOString(),
-    //   wordpress_url: despacho.link
-    // };
-
     try {
-      // Primero verificar si el despacho ya existe
-      // Verificar si el despacho ya existe
+      // Verificar si el despacho ya existe por object_id
       const { data: existingDespacho } = await supabase
-        .from('despachos')
-        .select('*')
-        .eq('wordpress_id', despacho.id)
+        .from("despachos")
+        .select("*")
+        .eq("object_id", String(despacho.id))
         .single();
 
       let result;
       const isNewDespacho = !existingDespacho;
-      
+
       if (existingDespacho) {
         // Actualizar despacho existente
         const updateData = {
-          ...despachoFiltrado, // Usar los datos filtrados
+          nombre: despachoFiltrado.nombre,
+          slug: despachoFiltrado.slug,
+          sincronizado_wp: true,
+          ultima_sincronizacion: new Date().toISOString(),
+          estado_publicacion: despachoFiltrado.estado_publicacion,
+          status: despachoFiltrado.status,
           updated_at: new Date().toISOString(),
-          // Mantener el estado actual si existe
-          status: existingDespacho.status || despachoFiltrado.status || 'draft'
         };
-        
+
         const { data, error } = await supabase
-          .from('despachos')
+          .from("despachos")
           .update(updateData)
-          .eq('id', existingDespacho.id)
+          .eq("id", existingDespacho.id)
           .select();
-        
+
         if (error) throw error;
         result = { data, error: null };
-        } else {
+      } else {
         // Crear nuevo despacho
-        const insertData = {
-          ...despachoFiltrado, // Usar los datos filtrados
-          status: 'publish', // Valor por defecto para nuevos despachos
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
         const { data, error } = await supabase
-          .from('despachos')
-          .insert([insertData])
+          .from("despachos")
+          .insert([despachoFiltrado])
           .select();
-        
+
         if (error) throw error;
         result = { data, error: null };
-        }
+      }
 
       if (result.error) {
-        console.error('❌ [Error] Error al guardar el despacho:', result.error);
+        console.error("❌ [Error] Error al guardar el despacho:", result.error);
         throw result.error;
       }
 
       // Procesar sedes si existen
-      const sedesData = Array.isArray(despacho.meta?._despacho_sedes) ? despacho.meta._despacho_sedes : [];
+      // WordPress devuelve _despacho_sedes como array de strings serializados de PHP
+      let sedesData: SedeWP[] = [];
+      const sedesMeta = despacho.meta?._despacho_sedes;
+      
+      if (sedesMeta) {
+        if (Array.isArray(sedesMeta) && sedesMeta.length > 0) {
+          // Si viene como array de strings, deserializar el primer elemento
+          const sedesRaw = typeof sedesMeta[0] === 'string' 
+            ? unserialize(sedesMeta[0])
+            : sedesMeta[0];
+          
+          if (Array.isArray(sedesRaw)) {
+            sedesData = sedesRaw as SedeWP[];
+          } else if (sedesRaw && typeof sedesRaw === 'object') {
+            // Si es un objeto, convertirlo a array
+            sedesData = Object.values(sedesRaw) as SedeWP[];
+          }
+        } else if (typeof sedesMeta === 'string') {
+          // Si viene como string serializado directamente
+          const sedesRaw = unserialize(sedesMeta);
+          
+          if (Array.isArray(sedesRaw)) {
+            sedesData = sedesRaw as SedeWP[];
+          } else if (sedesRaw && typeof sedesRaw === 'object') {
+            sedesData = Object.values(sedesRaw) as SedeWP[];
+          }
+        }
+      }
+      
+      console.log(`📍 Importando despacho "${despachoFiltrado.nombre}" con ${sedesData.length} sede(s)`);
       let processedCount = 0;
 
       if (sedesData.length > 0 && result?.data?.[0]?.id) {
@@ -287,21 +324,21 @@ export async function POST(request: Request) {
               despacho_id: result.data[0].id,
               // Solo incluir wp_sede_id si tiene un valor válido
               ...(sede.id ? { wp_sede_id: String(sede.id) } : {}),
-              
+
               // Información básica
-              nombre: sede.nombre || `Sede de ${despachoData.nombre}`,
+              nombre: sede.nombre || `Sede de ${despachoFiltrado.nombre}`,
               descripcion: sede.descripcion || "",
               // Información de contacto
               web: sede.web || "",
               telefono: sede.telefono || "",
               email_contacto: sede.email_contacto || "",
               persona_contacto: sede.persona_contacto || "",
-              
+
               // Información profesional
               numero_colegiado: sede.numero_colegiado || "",
               colegio: sede.colegio || "",
               experiencia: sede.experiencia || "",
-              
+
               // Ubicación - Campos individuales
               calle: sede.calle || "",
               numero: sede.numero || "",
@@ -310,46 +347,67 @@ export async function POST(request: Request) {
               provincia: sede.provincia || "",
               codigo_postal: sede.codigo_postal || "",
               pais: sede.pais || "España",
-              
+
               // Detalles del despacho
-              ano_fundacion: sede.ano_fundacion ? parseInt(String(sede.ano_fundacion)) : null,
+              ano_fundacion: sede.ano_fundacion
+                ? parseInt(String(sede.ano_fundacion))
+                : null,
               tamano_despacho: sede.tamano_despacho || "",
-              
+
               // Servicios y especialidades
-              especialidades: typeof sede.especialidades === 'string' ? sede.especialidades : "",
-              servicios_especificos: typeof sede.servicios_especificos === 'string' ? sede.servicios_especificos : "",
-              areas_practica: Array.isArray(sede.areas_practica) 
-                ? sede.areas_practica.map(String).filter(Boolean) 
+              especialidades:
+                typeof sede.especialidades === "string"
+                  ? sede.especialidades
+                  : "",
+              servicios_especificos:
+                typeof sede.servicios_especificos === "string"
+                  ? sede.servicios_especificos
+                  : "",
+              areas_practica: Array.isArray(sede.areas_practica)
+                ? sede.areas_practica.map(String).filter(Boolean)
                 : [],
-              
+
               // Multimedia
               foto_perfil: sede.foto_perfil || null,
-              
+
               // Estado
-              estado_verificacion: ['verificado', 'pendiente', 'rechazado'].includes(String(sede.estado_verificacion)) 
+              estado_verificacion: [
+                "verificado",
+                "pendiente",
+                "rechazado",
+              ].includes(String(sede.estado_verificacion))
                 ? String(sede.estado_verificacion)
                 : "pendiente",
-              estado_registro: ['activo', 'inactivo', 'pendiente'].includes(String(sede.estado_registro))
+              estado_registro: ["activo", "inactivo", "pendiente"].includes(
+                String(sede.estado_registro)
+              )
                 ? String(sede.estado_registro)
                 : "activo",
               is_verified: Boolean(sede.is_verified),
               es_principal: Boolean(sede.es_principal),
               activa: sede.activa !== false, // Por defecto true si no está definido o es true
-              
+
               // Datos estructurados
-              horarios: sede.horarios && typeof sede.horarios === 'object' ? sede.horarios : {},
-              redes_sociales: sede.redes_sociales && typeof sede.redes_sociales === 'object' 
-                ? sede.redes_sociales 
-                : {},
-              
+              horarios:
+                sede.horarios && typeof sede.horarios === "object"
+                  ? sede.horarios
+                  : {},
+              redes_sociales:
+                sede.redes_sociales && typeof sede.redes_sociales === "object"
+                  ? sede.redes_sociales
+                  : {},
+
               // Observaciones
-              observaciones: String(sede.observaciones || ''),
+              observaciones: String(sede.observaciones || ""),
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             };
 
             // 1. Primero intentamos encontrar la sede por wp_sede_id si existe un ID válido
-            const sedeId = sede && typeof sede === 'object' && 'id' in sede ? String(sede.id) : null;
+            const sedeId =
+              sede && typeof sede === "object" && "id" in sede
+                ? String(sede.id)
+                : null;
             if (sedeId) {
               const { data: existingSede } = await supabase
                 .from("sedes")
@@ -360,18 +418,19 @@ export async function POST(request: Request) {
               if (existingSede) {
                 // Si encontramos por wp_sede_id, actualizamos
                 // Extraemos solo los campos que necesitamos, ignorando id y created_at
-                const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
+                const { id, created_at, ...datosActualizacion } =
+                  sedeData as Record<string, unknown>;
                 // Indicamos que estas variables son intencionalmente no utilizadas
                 void (id && created_at && 0);
-                
+
                 // Crear un nuevo objeto sin los campos vacíos o nulos
                 const cleanSedeData: Record<string, unknown> = {};
                 Object.entries(datosActualizacion).forEach(([key, value]) => {
-                  if (value !== null && value !== '') {
+                  if (value !== null && value !== "") {
                     cleanSedeData[key] = value;
                   }
                 });
-                
+
                 // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
                 const { error: updateError } = await supabase
                   .from("sedes")
@@ -386,26 +445,27 @@ export async function POST(request: Request) {
 
             // 2. Si no la encontramos por wp_sede_id, buscamos por nombre y despacho_id
             const { data: sedePorNombre } = await supabase
-              .from('sedes')
-              .select('*')
-              .eq('nombre', sedeData.nombre)
-              .eq('despacho_id', sedeData.despacho_id)
+              .from("sedes")
+              .select("*")
+              .eq("nombre", sedeData.nombre)
+              .eq("despacho_id", sedeData.despacho_id)
               .maybeSingle();
 
             if (sedePorNombre) {
               // Extraemos solo los campos que necesitamos, ignorando id y created_at
-              const { id, created_at, ...datosActualizacion } = sedeData as Record<string, unknown>;
+              const { id, created_at, ...datosActualizacion } =
+                sedeData as Record<string, unknown>;
               // Indicamos que estas variables son intencionalmente no utilizadas
               void (id && created_at && 0);
-              
+
               // Crear un nuevo objeto sin los campos vacíos o nulos
               const cleanSedeData: Record<string, unknown> = {};
               Object.entries(datosActualizacion).forEach(([key, value]) => {
-                if (value !== null && value !== '') {
+                if (value !== null && value !== "") {
                   cleanSedeData[key] = value;
                 }
               });
-              
+
               // Si encontramos por nombre y despacho_id, actualizamos con todos los campos
               const { error: updateError } = await supabase
                 .from("sedes")
@@ -419,24 +479,27 @@ export async function POST(request: Request) {
 
             // 3. Si no existe, la creamos con todos los campos necesarios
             // Usamos el objeto completo de sedeData que ya tiene todos los campos mapeados correctamente
-            const { data: nuevaSede, error: insertError } = await supabase
+            const { error: insertError } = await supabase
               .from('sedes')
               .insert(sedeData)
               .select()
               .single();
 
             if (insertError) {
-              console.error('❌ [Error] Detalles del error al insertar sede:', {
+              console.error("❌ [Error] Detalles del error al insertar sede:", {
                 error: insertError,
                 sedeData: sedeData,
-                wp_sede_id: sedeData.wp_sede_id
+                wp_sede_id: sedeData.wp_sede_id,
               });
               throw insertError;
             }
 
             processedCount++;
           } catch (error) {
-            console.error(`❌ [Error] Error al procesar sede ${sede.nombre || 'sin nombre'}:`, error);
+            console.error(
+              `❌ [Error] Error al procesar sede ${sede.nombre || "sin nombre"}:`,
+              error
+            );
           }
         }
       }
@@ -447,7 +510,7 @@ export async function POST(request: Request) {
         data: result.data[0],
         isNew: isNewDespacho,
         sedesProcesadas: processedCount,
-        totalSedes: sedesData.length
+        totalSedes: sedesData.length,
       });
     } catch (error) {
       console.error("❌ [Error] Error en la importación:", error);
