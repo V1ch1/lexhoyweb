@@ -737,6 +737,9 @@ export class SyncService {
         ultima_actualizacion: new Date().toLocaleDateString("es-ES"),
         slug:
           despacho.slug || despacho.nombre.toLowerCase().replace(/\s+/g, "-"),
+        // Campos de verificación a nivel de despacho
+        estado_verificacion: despacho.estado_verificacion || "pendiente",
+        is_verified: despacho.estado_verificacion === "verificado",
       };
 
       // Enviar a Algolia

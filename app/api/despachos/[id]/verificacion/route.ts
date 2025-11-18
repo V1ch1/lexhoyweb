@@ -66,14 +66,22 @@ export async function PUT(
 
     // Sincronizar con Algolia
     if (despachoData?.object_id) {
+      console.log(`🔄 Iniciando sincronización con Algolia para object_id: ${despachoData.object_id}...`);
       try {
         const { SyncService } = await import('@/lib/syncService');
-        await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
-        console.log('✅ Sincronizado con Algolia');
+        const algoliaResult = await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
+        
+        if (algoliaResult.success) {
+          console.log('✅ Sincronizado correctamente con Algolia');
+        } else {
+          console.error('❌ Error en sincronización con Algolia:', algoliaResult.error);
+        }
       } catch (algoliaError) {
-        console.error('⚠️ Error al sincronizar con Algolia:', algoliaError);
+        console.error('⚠️ Excepción al sincronizar con Algolia:', algoliaError);
         // No fallar la petición si la sincronización con Algolia falla
       }
+    } else {
+      console.warn('⚠️ No se puede sincronizar con Algolia: falta object_id');
     }
 
     return NextResponse.json({
