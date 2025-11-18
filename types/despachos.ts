@@ -19,6 +19,8 @@ export interface DespachoSummary {
   owner_apellidos?: string | null;
   owner_email?: string | null;
   isOwner?: boolean; // Indica si el usuario actual es propietario del despacho
+  origen?: "supabase" | "wordpress"; // Indica de dónde proviene el despacho
+  wordpress_id?: number; // ID del despacho en WordPress
 }
 
 import { SedeWP, DespachoWP as BaseDespachoWP } from './wordpress';
