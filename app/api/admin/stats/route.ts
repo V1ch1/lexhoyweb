@@ -25,11 +25,18 @@ export async function GET() {
       usuario: users?.filter(u => u.rol === 'usuario').length || 0,
     };
 
-    // Obtener despachos verificados
-    const { count: verifiedDespachos } = await supabase
+    // Obtener total de despachos en Supabase (importados desde WordPress)
+    const { count: supabaseDespachos } = await supabase
+      .from('despachos')
+      .select('*', { count: 'exact', head: true });
+    
+    // Obtener despachos nuevos (últimos 30 días)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { count: newDespachos } = await supabase
       .from('despachos')
       .select('*', { count: 'exact', head: true })
-      .eq('estado_verificacion', 'verificado');
+      .gte('created_at', thirtyDaysAgo.toISOString());
 
     // Obtener total de leads
     const { count: totalLeads } = await supabase
@@ -38,7 +45,8 @@ export async function GET() {
 
     return NextResponse.json({
       totalUsers: totalUsers || 0,
-      verifiedDespachos: verifiedDespachos || 0,
+      supabaseDespachos: supabaseDespachos || 0,
+      newDespachos: newDespachos || 0,
       totalLeads: totalLeads || 0,
       usersByRole,
     });

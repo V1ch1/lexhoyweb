@@ -22,7 +22,8 @@ import {
 // Interfaces
 interface SystemStats {
   totalUsers: number;
-  verifiedDespachos: number;
+  supabaseDespachos: number;
+  newDespachos: number;
   totalLeads: number;
   usersByRole: {
     super_admin: number;
@@ -377,8 +378,8 @@ const DashboardPage = () => {
             color="blue"
           />
           <StatCard
-            title="Despachos Verificados"
-            value={systemStats.verifiedDespachos}
+            title="Despachos en Supabase"
+            value={systemStats.supabaseDespachos}
             icon={BuildingOfficeIcon}
             color="green"
           />

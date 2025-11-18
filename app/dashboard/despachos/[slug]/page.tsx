@@ -224,32 +224,108 @@ export default function DespachoPage() {
         setLoading(true);
         setError(null);
 
-        // Obtener todos los despachos y buscar por slug
-        const { data: allDespachos, error: fetchError } = await supabase.from(
-          "despachos"
-        ).select(`
+        // Buscar despacho por slug directamente
+        const { data: despachoData, error: fetchError } = await supabase
+          .from("despachos")
+          .select(`
             *,
             sedes(*)
-          `);
+          `)
+          .eq("slug", slug)
+          .single();
 
         if (fetchError) {
-          console.error("Error al cargar despachos:", fetchError);
-          setError("No se pudo cargar la información del despacho");
-          return;
-        }
-
-        // Buscar el despacho cuyo nombre coincida con el slug
-        // Intentar con el slug actual y también normalizando el nombre del despacho
-        const despachoData = allDespachos?.find((d) => {
-          const despachoSlug = slugify(d.nombre);
-          return despachoSlug === slug;
-        });
-
-        if (!despachoData) {
-          console.error("No se encontró despacho con slug:", slug);
-          setError(
-            "No se encontró el despacho. Verifica que el nombre sea correcto."
+          console.error("Error al cargar despacho:", fetchError);
+          
+          // Si no se encuentra por slug, intentar buscar por nombre slugificado (fallback)
+          const { data: allDespachos } = await supabase
+            .from("despachos")
+            .select(`
+              *,
+              sedes(*)
+            `);
+          
+          const despachoFallback = allDespachos?.find((d) => {
+            const despachoSlug = slugify(d.nombre);
+            return despachoSlug === slug;
+          });
+          
+          if (!despachoFallback) {
+            console.error("No se encontró despacho con slug:", slug);
+            setError(
+              "No se encontró el despacho. Verifica que el nombre sea correcto."
+            );
+            return;
+          }
+          
+          // Usar el despacho encontrado por fallback
+          const processedDespacho: Despacho = {
+            ...despachoFallback,
+            areas_practica: Array.isArray(despachoFallback.areas_practica)
+              ? despachoFallback.areas_practica
+              : [],
+            sedes: Array.isArray(despachoFallback.sedes) ? despachoFallback.sedes : [],
+            redes_sociales: despachoFallback.redes_sociales || {
+              twitter: "",
+              linkedin: "",
+              facebook: "",
+              instagram: "",
+            },
+            horarios: despachoFallback.horarios || {},
+            servicios_adicionales: Array.isArray(
+              despachoFallback.servicios_adicionales
+            )
+              ? despachoFallback.servicios_adicionales
+              : [],
+          };
+          
+          setDespacho(processedDespacho);
+          const sedesOrdenadas = [...(processedDespacho.sedes || [])].sort(
+            (a, b) => {
+              if (a.es_principal) return -1;
+              if (b.es_principal) return 1;
+              return 0;
+            }
           );
+          setSedes(sedesOrdenadas);
+          const sedePrincipal =
+            processedDespacho.sedes?.find((s) => s.es_principal) ||
+            processedDespacho.sedes?.[0];
+          setFormData({
+            nombre: decodeHtmlEntities(processedDespacho.nombre || ""),
+            descripcion: decodeHtmlEntities(
+              processedDespacho.descripcion || sedePrincipal?.descripcion || ""
+            ),
+            localidad:
+              processedDespacho.localidad || sedePrincipal?.localidad || "",
+            provincia:
+              processedDespacho.provincia || sedePrincipal?.provincia || "",
+            telefono: processedDespacho.telefono || sedePrincipal?.telefono || "",
+            email: processedDespacho.email || sedePrincipal?.email_contacto || "",
+            email_contacto:
+              processedDespacho.email_contacto ||
+              sedePrincipal?.email_contacto ||
+              "",
+            web: processedDespacho.web || sedePrincipal?.web || "",
+            num_sedes: processedDespacho.num_sedes || 1,
+            areas_practica:
+              processedDespacho.areas_practica &&
+              processedDespacho.areas_practica.length > 0
+                ? processedDespacho.areas_practica
+                : sedePrincipal?.areas_practica || [],
+            direccion:
+              processedDespacho.direccion || sedePrincipal?.direccion || "",
+            foto_perfil:
+              processedDespacho.foto_perfil || sedePrincipal?.foto_perfil || "",
+            redes_sociales: {
+              twitter: processedDespacho.redes_sociales?.twitter || "",
+              linkedin: processedDespacho.redes_sociales?.linkedin || "",
+              facebook: processedDespacho.redes_sociales?.facebook || "",
+              instagram: processedDespacho.redes_sociales?.instagram || "",
+            },
+            horarios: processedDespacho.horarios || sedePrincipal?.horarios || {},
+            servicios_adicionales: processedDespacho.servicios_adicionales || [],
+          });
           return;
         }
 

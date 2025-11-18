@@ -151,10 +151,25 @@ export async function POST(request: Request) {
     const despacho: DespachoWP = await wpResponse.json();
     // La función obtenerDescripcionSede ha sido eliminada ya que no se estaba utilizando
 
+    // Función para decodificar entidades HTML
+    const decodeHtmlEntities = (str: string): string => {
+      if (!str) return "";
+      return str
+        .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, " ");
+    };
+
     // Generar slug, usando el de WordPress si existe, o generarlo del título
     const generateSlug = (str: string) => {
       if (!str) return "";
-      return str
+      // Primero decodificar entidades HTML
+      const decoded = decodeHtmlEntities(str);
+      return decoded
         .toString()
         .toLowerCase()
         .replace(/&/g, "y")
@@ -164,8 +179,9 @@ export async function POST(request: Request) {
         .trim();
     };
 
-    const despachoNombre =
-      despacho.title?.rendered || `Despacho ${despacho.id}`;
+    const despachoNombre = decodeHtmlEntities(
+      despacho.title?.rendered || `Despacho ${despacho.id}`
+    );
 
     // Asegurarse de que siempre tengamos un slug válido
     let slug = "";
@@ -217,7 +233,7 @@ export async function POST(request: Request) {
     const despachoFiltrado: DespachoData = {
       wordpress_id: despacho.id,
       object_id: String(despacho.id),
-      nombre: despachoNombre || `Despacho ${despacho.id}`,
+      nombre: despachoNombre || `Despacho ${despacho.id}`, // Ya está decodificado arriba
       slug: slug || `despacho-${despacho.id}`,
       sincronizado_wp: true,
       ultima_sincronizacion: new Date().toISOString(),

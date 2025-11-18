@@ -49,7 +49,7 @@ const VerDespachosPage = () => {
   const [totalWordPress, setTotalWordPress] = useState(0); // Total real en WordPress
   
   // Estados para contadores (no cambian con la paginación)
-  const [totalVerificados, setTotalVerificados] = useState(0);
+  const [totalSupabase, setTotalSupabase] = useState(0);
   const [totalConPropietario, setTotalConPropietario] = useState(0);
   
   // Estado para búsqueda de usuario
@@ -107,11 +107,10 @@ const VerDespachosPage = () => {
     if (!user?.id) return;
     
     try {
-      // Contar despachos verificados en Supabase
-      const { count: countVerificados } = await supabase
+      // Contar total de despachos en Supabase
+      const { count: countSupabase } = await supabase
         .from('despachos')
-        .select('*', { count: 'exact', head: true })
-        .eq('estado_verificacion', 'verificado');
+        .select('*', { count: 'exact', head: true });
       
       // Contar despachos con propietario en Supabase
       const { count: countConPropietario } = await supabase
@@ -119,7 +118,7 @@ const VerDespachosPage = () => {
         .select('*', { count: 'exact', head: true })
         .not('owner_email', 'is', null);
       
-      setTotalVerificados(countVerificados || 0);
+      setTotalSupabase(countSupabase || 0);
       setTotalConPropietario(countConPropietario || 0);
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
@@ -479,124 +478,126 @@ const VerDespachosPage = () => {
           </p>
         </div>
 
-        {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Total Despachos
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {totalWordPress || "..."}
-                </p>
-              </div>
-              <div className="bg-blue-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
+        {/* Estadísticas principales - Solo para super_admin */}
+        {user?.role === "super_admin" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Total Despachos
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {totalWordPress || "..."}
+                  </p>
+                </div>
+                <div className="bg-blue-500 p-3 rounded-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Verificados
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {totalVerificados}
-                </p>
-              </div>
-              <div className="bg-green-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    En Supabase
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {totalSupabase}
+                  </p>
+                </div>
+                <div className="bg-green-500 p-3 rounded-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Con Propietario
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {totalConPropietario}
-                </p>
-              </div>
-              <div className="bg-purple-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Con Propietario
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {totalConPropietario}
+                  </p>
+                </div>
+                <div className="bg-purple-500 p-3 rounded-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 mb-1">Tu Rol</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {user?.role === "super_admin"
-                    ? "Super Admin"
-                    : "Despacho Admin"}
-                </p>
-              </div>
-              <div className="bg-orange-500 p-3 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Tu Rol</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {user?.role === "super_admin"
+                      ? "Super Admin"
+                      : "Despacho Admin"}
+                  </p>
+                </div>
+                <div className="bg-orange-500 p-3 rounded-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Sección principal: Lista de Despachos - Solo si hay búsqueda o hay despachos */}
         <DespachosList
