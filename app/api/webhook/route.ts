@@ -118,28 +118,40 @@ async function handleDespachoUpdate(despachoData: DespachoData) {
       throw new Error('ID de despacho es requerido');
     }
 
+    // Extraer estado de verificación desde meta
+    const estadoVerificacionMeta = despachoData.meta?._despacho_estado_verificacion;
+    const isVerifiedMeta = despachoData.meta?._despacho_is_verified;
+    const estadoRegistroMeta = despachoData.meta?._despacho_estado_registro;
+    
+    let estadoVerificacion = 'pendiente';
+    if (estadoVerificacionMeta === 'verificado' || isVerifiedMeta === '1' || isVerifiedMeta === 1) {
+      estadoVerificacion = 'verificado';
+    } else if (estadoVerificacionMeta === 'rechazado') {
+      estadoVerificacion = 'rechazado';
+    }
+    
     const updateData = {
       // Usamos el ID de WordPress como object_id
       object_id: despachoData.id.toString(),
+      wordpress_id: typeof despachoData.id === 'number' ? despachoData.id : parseInt(String(despachoData.id)),
       nombre: despachoData.title?.rendered || 'Sin título',
       descripcion: despachoData.content?.rendered || '',
       direccion: despachoData.meta?.direccion || null,
       telefono: despachoData.meta?.telefono || null,
       email: despachoData.meta?.email || null,
       web: despachoData.meta?.web || null,
-      // Campos adicionales para el control
-      estado_registro: 'borrador',  // Valores permitidos: 'borrador', 'pendiente', 'aprobado', 'rechazado'
-      sincronizado_wordpress: true,
-      fecha_sync_wordpress: new Date().toISOString(),
+      // Estados de verificación y publicación desde WordPress
+      estado_verificacion: estadoVerificacion,
+      estado_publicacion: despachoData.status || 'draft',
+      status: estadoRegistroMeta === 'activo' ? 'active' : 'inactive',
+      // Control de sincronización
+      sincronizado_wp: true,
+      ultima_sincronizacion: new Date().toISOString(),
       // Mantenemos los campos requeridos
       num_sedes: 1, // Valor por defecto, ajusta según sea necesario
       areas_practica: [], // Inicializamos como array vacío
-      ultima_actualizacion: new Date().toISOString(),
       slug: despachoData.slug || `despacho-${despachoData.id}`,
-      fecha_creacion: new Date().toISOString(),
-      fecha_actualizacion: new Date().toISOString(),
-      verificado: false,
-      activo: true
+      updated_at: new Date().toISOString()
     };
 
     // Buscamos si ya existe un despacho con este object_id

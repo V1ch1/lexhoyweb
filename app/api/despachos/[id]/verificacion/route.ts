@@ -49,11 +49,18 @@ export async function PUT(
       .single();
 
     // Sincronizar con WordPress
+    console.log(`🔄 Iniciando sincronización con WordPress para despacho ${despachoId}...`);
     try {
       const { SyncService } = await import('@/lib/syncService');
-      await SyncService.enviarDespachoAWordPress(despachoId, false);
+      const wpResult = await SyncService.enviarDespachoAWordPress(despachoId, false);
+      
+      if (wpResult.success) {
+        console.log('✅ Sincronizado correctamente con WordPress:', wpResult);
+      } else {
+        console.error('❌ Error en sincronización con WordPress:', wpResult.error);
+      }
     } catch (syncError) {
-      console.error('⚠️ Error al sincronizar con WordPress:', syncError);
+      console.error('⚠️ Excepción al sincronizar con WordPress:', syncError);
       // No fallar la petición si la sincronización falla
     }
 

@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("despachos")
-    .select("id, nombre, slug, wordpress_id")
+    .select("id, nombre, slug, wordpress_id, estado_verificacion, estado_publicacion, status, object_id")
     .ilike("nombre", `%${query}%`);
 
   if (error) {
