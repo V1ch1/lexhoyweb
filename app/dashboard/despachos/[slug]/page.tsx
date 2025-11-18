@@ -227,29 +227,30 @@ export default function DespachoPage() {
         // Buscar despacho por slug directamente
         const { data: despachoData, error: fetchError } = await supabase
           .from("despachos")
-          .select(`
+          .select(
+            `
             *,
             sedes(*)
-          `)
+          `
+          )
           .eq("slug", slug)
           .single();
 
         if (fetchError) {
           console.error("Error al cargar despacho:", fetchError);
-          
+
           // Si no se encuentra por slug, intentar buscar por nombre slugificado (fallback)
-          const { data: allDespachos } = await supabase
-            .from("despachos")
+          const { data: allDespachos } = await supabase.from("despachos")
             .select(`
               *,
               sedes(*)
             `);
-          
+
           const despachoFallback = allDespachos?.find((d) => {
             const despachoSlug = slugify(d.nombre);
             return despachoSlug === slug;
           });
-          
+
           if (!despachoFallback) {
             console.error("No se encontró despacho con slug:", slug);
             setError(
@@ -257,14 +258,16 @@ export default function DespachoPage() {
             );
             return;
           }
-          
+
           // Usar el despacho encontrado por fallback
           const processedDespacho: Despacho = {
             ...despachoFallback,
             areas_practica: Array.isArray(despachoFallback.areas_practica)
               ? despachoFallback.areas_practica
               : [],
-            sedes: Array.isArray(despachoFallback.sedes) ? despachoFallback.sedes : [],
+            sedes: Array.isArray(despachoFallback.sedes)
+              ? despachoFallback.sedes
+              : [],
             redes_sociales: despachoFallback.redes_sociales || {
               twitter: "",
               linkedin: "",
@@ -278,7 +281,7 @@ export default function DespachoPage() {
               ? despachoFallback.servicios_adicionales
               : [],
           };
-          
+
           setDespacho(processedDespacho);
           const sedesOrdenadas = [...(processedDespacho.sedes || [])].sort(
             (a, b) => {
@@ -300,8 +303,10 @@ export default function DespachoPage() {
               processedDespacho.localidad || sedePrincipal?.localidad || "",
             provincia:
               processedDespacho.provincia || sedePrincipal?.provincia || "",
-            telefono: processedDespacho.telefono || sedePrincipal?.telefono || "",
-            email: processedDespacho.email || sedePrincipal?.email_contacto || "",
+            telefono:
+              processedDespacho.telefono || sedePrincipal?.telefono || "",
+            email:
+              processedDespacho.email || sedePrincipal?.email_contacto || "",
             email_contacto:
               processedDespacho.email_contacto ||
               sedePrincipal?.email_contacto ||
@@ -323,8 +328,10 @@ export default function DespachoPage() {
               facebook: processedDespacho.redes_sociales?.facebook || "",
               instagram: processedDespacho.redes_sociales?.instagram || "",
             },
-            horarios: processedDespacho.horarios || sedePrincipal?.horarios || {},
-            servicios_adicionales: processedDespacho.servicios_adicionales || [],
+            horarios:
+              processedDespacho.horarios || sedePrincipal?.horarios || {},
+            servicios_adicionales:
+              processedDespacho.servicios_adicionales || [],
           });
           return;
         }

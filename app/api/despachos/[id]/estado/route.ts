@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
-import { SyncService } from '@/lib/syncService';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { SyncService } from "@/lib/syncService";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 /**
@@ -20,52 +21,56 @@ export async function PUT(
     const { estado } = await request.json();
 
     // Validar estado
-    if (!['publish', 'draft', 'trash'].includes(estado)) {
+    if (!["publish", "draft", "trash"].includes(estado)) {
       return NextResponse.json(
-        { success: false, error: 'Estado inválido' },
+        { success: false, error: "Estado inválido" },
         { status: 400 }
       );
     }
 
     // 1. Actualizar estado en Supabase
     const { error: updateError } = await supabase
-      .from('despachos')
-      .update({ 
+      .from("despachos")
+      .update({
         estado_publicacion: estado,
-        status: estado === 'publish' ? 'active' : 'inactive'
+        status: estado === "publish" ? "active" : "inactive",
       })
-      .eq('id', despachoId);
+      .eq("id", despachoId);
 
     if (updateError) {
-      console.error('❌ Error al actualizar Supabase:', updateError);
+      console.error("❌ Error al actualizar Supabase:", updateError);
       return NextResponse.json(
-        { success: false, error: 'Error al actualizar en base de datos' },
+        { success: false, error: "Error al actualizar en base de datos" },
         { status: 500 }
       );
     }
 
     // 2. Sincronizar con WordPress (forzando el nuevo estado)
     // WordPress se encargará de sincronizar con Algolia automáticamente
-    const wpResult = await SyncService.enviarDespachoAWordPress(despachoId, true);
+    const wpResult = await SyncService.enviarDespachoAWordPress(
+      despachoId,
+      true
+    );
 
     if (!wpResult.success) {
-      console.warn('⚠️ Error al sincronizar con WordPress:', wpResult.error);
+      console.warn("⚠️ Error al sincronizar con WordPress:", wpResult.error);
     } else {
-      console.log('✅ Sincronizado con WordPress - WordPress sincronizará con Algolia');
+      console.log(
+        "✅ Sincronizado con WordPress - WordPress sincronizará con Algolia"
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Estado actualizado correctamente',
-      estado: estado
+      message: "Estado actualizado correctamente",
+      estado: estado,
     });
-
   } catch (error) {
-    console.error('❌ Error al cambiar estado:', error);
+    console.error("❌ Error al cambiar estado:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido'
+        error: error instanceof Error ? error.message : "Error desconocido",
       },
       { status: 500 }
     );

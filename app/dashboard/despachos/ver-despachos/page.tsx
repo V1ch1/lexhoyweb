@@ -40,21 +40,23 @@ import BuscadorDespachosWordpress from "@/components/BuscadorDespachosWordpress"
 const VerDespachosPage = () => {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  
+
   // Estados principales
   const [despachos, setDespachos] = useState<DespachoSummary[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalWordPress, setTotalWordPress] = useState(0); // Total real en WordPress
-  
+
   // Estados para contadores (no cambian con la paginación)
   const [totalSupabase, setTotalSupabase] = useState(0);
   const [totalConPropietario, setTotalConPropietario] = useState(0);
-  
+
   // Estado para búsqueda de usuario
   const [showAsignarModal, setShowAsignarModal] = useState(false);
-  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(null);
+  const [asignarDespachoId, setAsignarDespachoId] = useState<string | null>(
+    null
+  );
   const [searchUser, setSearchUser] = useState<string>("");
   const [userResults, setUserResults] = useState<User[]>([]);
   const [userLoading, setUserLoading] = useState<boolean>(false);
@@ -63,65 +65,68 @@ const VerDespachosPage = () => {
 
   // Estado para modal de solicitar propiedad
   const [showSolicitarModal, setShowSolicitarModal] = useState(false);
-  const [despachoSolicitar, setDespachoSolicitar] = useState<DespachoSummary | null>(null);
+  const [despachoSolicitar, setDespachoSolicitar] =
+    useState<DespachoSummary | null>(null);
   const [solicitandoPropiedad, setSolicitandoPropiedad] = useState(false);
   const [mensajePropiedad, setMensajePropiedad] = useState<{
     tipo: "success" | "error";
     texto: string;
   } | null>(null);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState<Set<string>>(new Set());
-  
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState<
+    Set<string>
+  >(new Set());
+
   // Cargar solicitudes pendientes del usuario actual
   useEffect(() => {
     const fetchSolicitudesPendientes = async () => {
       if (!user?.id) return;
-      
+
       try {
         const { data, error } = await supabase
-          .from('solicitudes_despacho')
-          .select('despacho_id')
-          .eq('user_id', user.id)
-          .eq('estado', 'pendiente');
-          
+          .from("solicitudes_despacho")
+          .select("despacho_id")
+          .eq("user_id", user.id)
+          .eq("estado", "pendiente");
+
         if (error) throw error;
-        
+
         if (data && data.length > 0) {
-          const despachosIds = data.map(s => s.despacho_id);
+          const despachosIds = data.map((s) => s.despacho_id);
           setSolicitudesPendientes(new Set(despachosIds));
         }
       } catch (error) {
-        console.error('Error al cargar solicitudes pendientes:', error);
+        console.error("Error al cargar solicitudes pendientes:", error);
       }
     };
-    
+
     fetchSolicitudesPendientes();
   }, [user?.id]);
-  
+
   // Función para actualizar las solicitudes pendientes
   const actualizarSolicitudesPendientes = (despachoId: string) => {
-    setSolicitudesPendientes(prev => new Set(prev).add(despachoId));
+    setSolicitudesPendientes((prev) => new Set(prev).add(despachoId));
   };
 
   // Función para cargar estadísticas generales
   const fetchEstadisticas = async () => {
     if (!user?.id) return;
-    
+
     try {
       // Contar total de despachos en Supabase
       const { count: countSupabase } = await supabase
-        .from('despachos')
-        .select('*', { count: 'exact', head: true });
-      
+        .from("despachos")
+        .select("*", { count: "exact", head: true });
+
       // Contar despachos con propietario en Supabase
       const { count: countConPropietario } = await supabase
-        .from('despachos')
-        .select('*', { count: 'exact', head: true })
-        .not('owner_email', 'is', null);
-      
+        .from("despachos")
+        .select("*", { count: "exact", head: true })
+        .not("owner_email", "is", null);
+
       setTotalSupabase(countSupabase || 0);
       setTotalConPropietario(countConPropietario || 0);
     } catch (error) {
-      console.error('Error al cargar estadísticas:', error);
+      console.error("Error al cargar estadísticas:", error);
     }
   };
 
@@ -129,13 +134,15 @@ const VerDespachosPage = () => {
   useEffect(() => {
     const fetchTotalWordPress = async () => {
       try {
-        const response = await fetch('/api/despachos/buscar-unificado?query=&page=1&perPage=1');
+        const response = await fetch(
+          "/api/despachos/buscar-unificado?query=&page=1&perPage=1"
+        );
         if (response.ok) {
           const { totalWordPress } = await response.json();
           setTotalWordPress(totalWordPress || 0);
         }
       } catch (error) {
-        console.error('Error al obtener total de WordPress:', error);
+        console.error("Error al obtener total de WordPress:", error);
       }
     };
 
@@ -193,31 +200,43 @@ const VerDespachosPage = () => {
 
   // Solicitar propiedad del despacho (con importación automática si es necesario)
   const handleSolicitarPropiedad = async () => {
-    if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad) return;
-    
+    if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad)
+      return;
+
     setSolicitandoPropiedad(true);
     setMensajePropiedad(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.access_token) {
         throw new Error("No hay sesión activa");
       }
 
       // Usar el nuevo endpoint inteligente que importa si es necesario
-      const response = await fetch("/api/despachos/solicitar-propiedad-inteligente", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          despachoId: despachoSolicitar.id,
-          origen: 'origen' in despachoSolicitar ? despachoSolicitar.origen : "supabase",
-          wordpressId: 'wordpress_id' in despachoSolicitar ? despachoSolicitar.wordpress_id : null,
-        }),
-      });
+      const response = await fetch(
+        "/api/despachos/solicitar-propiedad-inteligente",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            despachoId: despachoSolicitar.id,
+            origen:
+              "origen" in despachoSolicitar
+                ? despachoSolicitar.origen
+                : "supabase",
+            wordpressId:
+              "wordpress_id" in despachoSolicitar
+                ? despachoSolicitar.wordpress_id
+                : null,
+          }),
+        }
+      );
 
       const result = await response.json();
 
@@ -227,11 +246,11 @@ const VerDespachosPage = () => {
 
       // Actualizar el estado de solicitudes pendientes
       actualizarSolicitudesPendientes(result.despachoId);
-      
+
       // Mostrar mensaje de éxito
       setMensajePropiedad({
         tipo: "success",
-        texto: result.importado 
+        texto: result.importado
           ? "Despacho importado y solicitud enviada correctamente. Te notificaremos cuando sea revisada."
           : "Solicitud enviada correctamente. Te notificaremos cuando sea revisada.",
       });
@@ -244,12 +263,14 @@ const VerDespachosPage = () => {
         // Recargar despachos para mostrar el recién importado
         fetchDespachos();
       }, 2000);
-      
     } catch (err) {
       console.error("Error al enviar la solicitud:", err);
       setMensajePropiedad({
         tipo: "error",
-        texto: err instanceof Error ? err.message : "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
+        texto:
+          err instanceof Error
+            ? err.message
+            : "Error al enviar la solicitud. Por favor, inténtalo de nuevo.",
       });
     } finally {
       setSolicitandoPropiedad(false);
@@ -262,7 +283,7 @@ const VerDespachosPage = () => {
   const fetchDespachos = async () => {
     setLoadingDespachos(true);
     setError(null);
-    
+
     try {
       if (!user?.id) {
         setDespachos([]);
@@ -288,23 +309,25 @@ const VerDespachosPage = () => {
         .select("despacho_id")
         .eq("user_id", user.id);
 
-      const userDespachoIds = new Set(userDespachosData?.map(ud => ud.despacho_id) || []);
+      const userDespachoIds = new Set(
+        userDespachosData?.map((ud) => ud.despacho_id) || []
+      );
 
       // Mapear los datos (ya vienen formateados del endpoint)
       const mapped = (data || []).map((d: Record<string, unknown>) => ({
-        id: String(d.id || ''),
+        id: String(d.id || ""),
         wordpress_id: d.wordpress_id as number | undefined,
-        nombre: decodeHtmlEntities(String(d.nombre || '')),
-        slug: String(d.slug || ''),
+        nombre: decodeHtmlEntities(String(d.nombre || "")),
+        slug: String(d.slug || ""),
         num_sedes: Number(d.num_sedes) || 0,
-        localidad: String(d.localidad || ''),
-        provincia: String(d.provincia || ''),
-        telefono: String(d.telefono || ''),
-        email: String(d.email || ''),
+        localidad: String(d.localidad || ""),
+        provincia: String(d.provincia || ""),
+        telefono: String(d.telefono || ""),
+        email: String(d.email || ""),
         owner_email: d.owner_email ? String(d.owner_email) : null,
-        origen: d.origen as 'supabase' | 'wordpress',
+        origen: d.origen as "supabase" | "wordpress",
         yaImportado: Boolean(d.yaImportado),
-        isOwner: d.origen === 'supabase' && userDespachoIds.has(String(d.id)),
+        isOwner: d.origen === "supabase" && userDespachoIds.has(String(d.id)),
       }));
 
       setDespachos(mapped);
@@ -458,11 +481,22 @@ const VerDespachosPage = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => router.push('/dashboard/despachos')}
+            onClick={() => router.push("/dashboard/despachos")}
             className="mb-3 text-blue-600 hover:text-blue-700 font-medium flex items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Volver a Despachos
           </button>
@@ -571,7 +605,9 @@ const VerDespachosPage = () => {
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 mb-1">Tu Rol</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Tu Rol
+                  </p>
                   <p className="text-lg font-bold text-gray-900">
                     {user?.role === "super_admin"
                       ? "Super Admin"
@@ -626,7 +662,8 @@ const VerDespachosPage = () => {
                 No encontramos tu despacho
               </h3>
               <p className="text-gray-700 mb-6">
-                Puedes darlo de alta manualmente con toda la información necesaria
+                Puedes darlo de alta manualmente con toda la información
+                necesaria
               </p>
               <button
                 onClick={() => router.push("/dashboard/despachos/crear")}

@@ -11,28 +11,33 @@ const WORDPRESS_API_URL =
  */
 function unserialize(data: string | unknown): unknown {
   if (!data) return null;
-  
+
   // Si ya es un objeto o array, devolverlo
   if (Array.isArray(data)) return data;
-  if (typeof data === 'object') return data;
-  
-  if (typeof data !== 'string') return null;
+  if (typeof data === "object") return data;
+
+  if (typeof data !== "string") return null;
 
   try {
     const result = phpUnserialize(data);
-    
+
     // Convertir objetos con claves numéricas a arrays
-    if (result && typeof result === 'object' && !Array.isArray(result)) {
+    if (result && typeof result === "object" && !Array.isArray(result)) {
       const keys = Object.keys(result);
       const isNumericArray = keys.every((k, i) => k === String(i));
       if (isNumericArray) {
         return Object.values(result);
       }
     }
-    
+
     return result;
   } catch (error) {
-    console.error('❌ Error deserializando PHP:', error, 'Data:', data.substring(0, 200));
+    console.error(
+      "❌ Error deserializando PHP:",
+      error,
+      "Data:",
+      data.substring(0, 200)
+    );
     return null;
   }
 }
@@ -239,14 +244,20 @@ export async function POST(request: Request) {
     const estadoVerificacionWP = despacho.meta?._despacho_estado_verificacion;
     const isVerifiedWP = despacho.meta?._despacho_is_verified;
     const estadoRegistroWP = despacho.meta?._despacho_estado_registro;
-    
+
     let estadoVerificacion = "pendiente";
     if (Array.isArray(estadoVerificacionWP) && estadoVerificacionWP[0]) {
-      estadoVerificacion = estadoVerificacionWP[0] === "verificado" ? "verificado" : "pendiente";
-    } else if (Array.isArray(isVerifiedWP) && (isVerifiedWP[0] === 1 || isVerifiedWP[0] === "1" || isVerifiedWP[0] === true)) {
+      estadoVerificacion =
+        estadoVerificacionWP[0] === "verificado" ? "verificado" : "pendiente";
+    } else if (
+      Array.isArray(isVerifiedWP) &&
+      (isVerifiedWP[0] === 1 ||
+        isVerifiedWP[0] === "1" ||
+        isVerifiedWP[0] === true)
+    ) {
       estadoVerificacion = "verificado";
     }
-    
+
     let estadoRegistro = "activo";
     if (Array.isArray(estadoRegistroWP) && estadoRegistroWP[0]) {
       estadoRegistro = estadoRegistroWP[0];
@@ -323,33 +334,36 @@ export async function POST(request: Request) {
       // WordPress devuelve _despacho_sedes como array de strings serializados de PHP
       let sedesData: SedeWP[] = [];
       const sedesMeta = despacho.meta?._despacho_sedes;
-      
+
       if (sedesMeta) {
         if (Array.isArray(sedesMeta) && sedesMeta.length > 0) {
           // Si viene como array de strings, deserializar el primer elemento
-          const sedesRaw = typeof sedesMeta[0] === 'string' 
-            ? unserialize(sedesMeta[0])
-            : sedesMeta[0];
-          
+          const sedesRaw =
+            typeof sedesMeta[0] === "string"
+              ? unserialize(sedesMeta[0])
+              : sedesMeta[0];
+
           if (Array.isArray(sedesRaw)) {
             sedesData = sedesRaw as SedeWP[];
-          } else if (sedesRaw && typeof sedesRaw === 'object') {
+          } else if (sedesRaw && typeof sedesRaw === "object") {
             // Si es un objeto, convertirlo a array
             sedesData = Object.values(sedesRaw) as SedeWP[];
           }
-        } else if (typeof sedesMeta === 'string') {
+        } else if (typeof sedesMeta === "string") {
           // Si viene como string serializado directamente
           const sedesRaw = unserialize(sedesMeta);
-          
+
           if (Array.isArray(sedesRaw)) {
             sedesData = sedesRaw as SedeWP[];
-          } else if (sedesRaw && typeof sedesRaw === 'object') {
+          } else if (sedesRaw && typeof sedesRaw === "object") {
             sedesData = Object.values(sedesRaw) as SedeWP[];
           }
         }
       }
-      
-      console.log(`📍 Importando despacho "${despachoFiltrado.nombre}" con ${sedesData.length} sede(s)`);
+
+      console.log(
+        `📍 Importando despacho "${despachoFiltrado.nombre}" con ${sedesData.length} sede(s)`
+      );
       let processedCount = 0;
 
       if (sedesData.length > 0 && result?.data?.[0]?.id) {
@@ -518,7 +532,7 @@ export async function POST(request: Request) {
             // 3. Si no existe, la creamos con todos los campos necesarios
             // Usamos el objeto completo de sedeData que ya tiene todos los campos mapeados correctamente
             const { error: insertError } = await supabase
-              .from('sedes')
+              .from("sedes")
               .insert(sedeData)
               .select()
               .single();

@@ -682,7 +682,18 @@ export class SyncService {
         throw new Error(`Error al obtener sedes: ${sedesError.message}`);
       }
 
+      // IMPORTANTE: Usar el estado_verificacion del DESPACHO (nivel superior)
+      // porque es donde WordPress guarda _despacho_estado_verificacion y _despacho_is_verified
+      const estadoVerificacionDespacho =
+        despacho.estado_verificacion || "pendiente";
+      const isVerifiedDespacho = estadoVerificacionDespacho === "verificado";
+
+      console.log(
+        `🔍 Estado de verificación del despacho: ${estadoVerificacionDespacho}, is_verified: ${isVerifiedDespacho}`
+      );
+
       // Construir el registro para Algolia
+      // RESPETANDO la estructura existente: estado_verificacion e is_verified van DENTRO de cada sede
       const algoliaRecord = {
         objectID: algoliaObjectId,
         nombre: despacho.nombre,
@@ -719,12 +730,14 @@ export class SyncService {
             .join(", "),
           especialidades: sede.especialidades || "",
           servicios_especificos: sede.servicios_especificos || "",
-          estado_verificacion: sede.estado_verificacion || "pendiente",
+          // USAR el estado_verificacion del DESPACHO, no de la sede
+          estado_verificacion: estadoVerificacionDespacho,
           estado_registro: sede.estado_registro || "activo",
           foto_perfil: sede.foto_perfil?.startsWith("http")
             ? sede.foto_perfil
             : "",
-          is_verified: sede.estado_verificacion === "verificado",
+          // USAR is_verified del DESPACHO, no de la sede
+          is_verified: isVerifiedDespacho,
           observaciones: sede.observaciones || "",
           es_principal: sede.es_principal || false,
           activa: sede.activa !== false,
@@ -738,6 +751,11 @@ export class SyncService {
         slug:
           despacho.slug || despacho.nombre.toLowerCase().replace(/\s+/g, "-"),
       };
+
+      console.log(
+        `📤 Enviando a Algolia (objectID: ${algoliaObjectId}):`,
+        JSON.stringify(algoliaRecord, null, 2).substring(0, 500) + "..."
+      );
 
       // Enviar a Algolia
       const algoliaAppId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;

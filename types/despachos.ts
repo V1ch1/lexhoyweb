@@ -23,7 +23,7 @@ export interface DespachoSummary {
   wordpress_id?: number; // ID del despacho en WordPress
 }
 
-import { SedeWP, DespachoWP as BaseDespachoWP } from './wordpress';
+import { SedeWP, DespachoWP as BaseDespachoWP } from "./wordpress";
 
 /**
  * Representa una ubicación genérica con información de localización
@@ -62,7 +62,8 @@ export interface Sede extends SedeWP, Ubicacion {
  * Metadatos extendidos para un despacho
  * @extends Omit<BaseDespachoWP['meta'], '_despacho_sedes'>
  */
-export interface MetaData extends Omit<BaseDespachoWP['meta'], '_despacho_sedes'> {
+export interface MetaData
+  extends Omit<BaseDespachoWP["meta"], "_despacho_sedes"> {
   _despacho_sedes?: Sede[];
   telefono?: string;
   email_contacto?: string;
@@ -75,7 +76,10 @@ export interface MetaData extends Omit<BaseDespachoWP['meta'], '_despacho_sedes'
  * Tipo extendido para representar un despacho en la aplicación local
  * @extends Omit<BaseDespachoWP, 'meta' | 'title' | 'content'>
  */
-export type LocalDespachoWP = Omit<BaseDespachoWP, 'meta' | 'title' | 'content'> & {
+export type LocalDespachoWP = Omit<
+  BaseDespachoWP,
+  "meta" | "title" | "content"
+> & {
   object_id: string;
   title?: { rendered?: string };
   content?: { rendered?: string };
@@ -96,7 +100,9 @@ export type LocalDespachoWP = Omit<BaseDespachoWP, 'meta' | 'title' | 'content'>
  * @property {Function} [onImportSuccess] - Función que se ejecuta cuando la importación es exitosa
  */
 export interface BuscadorDespachosProps {
-  onImport?: (objectId: string) => Promise<{success: boolean; error?: string}>;
+  onImport?: (
+    objectId: string
+  ) => Promise<{ success: boolean; error?: string }>;
   onClose?: () => void;
   onImportSuccess?: () => void;
 }

@@ -325,39 +325,44 @@ const DashboardPage = () => {
           </div>
         </div>
       )}
-      
-      {user.role === "super_admin" && !statsLoading && solicitudesPendientes > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-3" />
-              <div>
-                <h3 className="text-lg font-semibold text-yellow-900">
-                  {solicitudesPendientes}{" "}
-                  {solicitudesPendientes === 1
-                    ? "solicitud pendiente"
-                    : "solicitudes pendientes"}
-                </h3>
-                <p className="text-sm text-yellow-800">
-                  Hay solicitudes de despacho esperando tu revisión
-                </p>
+
+      {user.role === "super_admin" &&
+        !statsLoading &&
+        solicitudesPendientes > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-3" />
+                <div>
+                  <h3 className="text-lg font-semibold text-yellow-900">
+                    {solicitudesPendientes}{" "}
+                    {solicitudesPendientes === 1
+                      ? "solicitud pendiente"
+                      : "solicitudes pendientes"}
+                  </h3>
+                  <p className="text-sm text-yellow-800">
+                    Hay solicitudes de despacho esperando tu revisión
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={() => router.push("/admin/users?tab=solicitudes")}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+              >
+                Revisar ahora
+              </button>
             </div>
-            <button
-              onClick={() => router.push("/admin/users?tab=solicitudes")}
-              className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
-            >
-              Revisar ahora
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Estadísticas principales */}
       {user.role === "super_admin" && statsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+            <div
+              key={i}
+              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="h-4 bg-gray-200 rounded w-24"></div>
                 <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
@@ -368,7 +373,7 @@ const DashboardPage = () => {
           ))}
         </div>
       )}
-      
+
       {user.role === "super_admin" && !statsLoading && systemStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
@@ -401,7 +406,10 @@ const DashboardPage = () => {
       {user.role === "despacho_admin" && statsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+            <div
+              key={i}
+              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="h-4 bg-gray-200 rounded w-24"></div>
                 <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
@@ -412,7 +420,7 @@ const DashboardPage = () => {
           ))}
         </div>
       )}
-      
+
       {user.role === "despacho_admin" && !statsLoading && despachoStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
