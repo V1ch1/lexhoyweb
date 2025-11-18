@@ -44,28 +44,14 @@ export async function PUT(
       );
     }
 
-    // Obtener el object_id para Algolia
-    const { data: despachoData } = await supabase
-      .from('despachos')
-      .select('object_id')
-      .eq('id', despachoId)
-      .single();
-
     // 2. Sincronizar con WordPress (forzando el nuevo estado)
+    // WordPress se encargará de sincronizar con Algolia automáticamente
     const wpResult = await SyncService.enviarDespachoAWordPress(despachoId, true);
 
     if (!wpResult.success) {
       console.warn('⚠️ Error al sincronizar con WordPress:', wpResult.error);
-    }
-
-    // 3. Sincronizar con Algolia
-    if (despachoData?.object_id) {
-      try {
-        await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
-        console.log('✅ Sincronizado con Algolia');
-      } catch (algoliaError) {
-        console.error('⚠️ Error al sincronizar con Algolia:', algoliaError);
-      }
+    } else {
+      console.log('✅ Sincronizado con WordPress - WordPress sincronizará con Algolia');
     }
 
     return NextResponse.json({

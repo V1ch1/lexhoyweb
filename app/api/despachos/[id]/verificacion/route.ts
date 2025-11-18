@@ -41,14 +41,7 @@ export async function PUT(
       );
     }
 
-    // Obtener el object_id para sincronizar con Algolia
-    const { data: despachoData } = await supabase
-      .from('despachos')
-      .select('object_id')
-      .eq('id', despachoId)
-      .single();
-
-    // Sincronizar con WordPress
+    // Sincronizar con WordPress (WordPress se encarga de sincronizar con Algolia)
     console.log(`🔄 Iniciando sincronización con WordPress para despacho ${despachoId}...`);
     try {
       const { SyncService } = await import('@/lib/syncService');
@@ -56,32 +49,13 @@ export async function PUT(
       
       if (wpResult.success) {
         console.log('✅ Sincronizado correctamente con WordPress:', wpResult);
+        console.log('ℹ️ WordPress sincronizará automáticamente con Algolia');
       } else {
         console.error('❌ Error en sincronización con WordPress:', wpResult.error);
       }
     } catch (syncError) {
       console.error('⚠️ Excepción al sincronizar con WordPress:', syncError);
       // No fallar la petición si la sincronización falla
-    }
-
-    // Sincronizar con Algolia
-    if (despachoData?.object_id) {
-      console.log(`🔄 Iniciando sincronización con Algolia para object_id: ${despachoData.object_id}...`);
-      try {
-        const { SyncService } = await import('@/lib/syncService');
-        const algoliaResult = await SyncService.sincronizarConAlgolia(despachoId, despachoData.object_id);
-        
-        if (algoliaResult.success) {
-          console.log('✅ Sincronizado correctamente con Algolia');
-        } else {
-          console.error('❌ Error en sincronización con Algolia:', algoliaResult.error);
-        }
-      } catch (algoliaError) {
-        console.error('⚠️ Excepción al sincronizar con Algolia:', algoliaError);
-        // No fallar la petición si la sincronización con Algolia falla
-      }
-    } else {
-      console.warn('⚠️ No se puede sincronizar con Algolia: falta object_id');
     }
 
     return NextResponse.json({
