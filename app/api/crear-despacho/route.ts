@@ -315,7 +315,10 @@ export async function POST(request: Request) {
     console.log(`   Nombre: ${nombre}`);
     console.log(`   Sedes: ${sedes.length}`);
 
-    let syncResult = { success: false, objectId: null, wordpressId: null, error: "No ejecutado" };
+    let syncResult: { success: boolean; objectId?: string; wordpressId?: number; error?: string } = { 
+      success: false, 
+      error: "No ejecutado" 
+    };
 
     try {
       const { SyncOrchestrator } = await import("@/lib/sync");
