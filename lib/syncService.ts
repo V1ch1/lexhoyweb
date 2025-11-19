@@ -1,4 +1,22 @@
 // lib/syncService.ts
+/**
+ * @deprecated Este archivo está DEPRECATED - usar lib/sync/ en su lugar
+ * 
+ * SISTEMA NUEVO (RECOMENDADO):
+ * - lib/sync/index.ts - SyncOrchestrator para sincronización completa
+ * - lib/sync/wordpress.ts - Operaciones WordPress
+ * - lib/sync/algolia.ts - Operaciones Algolia
+ * - lib/sync/supabase.ts - Operaciones Supabase
+ * 
+ * Este archivo se mantiene SOLO para:
+ * - importarDespachoDesdeWordPress() (usado en importación WP → Supabase)
+ * - sincronizarDesdeWebhook() (usado en webhooks WP → Supabase)
+ * 
+ * MIGRACIÓN:
+ * - Cualquier código nuevo debe usar lib/sync/
+ * - Este archivo se eliminará en una versión futura
+ */
+
 import { createClient } from "@supabase/supabase-js";
 
 // Cliente con Service Role para operaciones del servidor
