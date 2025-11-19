@@ -1,6 +1,15 @@
 /**
  * Módulo de sincronización con Algolia
- * Responsabilidad: Sincronizar datos a Algolia sin perder información
+ *
+ * ⚠️ DEPRECADO - NO SE USA ACTUALMENTE
+ *
+ * WordPress sincroniza automáticamente con Algolia cuando se crea/actualiza
+ * un despacho vía REST API (hooks: save_post_despacho, rest_after_insert_despacho).
+ *
+ * Este módulo se mantiene por compatibilidad, pero la sincronización directa
+ * desde Next.js está deshabilitada para evitar redundancia.
+ *
+ * Flujo actual: Next.js → Supabase → WordPress → Algolia (automático)
  */
 
 import type { Despacho, SyncResult } from "./types";

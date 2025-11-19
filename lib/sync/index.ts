@@ -1,11 +1,11 @@
 /**
  * Orchestrator de sincronización
- * Coordina el flujo: Supabase → WordPress → Algolia
+ * Coordina el flujo: Supabase → WordPress
+ * (WordPress sincroniza automáticamente con Algolia)
  */
 
 import { SupabaseSync } from "./supabase";
 import { WordPressSync } from "./wordpress";
-import { AlgoliaSync } from "./algolia";
 import type { SyncResult } from "./types";
 
 export class SyncOrchestrator {
@@ -80,7 +80,11 @@ export class SyncOrchestrator {
         );
       }
 
-      // PASO 3: Sincronizar con Algolia
+      // PASO 3: Sincronización con Algolia
+      // ⚠️ WordPress sincroniza automáticamente con Algolia al crear/actualizar
+      // el despacho vía REST API (hooks: save_post_despacho, rest_after_insert_despacho)
+      // Por lo tanto, NO es necesario sincronizar desde Next.js
+
       if (!wpResult.objectId) {
         const error = "No se obtuvo objectID de WordPress";
         console.error(`❌ ${error}`);
@@ -91,26 +95,12 @@ export class SyncOrchestrator {
         };
       }
 
-      console.log("\n🔍 PASO 3: Sincronizar con Algolia");
-      console.log("-".repeat(70));
-
-      const algoliaResult = await AlgoliaSync.sincronizarDespacho(
-        despacho,
-        wpResult.objectId
+      console.log(
+        "\n✅ PASO 3: Algolia (sincronizado automáticamente por WordPress)"
       );
-
-      if (!algoliaResult.success) {
-        const error = `Error al sincronizar con Algolia: ${algoliaResult.error}`;
-        console.error(`❌ ${error}`);
-        return {
-          success: false,
-          error,
-          wordpressId: wpResult.wordpressId,
-          objectId: wpResult.objectId,
-        };
-      }
-
-      console.log(`✅ Sincronizado con Algolia exitosamente`);
+      console.log("-".repeat(70));
+      console.log(`   WordPress ya sincronizó este despacho con Algolia`);
+      console.log(`   Algolia Object ID: ${wpResult.objectId}`);
 
       // RESULTADO FINAL
       console.log("\n" + "=".repeat(70));
@@ -120,13 +110,13 @@ export class SyncOrchestrator {
       console.log(`Estado verificación: ${despacho.estado_verificacion}`);
       console.log(`Sedes sincronizadas: ${despacho.sedes?.length || 0}`);
       console.log(`WordPress ID: ${wpResult.wordpressId}`);
-      console.log(`Algolia Object ID: ${algoliaResult.objectId}`);
+      console.log(`Algolia Object ID: ${wpResult.objectId}`);
       console.log("");
 
       return {
         success: true,
         wordpressId: wpResult.wordpressId,
-        objectId: algoliaResult.objectId,
+        objectId: wpResult.objectId,
         message: "Sincronización completa exitosa",
       };
     } catch (error) {

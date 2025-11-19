@@ -198,6 +198,13 @@ export default function CrearDespachoPage() {
     setLoading(true);
     setError(null);
 
+    // Validar nombre del despacho
+    if (!formData.nombre || formData.nombre.trim() === "") {
+      setError("El nombre del despacho es obligatorio");
+      setLoading(false);
+      return;
+    }
+
     // Validar sede principal
     const sedePrincipal = sedes[0];
     if (

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(
   request: Request,
@@ -23,13 +23,13 @@ export async function GET(
     try {
       // 1. Primero, obtener los despachos asociados al usuario
       const { data: userDespachos, error: userDespachosError } = await supabase
-        .from('user_despachos')
-        .select('id, despacho_id, fecha_asignacion')
-        .eq('user_id', userId)
-        .eq('activo', true);
+        .from("user_despachos")
+        .select("id, despacho_id, fecha_asignacion")
+        .eq("user_id", userId)
+        .eq("activo", true);
 
       if (userDespachosError) {
-        console.error('Error al obtener user_despachos:', userDespachosError);
+        console.error("Error al obtener user_despachos:", userDespachosError);
         throw userDespachosError;
       }
 
@@ -39,16 +39,16 @@ export async function GET(
       }
 
       // 2. Obtener los IDs de los despachos
-      const despachoIds = userDespachos.map(ud => ud.despacho_id);
+      const despachoIds = userDespachos.map((ud) => ud.despacho_id);
 
       // 3. Obtener los detalles de los despachos
       const { data: despachos, error: despachosError } = await supabase
-        .from('despachos')
-        .select('*')
-        .in('id', despachoIds);
+        .from("despachos")
+        .select("*")
+        .in("id", despachoIds);
 
       if (despachosError) {
-        console.error('Error al obtener los despachos:', despachosError);
+        console.error("Error al obtener los despachos:", despachosError);
         throw despachosError;
       }
 
@@ -56,11 +56,11 @@ export async function GET(
       const sedesCount: Record<string, number> = {};
       for (const despachoId of despachoIds) {
         const { count, error: countError } = await supabase
-          .from('sedes')
-          .select('*', { count: 'exact', head: true })
-          .eq('despacho_id', despachoId)
-          .eq('activa', true);
-        
+          .from("sedes")
+          .select("*", { count: "exact", head: true })
+          .eq("despacho_id", despachoId)
+          .eq("activa", true);
+
         if (!countError) {
           sedesCount[despachoId] = count || 0;
         } else {
@@ -69,31 +69,41 @@ export async function GET(
       }
 
       // 5. Transformar los datos para que coincidan con la interfaz esperada
-      const transformedDespachos = userDespachos.map(ud => {
-        const despacho = despachos.find(d => d.id === ud.despacho_id);
-        return {
-          id: ud.despacho_id,
-          nombre: despacho?.nombre || 'Sin nombre',
-          localidad: despacho?.direccion, // Usar dirección como localidad
-          provincia: despacho?.provincia || '',
-          telefono: despacho?.telefono,
-          email: despacho?.email,
-          web: despacho?.web,
-          descripcion: despacho?.descripcion,
-          num_sedes: sedesCount[ud.despacho_id] || 0,  // Usar el conteo real de sedes activas
-          estado: 'verificado', // Asumimos que si está en la tabla, está verificado
-          created_at: ud.fecha_asignacion || despacho?.created_at,
-        };
-      });
+      // IMPORTANTE: Filtrar solo despachos que existen realmente
+      const transformedDespachos = userDespachos
+        .map((ud) => {
+          const despacho = despachos.find((d) => d.id === ud.despacho_id);
+
+          // Si el despacho no existe en la tabla, retornar null
+          if (!despacho) {
+            console.warn(
+              `⚠️ Despacho ${ud.despacho_id} asignado al usuario pero no existe en tabla despachos`
+            );
+            return null;
+          }
+
+          return {
+            id: ud.despacho_id,
+            nombre: despacho.nombre || despacho.slug || "Despacho sin nombre",
+            localidad: despacho.localidad || "",
+            provincia: despacho.provincia || "",
+            telefono: despacho.telefono || "",
+            email: despacho.email || "",
+            web: despacho.web || "",
+            descripcion: despacho.descripcion || "",
+            num_sedes: sedesCount[ud.despacho_id] || 0, // Usar el conteo real de sedes activas
+            estado: "verificado", // Asumimos que si está en la tabla, está verificado
+            created_at: ud.fecha_asignacion || despacho.created_at,
+          };
+        })
+        .filter((d): d is NonNullable<typeof d> => d !== null); // Filtrar nulls y asegurar tipo
 
       return NextResponse.json(transformedDespachos, { status: 200 });
-
     } catch (error) {
-      console.error('❌ Error al consultar despachos:', error);
+      console.error("❌ Error al consultar despachos:", error);
       // En caso de error, devolver array vacío
       return NextResponse.json([], { status: 200 });
     }
-
   } catch (error) {
     console.error("❌ Error inesperado:", error);
     return NextResponse.json(
