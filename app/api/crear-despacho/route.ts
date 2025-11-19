@@ -337,8 +337,6 @@ export async function POST(request: Request) {
       console.error("❌ Excepción en sincronización:", syncError);
       syncResult = {
         success: false,
-        objectId: null,
-        wordpressId: null,
         error: syncError instanceof Error ? syncError.message : "Error desconocido",
       };
       // No lanzar error, continuar con la respuesta
