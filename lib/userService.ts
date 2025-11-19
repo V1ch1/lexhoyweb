@@ -503,6 +503,7 @@ export class UserService {
           
           return {
             ...ud,
+            despachoId: ud.despacho_id, // ⚠️ IMPORTANTE: Normalizar el campo para la deduplicación
             despachos: despacho || { nombre: "Despacho no encontrado", object_id: "", slug: "" }
           };
         })
@@ -536,15 +537,20 @@ export class UserService {
       }));
 
       // 5. Combinar ambas listas (evitando duplicados)
-      const allDespachos = [...(assignedDespachosWithData || []), ...ownedDespachosFormatted];
-      
-      // Eliminar duplicados basados en despachoId
-      const uniqueDespachos = allDespachos.filter(
-        (despacho, index, self) =>
-          index === self.findIndex((d) => d.despachoId === despacho.despachoId)
+      // PRIORIDAD: Asignaciones manuales > Propiedad (owner)
+      // Si existe asignación manual, no incluir la de propietario
+      const assignedDespachoIds = new Set(
+        assignedDespachosWithData.map(d => d.despachoId)
       );
+      
+      // Filtrar despachos propios que YA tienen asignación manual
+      const ownedDespachosFiltered = ownedDespachosFormatted.filter(
+        d => !assignedDespachoIds.has(d.despachoId)
+      );
+      
+      const allDespachos = [...assignedDespachosWithData, ...ownedDespachosFiltered];
 
-      return uniqueDespachos;
+      return allDespachos;
     } catch (error) {
       console.error("Error en getUserDespachos:", error);
       return [];
