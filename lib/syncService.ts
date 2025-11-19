@@ -138,7 +138,7 @@ export class SyncService {
         despachoId = updated.id;
       } else {
         // Crear nuevo despacho
-        const { data: created, error: createError} = await supabase
+        const { data: created, error: createError } = await supabase
           .from("despachos")
           .insert({
             object_id: objectId,
@@ -451,7 +451,8 @@ export class SyncService {
                 es_principal: sede.es_principal || false,
                 activa: sede.activa !== false,
                 // CRÍTICO: Usar el estado de verificación del DESPACHO, no hardcodear
-                estado_verificacion: despacho.estado_verificacion || "pendiente",
+                estado_verificacion:
+                  despacho.estado_verificacion || "pendiente",
                 estado_registro: sede.estado_registro || "activo",
                 is_verified: despacho.estado_verificacion === "verificado",
               };
@@ -750,8 +751,9 @@ export class SyncService {
       }
 
       // Actualizar timestamp
-      currentRecord.ultima_actualizacion =
-        new Date().toLocaleDateString("es-ES");
+      currentRecord.ultima_actualizacion = new Date().toLocaleDateString(
+        "es-ES"
+      );
 
       console.log(
         `📤 Enviando registro actualizado a Algolia con ${currentRecord.sedes?.length || 0} sedes...`

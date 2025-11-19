@@ -16,14 +16,15 @@
 ### ❌ PROBLEMAS CRÍTICOS ENCONTRADOS
 
 #### Problema 1: `enviarDespachoAWordPress()` - Líneas 494-498
+
 ```typescript
 // ❌ INCORRECTO
 return {
   nombre: sede.nombre || "",
   // ...
-  estado_verificacion: "pendiente",  // ⚠️ HARDCODED
+  estado_verificacion: "pendiente", // ⚠️ HARDCODED
   estado_registro: "activo",
-  is_verified: false,                 // ⚠️ HARDCODED
+  is_verified: false, // ⚠️ HARDCODED
 };
 ```
 
@@ -34,12 +35,14 @@ return {
 #### Problema 2: Falta mapeo completo de campos de Supabase
 
 **Missing en `importarDespachoDesdeWordPress`**:
+
 - No captura `estado_publicacion` del post
 - No captura `estado_verificacion` de meta
 - No captura `wordpress_id` (solo `object_id`)
 - No actualiza `num_sedes` correctamente
 
 **Missing en `enviarDespachoAWordPress`**:
+
 - No sincroniza todos los campos de estado de las sedes
 - No valida que el despacho tenga sedes antes de enviar
 
@@ -59,12 +62,14 @@ if (sede.direccion && !calle) {
 #### Problema 4: Sincronización de verificación inconsistente
 
 En `enviarDespachoAWordPress`, las sedes en el payload tienen:
+
 ```typescript
 estado_verificacion: "pendiente",  // ❌ Siempre pendiente
 is_verified: false,                // ❌ Siempre false
 ```
 
 Pero debería ser:
+
 ```typescript
 estado_verificacion: despacho.estado_verificacion,  // ✅ Del despacho
 is_verified: despacho.estado_verificacion === "verificado",  // ✅ Calculado
@@ -77,6 +82,7 @@ is_verified: despacho.estado_verificacion === "verificado",  // ✅ Calculado
 ### 1. Corregir `enviarDespachoAWordPress()` - Payload de sedes
 
 **ANTES:**
+
 ```typescript
 _despacho_sedes:
   despacho.sedes?.map((sede: Sede) => {
@@ -91,6 +97,7 @@ _despacho_sedes:
 ```
 
 **DESPUÉS:**
+
 ```typescript
 _despacho_sedes:
   despacho.sedes?.map((sede: Sede) => {
@@ -107,17 +114,19 @@ _despacho_sedes:
 ### 2. Mejorar `importarDespachoDesdeWordPress()`
 
 Agregar:
+
 ```typescript
 const { data: created, error: createError } = await supabase
   .from("despachos")
   .insert({
     object_id: objectId,
-    wordpress_id: parseInt(objectId),  // ✅ Agregar
+    wordpress_id: parseInt(objectId), // ✅ Agregar
     nombre,
     slug,
-    status: despachoWP.status === "publish" ? "active" : "inactive",  // ✅ Mapear
-    estado_publicacion: despachoWP.status || "draft",  // ✅ Agregar
-    estado_verificacion: despachoWP.meta?._despacho_estado_verificacion || "pendiente",  // ✅ Agregar
+    status: despachoWP.status === "publish" ? "active" : "inactive", // ✅ Mapear
+    estado_publicacion: despachoWP.status || "draft", // ✅ Agregar
+    estado_verificacion:
+      despachoWP.meta?._despacho_estado_verificacion || "pendiente", // ✅ Agregar
   })
   .select("id")
   .single();
@@ -126,18 +135,20 @@ const { data: created, error: createError } = await supabase
 ### 3. Mejorar `importarSedes()`
 
 Agregar manejo de estado de verificación:
+
 ```typescript
 const { error: sedeError } = await supabase.from("sedes").insert({
   // ... otros campos
-  estado_verificacion: sede.estado_verificacion || "pendiente",  // ✅ Del WP
+  estado_verificacion: sede.estado_verificacion || "pendiente", // ✅ Del WP
   estado_registro: sede.estado_registro || "activo",
-  is_verified: sede.is_verified || false,  // ✅ Del WP
+  is_verified: sede.is_verified || false, // ✅ Del WP
 });
 ```
 
 ### 4. Validación de datos antes de enviar
 
 Agregar al inicio de `enviarDespachoAWordPress`:
+
 ```typescript
 // Validar que el despacho tenga al menos una sede
 if (!despacho.sedes || despacho.sedes.length === 0) {
@@ -156,6 +167,7 @@ if (!despacho.nombre || !despacho.slug) {
 ## FLUJO CORRECTO DE VERIFICACIÓN
 
 ### Estado Actual (ROTO):
+
 ```
 1. Usuario cambia verificación en Next.js a "verificado"
 2. Next.js actualiza Supabase: estado_verificacion = "verificado" ✅
@@ -167,6 +179,7 @@ if (!despacho.nombre || !despacho.slug) {
 ```
 
 ### Flujo Correcto (A IMPLEMENTAR):
+
 ```
 1. Usuario cambia verificación en Next.js a "verificado"
 2. Next.js actualiza Supabase: estado_verificacion = "verificado" ✅
