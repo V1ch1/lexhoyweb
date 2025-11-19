@@ -43,6 +43,7 @@ interface Sede {
   nombre?: string;
   descripcion?: string;
   es_principal?: boolean;
+  activa?: boolean;
 
   // Ubicación
   direccion?: string;
@@ -76,6 +77,11 @@ interface Sede {
   // Multimedia
   foto_perfil?: string;
   logo?: string;
+
+  // Estado
+  estado_verificacion?: string;
+  estado_registro?: string;
+  is_verified?: boolean;
 
   // Horarios y redes
   horarios?: Record<string, string>;
@@ -117,8 +123,11 @@ export class SyncService {
           .from("despachos")
           .update({
             nombre,
-            descripcion,
             slug,
+            status: despachoWP.status === "publish" ? "active" : "inactive",
+            estado_publicacion: despachoWP.status || "draft",
+            estado_verificacion:
+              despachoWP.meta?._despacho_estado_verificacion || "pendiente",
             updated_at: new Date().toISOString(),
           })
           .eq("object_id", objectId)
@@ -129,15 +138,17 @@ export class SyncService {
         despachoId = updated.id;
       } else {
         // Crear nuevo despacho
-        const { data: created, error: createError } = await supabase
+        const { data: created, error: createError} = await supabase
           .from("despachos")
           .insert({
             object_id: objectId,
+            wordpress_id: parseInt(objectId),
             nombre,
-            descripcion,
             slug,
-            activo: despachoWP.status === "publish",
-            verificado: false,
+            status: despachoWP.status === "publish" ? "active" : "inactive",
+            estado_publicacion: despachoWP.status || "draft",
+            estado_verificacion:
+              despachoWP.meta?._despacho_estado_verificacion || "pendiente",
           })
           .select("id")
           .single();
@@ -296,10 +307,11 @@ export class SyncService {
           // Otros
           observaciones: sede.observaciones || null,
 
-          // Estado
-          activa: true,
-          estado_verificacion: "pendiente",
-          estado_registro: "activo",
+          // Estado - Importar desde WordPress
+          activa: sede.activa !== false,
+          estado_verificacion: sede.estado_verificacion || "pendiente",
+          estado_registro: sede.estado_registro || "activo",
+          is_verified: sede.is_verified || false,
         });
 
         if (sedeError) {
@@ -338,6 +350,15 @@ export class SyncService {
       if (despachoError || !despacho) {
         throw new Error("Despacho no encontrado");
       }
+
+      // Validar datos mínimos
+      if (!despacho.nombre || !despacho.slug) {
+        throw new Error("Despacho sin nombre o slug");
+      }
+
+      console.log(`📤 Enviando despacho ${despacho.nombre} a WordPress...`);
+      console.log(`   Estado verificación: ${despacho.estado_verificacion}`);
+      console.log(`   Número de sedes: ${despacho.sedes?.length || 0}`);
 
       // Preparar payload para WordPress con TODOS los campos
       // Usar estado_publicacion si existe, sino usar activo
@@ -428,10 +449,11 @@ export class SyncService {
                 redes_sociales: sede.redes_sociales || {},
                 observaciones: sede.observaciones || "",
                 es_principal: sede.es_principal || false,
-                activa: true,
-                estado_verificacion: "pendiente",
-                estado_registro: "activo",
-                is_verified: false,
+                activa: sede.activa !== false,
+                // CRÍTICO: Usar el estado de verificación del DESPACHO, no hardcodear
+                estado_verificacion: despacho.estado_verificacion || "pendiente",
+                estado_registro: sede.estado_registro || "activo",
+                is_verified: despacho.estado_verificacion === "verificado",
               };
             }) || [],
           // También agregar campos legacy para compatibilidad con WordPress
@@ -652,13 +674,18 @@ export class SyncService {
 
   /**
    * Sincroniza un despacho directamente con Algolia desde Next.js
-   * Obtiene los datos de Supabase y los envía a Algolia
+   * IMPORTANTE: Obtiene el registro actual de Algolia, actualiza solo los campos de verificación
+   * y hace PUT completo para preservar todos los datos existentes
    */
   static async sincronizarConAlgolia(
     despachoId: string,
     algoliaObjectId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log(
+        `🔄 Sincronizando despacho ${despachoId} con Algolia (objectID: ${algoliaObjectId})`
+      );
+
       // Obtener datos del despacho desde Supabase
       const { data: despacho, error: despachoError } = await supabase
         .from("despachos")
@@ -670,20 +697,6 @@ export class SyncService {
         throw new Error(`Error al obtener despacho: ${despachoError?.message}`);
       }
 
-      // Obtener sedes del despacho
-      const { data: sedes, error: sedesError } = await supabase
-        .from("sedes")
-        .select("*")
-        .eq("despacho_id", despachoId)
-        .eq("activa", true)
-        .order("es_principal", { ascending: false });
-
-      if (sedesError) {
-        throw new Error(`Error al obtener sedes: ${sedesError.message}`);
-      }
-
-      // IMPORTANTE: Usar el estado_verificacion del DESPACHO (nivel superior)
-      // porque es donde WordPress guarda _despacho_estado_verificacion y _despacho_is_verified
       const estadoVerificacionDespacho =
         despacho.estado_verificacion || "pendiente";
       const isVerifiedDespacho = estadoVerificacionDespacho === "verificado";
@@ -692,72 +705,7 @@ export class SyncService {
         `🔍 Estado de verificación del despacho: ${estadoVerificacionDespacho}, is_verified: ${isVerifiedDespacho}`
       );
 
-      // Construir el registro para Algolia
-      // RESPETANDO la estructura existente: estado_verificacion e is_verified van DENTRO de cada sede
-      const algoliaRecord = {
-        objectID: algoliaObjectId,
-        nombre: despacho.nombre,
-        descripcion: despacho.descripcion || "",
-        sedes: (sedes || []).map((sede) => ({
-          nombre: sede.nombre || "",
-          descripcion: sede.descripcion || "",
-          web: sede.web || "",
-          ano_fundacion: sede.ano_fundacion || "",
-          tamano_despacho: sede.tamano_despacho || "",
-          persona_contacto: sede.persona_contacto || "",
-          email_contacto: sede.email_contacto || "",
-          telefono: sede.telefono || "",
-          numero_colegiado: sede.numero_colegiado || "",
-          colegio: sede.colegio || "",
-          experiencia: sede.experiencia || "",
-          calle: sede.calle || "",
-          numero: sede.numero || "",
-          piso: sede.piso || "",
-          localidad: sede.localidad || "",
-          provincia: sede.provincia || "",
-          codigo_postal: sede.codigo_postal || "",
-          pais: sede.pais || "España",
-          direccion_completa: [
-            sede.calle && sede.numero
-              ? `${sede.calle} ${sede.numero}`
-              : sede.calle,
-            sede.piso,
-            sede.localidad,
-            sede.provincia,
-            sede.codigo_postal ? `(${sede.codigo_postal})` : "",
-          ]
-            .filter(Boolean)
-            .join(", "),
-          especialidades: sede.especialidades || "",
-          servicios_especificos: sede.servicios_especificos || "",
-          // USAR el estado_verificacion del DESPACHO, no de la sede
-          estado_verificacion: estadoVerificacionDespacho,
-          estado_registro: sede.estado_registro || "activo",
-          foto_perfil: sede.foto_perfil?.startsWith("http")
-            ? sede.foto_perfil
-            : "",
-          // USAR is_verified del DESPACHO, no de la sede
-          is_verified: isVerifiedDespacho,
-          observaciones: sede.observaciones || "",
-          es_principal: sede.es_principal || false,
-          activa: sede.activa !== false,
-          horarios: sede.horarios || {},
-          redes_sociales: sede.redes_sociales || {},
-          areas_practica: sede.areas_practica || [],
-        })),
-        num_sedes: sedes?.length || 0,
-        areas_practica: despacho.areas_practica || [],
-        ultima_actualizacion: new Date().toLocaleDateString("es-ES"),
-        slug:
-          despacho.slug || despacho.nombre.toLowerCase().replace(/\s+/g, "-"),
-      };
-
-      console.log(
-        `📤 Enviando a Algolia (objectID: ${algoliaObjectId}):`,
-        JSON.stringify(algoliaRecord, null, 2).substring(0, 500) + "..."
-      );
-
-      // Enviar a Algolia
+      // Configuración de Algolia
       const algoliaAppId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
       const algoliaApiKey = process.env.ALGOLIA_ADMIN_API_KEY;
       const algoliaIndex =
@@ -767,26 +715,70 @@ export class SyncService {
         throw new Error("Algolia credentials not configured");
       }
 
-      const response = await fetch(
+      // PASO 1: Obtener el registro actual de Algolia
+      console.log("📥 Obteniendo registro actual de Algolia...");
+      const getResponse = await fetch(
+        `https://${algoliaAppId}-dsn.algolia.net/1/indexes/${algoliaIndex}/${algoliaObjectId}`,
+        {
+          headers: {
+            "X-Algolia-API-Key": algoliaApiKey,
+            "X-Algolia-Application-Id": algoliaAppId,
+          },
+        }
+      );
+
+      if (!getResponse.ok) {
+        throw new Error(
+          `Error al obtener registro de Algolia: ${getResponse.status}`
+        );
+      }
+
+      const currentRecord = await getResponse.json();
+      console.log(
+        `✅ Registro obtenido. Sedes actuales: ${currentRecord.sedes?.length || 0}`
+      );
+
+      // PASO 2: Actualizar solo los campos de verificación en las sedes
+      if (currentRecord.sedes && Array.isArray(currentRecord.sedes)) {
+        currentRecord.sedes = currentRecord.sedes.map(
+          (sede: { estado_verificacion?: string; is_verified?: boolean }) => ({
+            ...sede,
+            estado_verificacion: estadoVerificacionDespacho,
+            is_verified: isVerifiedDespacho,
+          })
+        );
+      }
+
+      // Actualizar timestamp
+      currentRecord.ultima_actualizacion =
+        new Date().toLocaleDateString("es-ES");
+
+      console.log(
+        `📤 Enviando registro actualizado a Algolia con ${currentRecord.sedes?.length || 0} sedes...`
+      );
+
+      // PASO 3: Enviar el registro completo actualizado
+      const putResponse = await fetch(
         `https://${algoliaAppId}-dsn.algolia.net/1/indexes/${algoliaIndex}/${algoliaObjectId}`,
         {
           method: "PUT",
           headers: {
             "X-Algolia-API-Key": algoliaApiKey,
             "X-Algolia-Application-Id": algoliaAppId,
-            "Content-Type": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
           },
-          body: JSON.stringify(algoliaRecord),
+          body: JSON.stringify(currentRecord),
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
+      if (!putResponse.ok) {
+        const errorText = await putResponse.text();
         throw new Error(
-          `Algolia sync failed: ${response.status} - ${errorText}`
+          `Algolia sync failed: ${putResponse.status} - ${errorText}`
         );
       }
 
+      console.log("✅ Sincronización con Algolia exitosa");
       return { success: true };
     } catch (error) {
       console.error("❌ Error al sincronizar con Algolia:", error);
