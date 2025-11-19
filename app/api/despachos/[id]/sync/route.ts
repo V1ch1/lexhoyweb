@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { SyncService } from '@/lib/syncService';
+import { SyncOrchestrator } from '@/lib/sync';
+import { SupabaseSync } from '@/lib/sync/supabase';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -9,8 +10,8 @@ const supabase = createClient(
 
 /**
  * POST /api/despachos/[id]/sync
- * Sincroniza un despacho de Supabase a WordPress
- * WordPress luego actualiza Algolia via plugin
+ * Sincroniza un despacho completo usando el nuevo sistema modular
+ * Supabase → WordPress → Algolia
  */
 export async function POST(
   request: Request,
@@ -45,50 +46,45 @@ export async function POST(
       );
     }
     
-    // 2. Sincronizar a WordPress
-    const wpResult = await SyncService.enviarDespachoAWordPress(despachoId);
+    // 2. Sincronizar usando el nuevo sistema modular
+    const result = await SyncOrchestrator.sincronizarCompleto(despachoId, false);
     
-    if (!wpResult.success) {
-      console.error('❌ Error al sincronizar con WordPress:', wpResult.error);
+    if (!result.success) {
+      console.error('❌ Error en sincronización:', result.error);
       
       // Guardar en cola para reintentar (si existe la tabla)
       try {
         await supabase.from('sync_queue').insert({
-          tipo: 'wordpress',
+          tipo: 'completo',
           despacho_id: despachoId,
-          accion: 'update',
+          accion: 'sync',
           estado: 'fallido',
-          ultimo_error: wpResult.error,
+          ultimo_error: result.error,
           proximo_intento_at: new Date(Date.now() + 2 * 60 * 1000).toISOString() // +2 minutos
         });
-        } catch (error) {
+      } catch (error) {
         console.warn('⚠️ No se pudo encolar (tabla sync_queue no existe aún):', error);
       }
       
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Error al sincronizar con WordPress',
-          details: wpResult.error,
+          error: 'Error en sincronización completa',
+          details: result.error,
           enqueued: true
         },
         { status: 500 }
       );
     }
     
-    // 3. Actualizar estado de sincronización en Supabase
-    await supabase
-      .from('despachos')
-      .update({
-        sincronizado_wp: true,
-        ultima_sincronizacion: new Date().toISOString()
-      })
-      .eq('id', despachoId);
+    // 3. Los IDs ya se actualizan automáticamente en SyncOrchestrator
+    console.log('✅ Sincronización completa exitosa');
     
     return NextResponse.json({
       success: true,
-      message: 'Despacho sincronizado correctamente con WordPress',
-      objectId: wpResult.objectId,
+      message: 'Despacho sincronizado correctamente (Supabase → WordPress → Algolia)',
+      wordpressId: result.wordpressId,
+      objectId: result.objectId,
       timestamp: new Date().toISOString()
     });
     

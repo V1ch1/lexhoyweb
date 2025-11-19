@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SyncService } from "@/lib/syncService";
+import { SyncOrchestrator } from "@/lib/sync";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -10,7 +10,7 @@ const supabase = createClient(
 
 /**
  * PUT /api/despachos/[id]/estado
- * Cambia el estado de publicación de un despacho
+ * Cambia el estado de publicación usando el nuevo sistema modular
  */
 export async function PUT(
   request: Request,
@@ -45,25 +45,21 @@ export async function PUT(
       );
     }
 
-    // 2. Sincronizar con WordPress (forzando el nuevo estado)
-    // WordPress se encargará de sincronizar con Algolia automáticamente
-    const wpResult = await SyncService.enviarDespachoAWordPress(
-      despachoId,
-      true
-    );
+    // 2. Sincronizar completo usando el nuevo sistema modular
+    const syncResult = await SyncOrchestrator.sincronizarCompleto(despachoId, true);
 
-    if (!wpResult.success) {
-      console.warn("⚠️ Error al sincronizar con WordPress:", wpResult.error);
+    if (!syncResult.success) {
+      console.warn("⚠️ Error en sincronización:", syncResult.error);
     } else {
-      console.log(
-        "✅ Sincronizado con WordPress - WordPress sincronizará con Algolia"
-      );
+      console.log("✅ Sincronización completa exitosa (Supabase → WordPress → Algolia)");
     }
 
     return NextResponse.json({
       success: true,
       message: "Estado actualizado correctamente",
       estado: estado,
+      wordpressId: syncResult.wordpressId,
+      objectId: syncResult.objectId,
     });
   } catch (error) {
     console.error("❌ Error al cambiar estado:", error);

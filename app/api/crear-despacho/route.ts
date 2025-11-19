@@ -309,58 +309,47 @@ export async function POST(request: Request) {
     // Esperar 1 segundo para asegurar que las sedes estén completamente guardadas
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Sincronización con WordPress
-    let wpResult: {
-      success: boolean;
-      objectId?: string | null;
-      error?: string;
-      message?: string;
-    } = { success: false, objectId: null, error: "No ejecutado" };
-
-    console.log("🔄 Iniciando sincronización con WordPress...");
+    // Sincronización completa usando el nuevo sistema modular
+    console.log("🔄 Iniciando sincronización completa (Supabase → WordPress → Algolia)...");
     console.log(`   Despacho ID: ${despacho.id}`);
     console.log(`   Nombre: ${nombre}`);
     console.log(`   Sedes: ${sedes.length}`);
 
-    try {
-      const { SyncService } = await import("@/lib/syncService");
-      wpResult = await SyncService.enviarDespachoAWordPress(despacho.id);
+    let syncResult = { success: false, objectId: null, wordpressId: null, error: "No ejecutado" };
 
-      if (wpResult.success) {
-        console.log("✅ Sincronizado con WordPress exitosamente");
-        console.log(`   Object ID: ${wpResult.objectId}`);
+    try {
+      const { SyncOrchestrator } = await import("@/lib/sync");
+      syncResult = await SyncOrchestrator.sincronizarCompleto(despacho.id, false);
+
+      if (syncResult.success) {
+        console.log("✅ Sincronización completa exitosa");
+        console.log(`   WordPress ID: ${syncResult.wordpressId}`);
+        console.log(`   Algolia Object ID: ${syncResult.objectId}`);
       } else {
-        console.error("⚠️ Error al sincronizar con WordPress:", wpResult.error);
-        console.error(
-          "   Detalles completos:",
-          JSON.stringify(wpResult, null, 2)
-        );
+        console.error("⚠️ Error en sincronización:", syncResult.error);
         // No fallar la creación, el despacho ya está en Supabase
         // Se puede sincronizar manualmente después
       }
     } catch (syncError) {
-      console.error("❌ Excepción al sincronizar con WordPress:", syncError);
-      console.error(
-        "   Stack trace:",
-        syncError instanceof Error ? syncError.stack : "N/A"
-      );
-      wpResult = {
+      console.error("❌ Excepción en sincronización:", syncError);
+      syncResult = {
         success: false,
         objectId: null,
-        error:
-          syncError instanceof Error ? syncError.message : "Error desconocido",
+        wordpressId: null,
+        error: syncError instanceof Error ? syncError.message : "Error desconocido",
       };
       // No lanzar error, continuar con la respuesta
     }
 
-    console.log("📊 Resultado de sincronización WP:", wpResult);
+    console.log("📊 Resultado de sincronización:", syncResult);
 
     return NextResponse.json({
       success: true,
       message: "Despacho creado correctamente",
       despachoId: despacho.id,
-      objectId: wpResult.objectId,
-      sincronizadoWP: wpResult.success,
+      wordpressId: syncResult.wordpressId,
+      objectId: syncResult.objectId,
+      sincronizado: syncResult.success,
       sedesCreadas: !sedesError,
       sedesError: sedesError
         ? {

@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
-import { SyncService } from "@/lib/syncService";
+import { SyncOrchestrator } from "@/lib/sync";
+import { SyncService } from "@/lib/syncService"; // Mantener para webhook (importación WP→Supabase)
 
 /**
- * Endpoint para sincronización bidireccional con WordPress
- * - Recibe webhooks DE WordPress (WP → Next.js)
- * - Envía cambios A WordPress (Next.js → WP)
+ * Endpoint para sincronización bidireccional
+ * - Envía cambios A WordPress usando nuevo sistema modular (Next.js → WP → Algolia)
+ * - Recibe webhooks DE WordPress (WP → Next.js) - usa SyncService legacy
  */
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
     
-    // Caso 1: Sincronizar DESDE Next.js HACIA WordPress
+    // Caso 1: Sincronizar DESDE Next.js HACIA WordPress (usar nuevo sistema)
     if (payload.despachoId && payload.objectId) {
-      const result = await SyncService.enviarDespachoAWordPress(payload.despachoId);
+      const result = await SyncOrchestrator.sincronizarCompleto(payload.despachoId, false);
       
       if (!result.success) {
-        console.error('❌ Error al enviar a WordPress:', result.error);
+        console.error('❌ Error en sincronización:', result.error);
         return NextResponse.json(
           { 
             status: 'error',
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { 
           status: 'success',
-          message: 'Despacho sincronizado con WordPress',
+          message: 'Despacho sincronizado completamente (Supabase → WordPress → Algolia)',
+          wordpressId: result.wordpressId,
+          objectId: result.objectId,
           timestamp: new Date().toISOString(),
         },
         { status: 200 }
