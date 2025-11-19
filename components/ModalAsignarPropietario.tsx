@@ -64,16 +64,26 @@ const ModalAsignarPropietario = ({
         // Para cada usuario, verificar si ya administra ESTE despacho
         const usersWithDespacho = await Promise.all(
           (users || []).map(async (user) => {
+            // 1. Verificar asignación manual ACTIVA en user_despachos
             const { data: userDespachos } = await supabase
               .from("user_despachos")
               .select("despacho_id")
               .eq("user_id", user.id)
               .eq("despacho_id", despachoId)
+              .eq("activo", true) // ⚠️ IMPORTANTE: Solo asignaciones activas
+              .maybeSingle();
+
+            // 2. Verificar si es owner_email del despacho
+            const { data: despacho } = await supabase
+              .from("despachos")
+              .select("owner_email")
+              .eq("id", despachoId)
+              .eq("owner_email", user.email)
               .maybeSingle();
 
             return {
               ...user,
-              yaAdministraEsteDespacho: !!userDespachos
+              yaAdministraEsteDespacho: !!userDespachos || !!despacho
             };
           })
         );
@@ -103,19 +113,39 @@ const ModalAsignarPropietario = ({
     setUserError(null);
 
     try {
-      // Crear relación en user_despachos (solo columnas obligatorias)
-      const { data: insertData, error: relationError } = await supabase
+      // Verificar si existe una asignación desactivada
+      const { data: existingAssignment } = await supabase
         .from("user_despachos")
-        .insert({
-          user_id: selectedUser.id,
-          despacho_id: despachoId
-          // No incluir rol ni created_at - se asignarán por defecto en la BD
-        })
-        .select();
+        .select("id, activo")
+        .eq("user_id", selectedUser.id)
+        .eq("despacho_id", despachoId)
+        .maybeSingle();
 
-      if (relationError) {
-        console.error('❌ Error al crear relación:', relationError);
-        throw new Error(`Error al crear relación: ${relationError.message}`);
+      if (existingAssignment) {
+        // Reactivar asignación existente
+        const { error: updateError } = await supabase
+          .from("user_despachos")
+          .update({ activo: true })
+          .eq("id", existingAssignment.id);
+
+        if (updateError) {
+          console.error('❌ Error al reactivar asignación:', updateError);
+          throw new Error(`Error al reactivar asignación: ${updateError.message}`);
+        }
+      } else {
+        // Crear nueva asignación en user_despachos
+        const { error: insertError } = await supabase
+          .from("user_despachos")
+          .insert({
+            user_id: selectedUser.id,
+            despacho_id: despachoId
+            // No incluir rol ni created_at - se asignarán por defecto en la BD
+          });
+
+        if (insertError) {
+          console.error('❌ Error al crear relación:', insertError);
+          throw new Error(`Error al crear relación: ${insertError.message}`);
+        }
       }
 
       // Actualizar owner_email en despachos
