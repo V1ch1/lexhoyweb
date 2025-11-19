@@ -56,7 +56,8 @@ export async function POST(req: Request) {
       );
     }
     return NextResponse.json({ success: true });
-  } catch (e) {
+  } catch (error) {
+    console.error("Error al cancelar solicitud:", error);
     return NextResponse.json({ error: "Error inesperado" }, { status: 500 });
   }
 }
