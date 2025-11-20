@@ -654,19 +654,11 @@ export class SyncService {
    */
   static async eliminarDespachoCompleto(despachoId: string) {
     try {
-      // Obtener token de autenticación
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
-      }
-
+      // Usar nuestra API REST de eliminación
       const response = await fetch(`/api/despachos/${despachoId}`, {
         method: "DELETE",
+        credentials: "include",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
       });

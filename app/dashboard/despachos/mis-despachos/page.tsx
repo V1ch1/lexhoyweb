@@ -59,24 +59,13 @@ export default function MisDespachosPage() {
   const handleDeleteDespacho = async (despachoId: string) => {
     try {
 
-      // Obtener sesión actual
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setMessage({
-          type: 'error',
-          text: 'No estás autenticado'
-        });
-        return;
-      }
-
       // Llamar al endpoint para desasignar usuario
       const response = await fetch(`/api/user/despachos/${despachoId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include',
       });
 
       // Verificar si la respuesta es JSON

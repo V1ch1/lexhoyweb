@@ -744,24 +744,15 @@ export default function DespachoPage() {
       setDeletingSede(true);
       setFormError(null);
 
-      // Obtener token de sesión
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error("No hay sesión activa");
-      }
-
-      // Llamar al endpoint DELETE con token de autenticación
+      // Llamar al endpoint DELETE con autenticación de Clerk
       const response = await fetch(
         `/api/despachos/${despacho.id}/sedes/${sedeToDelete.id}`,
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
+          credentials: "include",
         }
       );
 

@@ -221,15 +221,6 @@ export default function CrearDespachoPage() {
     }
 
     try {
-      // Obtener token de autenticación
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
-      }
-
       // Normalizar URLs de sedes
       const normalizedSedes = sedes.map((sede) => ({
         ...sede,
@@ -243,8 +234,8 @@ export default function CrearDespachoPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           sedes: normalizedSedes,

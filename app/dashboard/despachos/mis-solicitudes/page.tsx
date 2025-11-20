@@ -35,20 +35,9 @@ export default function MisSolicitudesPage() {
       
       try {
         setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setMessage({
-            type: 'error',
-            text: 'No estás autenticado'
-          });
-          return;
-        }
 
         const response = await fetch('/api/mis-solicitudes', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
+          credentials: 'include',
         });
 
         if (!response.ok) {
@@ -75,23 +64,13 @@ export default function MisSolicitudesPage() {
   const handleCancelarSolicitud = async (solicitudId: string) => {
     try {
       setCancelando(solicitudId);
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setMessage({
-          type: 'error',
-          text: 'No estás autenticado'
-        });
-        return;
-      }
 
       const response = await fetch('/api/cancelar-solicitud-despacho', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ solicitudId }),
       });
 

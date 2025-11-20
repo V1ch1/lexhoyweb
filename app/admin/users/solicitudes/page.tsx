@@ -85,24 +85,13 @@ export default function SolicitudesPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        setToast({
-          type: "error",
-          message: "No hay sesión activa.",
-        });
-        setProcessingId(null);
-        return;
-      }
 
       const response = await fetch(`/api/admin/solicitudes/${solicitudId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           accion: "aprobar",
         }),
@@ -138,24 +127,13 @@ export default function SolicitudesPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        setToast({
-          type: "error",
-          message: "No hay sesión activa.",
-        });
-        setProcessingId(null);
-        return;
-      }
 
       const response = await fetch(`/api/admin/solicitudes/${solicitudId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           accion: "rechazar",
           motivo,

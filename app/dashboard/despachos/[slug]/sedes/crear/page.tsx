@@ -134,22 +134,13 @@ export default function CrearSedePage() {
         return;
       }
 
-      // Obtener token de autenticación
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setError('No estás autenticado');
-        setLoading(false);
-        return;
-      }
-
       // Enviar datos al endpoint
       const response = await fetch(`/api/despachos/${despachoId}/sedes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
         },
+        credentials: 'include',
         body: JSON.stringify(formData)
       });
 

@@ -66,21 +66,12 @@ export function DespachosList({
     if (despacho.origen === "wordpress" && user?.role === "super_admin") {
       setIsImporting(true);
       try {
-        // Obtener token de autenticación
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.access_token) {
-          throw new Error("No hay sesión activa");
-        }
-
         // Importar el despacho desde WordPress
         const response = await fetch("/api/despachos/wordpress/importar", {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             objectId: despacho.wordpress_id || despacho.id,
@@ -120,20 +111,11 @@ export function DespachosList({
 
     setIsDeleting(true);
     try {
-      // Obtener token de autenticación
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("No hay sesión activa");
-      }
-
       // Usar nuestra API REST de eliminación
       const response = await fetch(`/api/despachos/${despachoToDelete.id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
       });
