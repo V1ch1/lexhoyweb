@@ -2,48 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { UserService } from "@/lib/userService";
-import { AuthSimpleService } from "@/lib/auth/services/auth-simple.service";
-import { supabase } from "@/lib/supabase";
+import { UserProfile } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
-  UserIcon,
-  KeyIcon,
+  UserCircleIcon,
   BellIcon,
   ShieldCheckIcon,
-  ComputerDesktopIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
-import ProfileTab from "@/components/settings/ProfileTab";
-import PasswordTab from "@/components/settings/PasswordTab";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import PrivacyTab from "@/components/settings/PrivacyTab";
-import SessionsTab from "@/components/settings/SessionsTab";
 
 // Types
 type SettingsSection =
   | "overview"
-  | "profile"
-  | "password"
+  | "account"
   | "notifications"
-  | "privacy"
-  | "sessions"
-  | "cuenta-clerk";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  name: string;
-  role: "super_admin" | "despacho_admin" | "usuario";
-  nombre: string;
-  apellidos: string;
-  telefono: string;
-  fecha_registro: string;
-  ultimo_acceso: string;
-  despacho_nombre?: string;
-}
+  | "privacy";
 
 interface SettingsCard {
   id: SettingsSection;
@@ -54,47 +29,23 @@ interface SettingsCard {
   visible: boolean;
 }
 
-// Service instance
-const userService = new UserService();
-
 export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("overview");
   const [currentHash, setCurrentHash] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-  const [profile, setProfile] = useState<UserProfile>({
-    id: "",
-    email: "",
-    name: "",
-    role: "usuario",
-    nombre: "",
-    apellidos: "",
-    telefono: "",
-    fecha_registro: new Date().toISOString(),
-    ultimo_acceso: new Date().toISOString(),
-  });
 
   // Detectar hash en la URL y cambiar sección activa
   useEffect(() => {
     // Mapear hashes a secciones
     const hashToSection: Record<string, SettingsSection> = {
-      perfil: "profile",
-      profile: "profile",
-      contrasena: "password",
-      password: "password",
+      cuenta: "account",
+      account: "account",
       notificaciones: "notifications",
       notifications: "notifications",
       privacidad: "privacy",
       privacy: "privacy",
-      sesiones: "sessions",
-      sessions: "sessions",
     };
 
     const updateSection = () => {
@@ -131,79 +82,15 @@ export default function SettingsPage() {
     };
   }, [currentHash]);
 
-  // Load user data on component mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-        const userData = {
-          id: user.id,
-          email: user.email,
-          name: user?.name || user?.nombre || "",
-          role: (user?.role || user?.rol || "usuario") as UserProfile["role"],
-          nombre: user?.name?.split(" ")[0] || user?.nombre || "",
-          apellidos:
-            user?.name?.split(" ").slice(1).join(" ") || user?.apellidos || "",
-          telefono: "",
-          fecha_registro: new Date().toISOString(),
-          ultimo_acceso: new Date().toISOString(),
-        };
-
-        setProfile(userData);
-
-        try {
-          const profileData = await userService.getUserProfile(user.id);
-          setProfile((prev) => ({
-            ...prev,
-            ...profileData,
-          }));
-        } catch (profileError) {
-          console.error(
-            "Error al cargar datos adicionales del perfil:",
-            profileError
-          );
-        }
-      } catch (error) {
-        console.error("Error en loadUserData:", error);
-        setMessage({
-          type: "error",
-          text: "Error al cargar los datos del usuario",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
-  }, [user]);
-
   // Settings cards configuration
   const settingsCards: SettingsCard[] = [
     {
-      id: "cuenta-clerk",
-      name: "Mi Cuenta",
-      description: "Gestiona tu perfil, seguridad y sesiones",
-      icon: ShieldCheckIcon,
+      id: "account",
+      name: "Cuenta",
+      description: "Gestiona tu perfil, contraseña y sesiones",
+      icon: UserCircleIcon,
       color: "blue",
       visible: true,
-    },
-    {
-      id: "profile",
-      name: "Perfil",
-      description: "Actualiza tu información personal",
-      icon: UserIcon,
-      color: "green",
-      visible: false, // Ocultar porque Clerk lo maneja
-    },
-    {
-      id: "password",
-      name: "Contraseña",
-      description: "Cambia tu contraseña de acceso",
-      icon: KeyIcon,
-      color: "purple",
-      visible: false, // Ocultar porque Clerk lo maneja
     },
     {
       id: "notifications",
@@ -219,122 +106,33 @@ export default function SettingsPage() {
       description: "Controla tu privacidad y datos",
       icon: ShieldCheckIcon,
       color: "red",
-      visible: false, // Ocultar porque Clerk lo maneja
-    },
-    {
-      id: "sessions",
-      name: "Sesiones",
-      description: "Gestiona tus sesiones activas",
-      icon: ComputerDesktopIcon,
-      color: "orange",
-      visible: false, // Ocultar porque Clerk lo maneja
+      visible: true,
     },
   ];
 
-  // Handle password change
-  const handleChangePassword = async (
-    currentPassword: string,
-    newPassword: string
-  ) => {
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email || "",
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        throw new Error("La contraseña actual es incorrecta");
-      }
-
-      const { error: updateError } =
-        await AuthSimpleService.updatePassword(newPassword);
-
-      if (updateError) {
-        throw new Error(updateError);
-      }
-
-      setMessage({
-        type: "success",
-        text: "Contraseña actualizada correctamente",
-      });
-    } catch (error) {
-      console.error("Error al cambiar la contraseña:", error);
-      setMessage({
-        type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al cambiar la contraseña. Por favor, verifica tu contraseña actual e inténtalo de nuevo.",
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle profile update
-  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-      const updatedProfile = await userService.updateUserProfile(user.id, {
-        nombre: data.nombre || "",
-        apellidos: data.apellidos || "",
-        telefono: data.telefono || "",
-      });
-
-      setProfile(updatedProfile);
-
-      setMessage({
-        type: "success",
-        text: "Perfil actualizado correctamente",
-      });
-    } catch (error) {
-      console.error("Error al actualizar el perfil:", error);
-      setMessage({
-        type: "error",
-        text: "Error al actualizar el perfil. Por favor, inténtalo de nuevo.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Render section content
   const renderSectionContent = () => {
-    if (loading && activeSection !== "overview") {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      );
-    }
-
     switch (activeSection) {
-      case "profile":
+      case "account":
         return (
-          <ProfileTab
-            profileData={profile}
-            onUpdate={handleUpdateProfile}
-            loading={isLoading}
-          />
-        );
-      case "password":
-        return (
-          <PasswordTab
-            loading={isLoading}
-            onChangePassword={handleChangePassword}
-          />
+          <div className="w-full">
+            <UserProfile
+              appearance={{
+                variables: {
+                  colorPrimary: "#E04040",
+                },
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-0 w-full",
+                },
+              }}
+            />
+          </div>
         );
       case "notifications":
         return (
           <NotificationsTab
-            loading={loading}
+            loading={false}
             notifications={{
               email_nuevos_leads: false,
               email_actualizaciones: false,
@@ -347,21 +145,11 @@ export default function SettingsPage() {
           />
         );
       case "privacy":
-        return <PrivacyTab loading={loading} />;
-      case "sessions":
-        return <SessionsTab loading={loading} />;
+        return <PrivacyTab loading={false} />;
       default:
         return null;
     }
   };
-
-  if (isLoading && activeSection === "overview") {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   if (!user) {
     return (
@@ -447,23 +235,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {message && (
-        <div
-          className={`mb-6 p-4 rounded-lg flex items-center ${
-            message.type === "success"
-              ? "bg-green-50 text-green-800"
-              : "bg-red-50 text-red-800"
-          }`}
-        >
-          {message.type === "success" ? (
-            <CheckCircleIcon className="h-5 w-5 mr-2 flex-shrink-0" />
-          ) : (
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2 flex-shrink-0" />
-          )}
-          <span>{message.text}</span>
-        </div>
-      )}
-
       {activeSection === "overview" ? (
         <>
           {/* User Info Card */}
@@ -497,15 +268,12 @@ export default function SettingsPage() {
             {settingsCards
               .filter((card) => card.visible)
               .map((card) => {
-                // Mapear IDs de sección a hashes/rutas
-                const sectionToPath: Record<SettingsSection, string> = {
+                // Mapear IDs de sección a hashes en español
+                const sectionToHash: Record<SettingsSection, string> = {
                   overview: "",
-                  profile: "#perfil",
-                  password: "#contrasena",
-                  notifications: "#notificaciones",
-                  privacy: "#privacidad",
-                  sessions: "#sesiones",
-                  "cuenta-clerk": "/dashboard/settings/cuenta",
+                  account: "cuenta",
+                  notifications: "notificaciones",
+                  privacy: "privacidad",
                 };
 
                 return (
@@ -514,9 +282,7 @@ export default function SettingsPage() {
                     card={card}
                     onClick={() =>
                       router.push(
-                        card.id === "cuenta-clerk"
-                          ? sectionToPath[card.id]
-                          : `/dashboard/settings${sectionToPath[card.id]}`
+                        `/dashboard/settings#${sectionToHash[card.id]}`
                       )
                     }
                   />
