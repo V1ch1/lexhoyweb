@@ -6,15 +6,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LeadService } from "@/lib/services/leadService";
 
-// Secret para validar que el webhook viene de WordPress
-const WEBHOOK_SECRET = process.env.LEXHOY_WEBHOOK_SECRET || "change-me-in-production";
-
 export async function POST(request: NextRequest) {
+  // Leer secret en cada request para asegurar que toma el valor actualizado
+  // TODO: Revertir a process.env.LEXHOY_WEBHOOK_SECRET cuando se solucione la carga de envs
+  const WEBHOOK_SECRET = process.env.LEXHOY_WEBHOOK_SECRET || "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
+
   try {
     // 1. Verificar secret
     const authHeader = request.headers.get("x-webhook-secret");
-    if (authHeader !== WEBHOOK_SECRET) {
-      console.error("❌ Webhook secret inválido");
+    
+    if (!WEBHOOK_SECRET || authHeader !== WEBHOOK_SECRET) {
+      console.error("❌ Webhook secret inválido o no configurado", {
+        configurado: !!WEBHOOK_SECRET,
+        recibido: authHeader
+      });
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }

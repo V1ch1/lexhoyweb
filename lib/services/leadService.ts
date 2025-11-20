@@ -2,7 +2,7 @@
  * Servicio para gestionar leads en el marketplace
  */
 
-import { supabase } from "../supabase";
+import { supabase, supabaseAdmin } from "../supabase";
 import { AILeadService, LeadData, LeadAnalysis } from "./aiLeadService";
 
 export interface Lead {
@@ -95,7 +95,10 @@ export class LeadService {
         : null;
 
       // 4. Insertar en base de datos
-      const { data, error } = await supabase
+      // Usamos supabaseAdmin para saltar RLS ya que es una operación de servidor
+      const client = supabaseAdmin || supabase;
+      
+      const { data, error } = await client
         .from("leads")
         .insert({
           nombre: input.nombre,
@@ -148,7 +151,8 @@ export class LeadService {
     urgencia?: string;
     precioMax?: number;
   }) {
-    let query = supabase
+    const client = supabaseAdmin || supabase;
+    let query = client
       .from("leads")
       .select(
         `
@@ -197,7 +201,8 @@ export class LeadService {
    * Obtiene un lead completo (solo si el usuario lo compró)
    */
   static async getLeadById(leadId: string, userId: string): Promise<Lead> {
-    const { data, error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
       .from("leads")
       .select("*")
       .eq("id", leadId)
@@ -225,8 +230,9 @@ export class LeadService {
    */
   static async buyLead(leadId: string, compradorId: string): Promise<Lead> {
     try {
+      const client = supabaseAdmin || supabase;
       // 1. Obtener lead
-      const { data: lead, error: leadError } = await supabase
+      const { data: lead, error: leadError } = await client
         .from("leads")
         .select("*")
         .eq("id", leadId)
@@ -239,7 +245,7 @@ export class LeadService {
       const precioVenta = lead.precio_base || 100;
 
       // 2. Actualizar lead como vendido
-      const { data: updatedLead, error: updateError } = await supabase
+      const { data: updatedLead, error: updateError } = await client
         .from("leads")
         .update({
           estado: "vendido",
@@ -254,7 +260,7 @@ export class LeadService {
       if (updateError) throw updateError;
 
       // 3. Registrar compra
-      await supabase.from("compras_leads").insert({
+      await client.from("compras_leads").insert({
         lead_id: leadId,
         comprador_id: compradorId,
         tipo_compra: "directa",
@@ -275,7 +281,8 @@ export class LeadService {
    * Obtiene leads comprados por un usuario
    */
   static async getPurchasedLeads(userId: string) {
-    const { data, error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
       .from("leads")
       .select("*")
       .eq("comprador_id", userId)
@@ -290,7 +297,8 @@ export class LeadService {
    * Registra visualización de un lead
    */
   static async trackView(leadId: string, despachoId: string) {
-    const { data, error } = await supabase
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
       .from("visualizaciones_leads")
       .upsert(
         {
@@ -312,7 +320,7 @@ export class LeadService {
 
     // Incrementar contador de vistas
     if (data) {
-      await supabase.rpc("increment", {
+      await client.rpc("increment", {
         table_name: "visualizaciones_leads",
         row_id: data.id,
         column_name: "vistas",
@@ -327,7 +335,8 @@ export class LeadService {
     leadId: string,
     analysis: LeadAnalysis
   ) {
-    await supabase.from("logs_procesamiento_ia").insert({
+    const client = supabaseAdmin || supabase;
+    await client.from("logs_procesamiento_ia").insert({
       lead_id: leadId,
       modelo_ia: "gpt-4o-mini",
       respuesta_ia: JSON.stringify(analysis),

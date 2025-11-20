@@ -29,6 +29,21 @@ export const supabase = createClient(
   }
 );
 
+// Cliente con privilegios de administración (Service Role)
+// SOLO usar en el servidor (API routes, Server Actions)
+export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  : null;
+
 // Tipos TypeScript para la base de datos
 export interface Despacho {
   id: number;

@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks/clerk",
+  "/api/webhooks/lexhoy", // Webhook para recibir leads desde WordPress
 ]);
 
 // Rutas solo para admin

@@ -10,7 +10,7 @@ import { LeadService } from "@/lib/services/leadService";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -18,10 +18,11 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const lead = await LeadService.getLeadById(params.id, userId);
+    const { id } = await params;
+    const lead = await LeadService.getLeadById(id, userId);
 
     // Registrar visualización
-    await LeadService.trackView(params.id, userId);
+    await LeadService.trackView(id, userId);
 
     return NextResponse.json({
       success: true,
@@ -41,7 +42,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -49,12 +50,13 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const action = body.action;
 
     if (action === "buy") {
       // Compra directa
-      const lead = await LeadService.buyLead(params.id, userId);
+      const lead = await LeadService.buyLead(id, userId);
 
       return NextResponse.json({
         success: true,
