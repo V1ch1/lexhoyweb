@@ -25,11 +25,11 @@ export class AuthRegisterService {
    *   telefono: '612345678'
    * });
    */
-  static async register(userData: RegisterUserData): Promise<AuthResponse> {
+  static async register(userData: RegisterUserData, retryCount = 0): Promise<AuthResponse> {
     try {
       const { email, password, ...userInfo } = userData;
       
-      // 1. Registrar usuario en Auth
+      // 1. Registrar usuario en Auth con reintentos automáticos
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -40,6 +40,12 @@ export class AuthRegisterService {
       });
 
       if (signUpError) {
+        // 🔄 SISTEMA DE REINTENTOS: Si falla por rate limit y no hemos reintentado mucho
+        if (this.isRateLimitError(signUpError) && retryCount < 3) {
+          console.log(`⏳ Rate limit detectado. Reintentando en ${(retryCount + 1) * 2} segundos... (intento ${retryCount + 1}/3)`);
+          await this.delay((retryCount + 1) * 2000); // 2s, 4s, 6s
+          return this.register(userData, retryCount + 1);
+        }
         return this.handleRegisterError(signUpError);
       }
 
@@ -264,9 +270,42 @@ export class AuthRegisterService {
       };
     }
 
+    // Detectar rate limiting después de reintentos agotados
+    if (this.isRateLimitError(error)) {
+      return {
+        user: null,
+        error: 'Alto volumen de registros en este momento. Por favor, espera 1-2 minutos e inténtalo de nuevo. Tu solicitud es importante para nosotros.',
+      };
+    }
+
     return {
       user: null,
       error: error.message || 'Error desconocido al registrar el usuario',
     };
+  }
+
+  /**
+   * Detecta si el error es por rate limiting
+   * @private
+   */
+  private static isRateLimitError(error: Error & { message: string }): boolean {
+    const rateLimitMessages = [
+      'rate limit',
+      'too many requests',
+      'exceeded',
+      '429',
+      'throttle'
+    ];
+    return rateLimitMessages.some(msg => 
+      error.message.toLowerCase().includes(msg)
+    );
+  }
+
+  /**
+   * Función auxiliar para esperar (delay)
+   * @private
+   */
+  private static delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
