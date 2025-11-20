@@ -97,6 +97,7 @@ async function handleUserCreated(data: ClerkWebhookData) {
       "jose@blancoyenbatea.com",
       "luis.ogando@blancoyenbatea.com",
       "manu@blancoyenbatea.com",
+      "blancocasal@gmail.com", // Agregado
     ];
     const rol = adminEmails.includes(email) ? "super_admin" : "usuario";
     const plan = adminEmails.includes(email) ? "premium" : "basico";
