@@ -7,12 +7,7 @@
 
 import { useUser, useAuth as useClerkAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "./supabase";
 
 export interface User {
   id: string;
@@ -72,8 +67,6 @@ export function useAuth() {
             name: data.nombre || data.name,
             role: data.rol || data.role,
           } as User;
-          console.log('🔍 User data from Supabase:', data);
-          console.log('🔍 Normalized user:', normalizedUser);
           setUser(normalizedUser);
         }
       } catch (error) {
