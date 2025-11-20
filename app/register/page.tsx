@@ -26,12 +26,17 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
 
-  const [error, setError] = useState<{message: string; type?: 'error' | 'warning' | 'info'; code?: string} | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    type?: "error" | "warning" | "info";
+    code?: string;
+  } | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState<boolean>(false);
   const [emailExists, setEmailExists] = useState<boolean>(false);
 
   const router = useRouter();
@@ -49,7 +54,7 @@ export default function RegisterPage() {
       if (form.password !== form.confirmPassword) {
         setError({
           message: "Las contraseñas no coinciden",
-          type: 'error'
+          type: "error",
         });
         return;
       }
@@ -57,7 +62,7 @@ export default function RegisterPage() {
       if (!form.acceptTerms) {
         setError({
           message: "Debes aceptar los términos y condiciones para continuar",
-          type: 'error'
+          type: "error",
         });
         return;
       }
@@ -66,7 +71,7 @@ export default function RegisterPage() {
       const nameParts = form.fullName.trim().split(" ");
       const nombre = nameParts[0] || "";
       const apellidos = nameParts.slice(1).join(" ") || "";
-      
+
       // Llamar al servicio de registro
       const result = await AuthRegisterService.register({
         email: form.email,
@@ -79,13 +84,14 @@ export default function RegisterPage() {
         if (result.exists) {
           setEmailExists(true);
           setError({
-            message: "Ya existe una cuenta con este correo electrónico. ¿Quieres iniciar sesión?",
-            type: 'warning'
+            message:
+              "Ya existe una cuenta con este correo electrónico. ¿Quieres iniciar sesión?",
+            type: "warning",
           });
         } else {
           setError({
             message: result.error,
-            type: 'error'
+            type: "error",
           });
         }
         return;
@@ -94,12 +100,12 @@ export default function RegisterPage() {
       // Si el registro fue exitoso, intentar iniciar sesión automáticamente
       const loginResult = await AuthLoginService.login({
         email: form.email,
-        password: form.password
+        password: form.password,
       });
 
       if (loginResult.user) {
         // Redirigir al dashboard después del registro exitoso
-        router.push('/dashboard');
+        router.push("/dashboard");
         return;
       }
 
@@ -113,10 +119,11 @@ export default function RegisterPage() {
         acceptTerms: false,
       });
     } catch (err) {
-      console.error('Error en el registro:', err);
+      console.error("Error en el registro:", err);
       setError({
-        message: "Ocurrió un error al procesar tu registro. Por favor, inténtalo de nuevo más tarde.",
-        type: 'error'
+        message:
+          "Ocurrió un error al procesar tu registro. Por favor, inténtalo de nuevo más tarde.",
+        type: "error",
       });
     } finally {
       setIsLoading(false);
@@ -126,9 +133,9 @@ export default function RegisterPage() {
   // Tipar el evento 'e' correctamente en handleChange
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -142,38 +149,55 @@ export default function RegisterPage() {
           {isLoading && (
             <div className="bg-blue-50 text-blue-800 border border-blue-200 p-3 rounded-md">
               <p className="text-sm flex items-center">
-                <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin h-4 w-4 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
-                Procesando tu registro. Si hay alta demanda, esto puede tardar unos segundos...
+                Procesando tu registro. Si hay alta demanda, esto puede tardar
+                unos segundos...
               </p>
             </div>
           )}
           {error && (
-            <div 
+            <div
               className={`p-3 rounded-md ${
-                error?.type === 'warning' 
-                  ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                error?.type === "warning"
+                  ? "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                  : "bg-red-50 text-red-800 border border-red-200"
               }`}
             >
               <p className="font-medium">
-                {error?.type === 'warning' ? 'Atención' : 'Error'}
+                {error?.type === "warning" ? "Atención" : "Error"}
               </p>
-              <p>{error?.message || 'Ocurrió un error inesperado'}</p>
+              <p>{error?.message || "Ocurrió un error inesperado"}</p>
               {emailExists && (
                 <div className="mt-2">
-                  <Link 
+                  <Link
                     href="/login"
                     className="text-primary hover:underline font-medium"
                   >
                     ¿Ya tienes una cuenta? Inicia sesión aquí
                   </Link>
                   <p className="text-sm mt-1">
-                    ¿Olvidaste tu contraseña?{' '}
-                    <Link 
-                      href="/forgot-password" 
+                    ¿Olvidaste tu contraseña?{" "}
+                    <Link
+                      href="/forgot-password"
                       className="text-primary hover:underline"
                     >
                       Restablecer contraseña
@@ -183,7 +207,7 @@ export default function RegisterPage() {
               )}
             </div>
           )}
-          
+
           <div>
             <input
               type="text"
@@ -194,11 +218,11 @@ export default function RegisterPage() {
               autoComplete="name"
               required
               className={`border p-3 rounded-md w-full ${
-                error?.type === 'error' ? 'border-red-300' : 'border-gray-300'
+                error?.type === "error" ? "border-red-300" : "border-gray-300"
               }`}
             />
           </div>
-          
+
           <div>
             <input
               type="email"
@@ -209,14 +233,21 @@ export default function RegisterPage() {
               autoComplete="email"
               required
               className={`border p-3 rounded-md w-full ${
-                emailExists || (error?.type === 'error' && error.message && error.message.toLowerCase().includes('email')) 
-                  ? 'border-yellow-500 bg-yellow-50' 
-                  : 'border-gray-300'
+                emailExists ||
+                (error?.type === "error" &&
+                  error.message &&
+                  error.message.toLowerCase().includes("email"))
+                  ? "border-yellow-500 bg-yellow-50"
+                  : "border-gray-300"
               }`}
             />
             {emailExists && (
               <p className="mt-1 text-sm text-yellow-600">
-                Este correo ya está registrado. ¿Quieres <Link href="/login" className="text-primary hover:underline">iniciar sesión</Link>?
+                Este correo ya está registrado. ¿Quieres{" "}
+                <Link href="/login" className="text-primary hover:underline">
+                  iniciar sesión
+                </Link>
+                ?
               </p>
             )}
           </div>
@@ -285,7 +316,7 @@ export default function RegisterPage() {
             type="submit"
             disabled={isLoading}
             className={`mt-2 bg-primary text-white px-4 py-3 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
-              isLoading ? 'opacity-75' : ''
+              isLoading ? "opacity-75" : ""
             }`}
           >
             {isLoading ? (
@@ -323,11 +354,11 @@ export default function RegisterPage() {
                   />
                 </svg>
                 <h3 className="text-red-800 font-medium">
-                  {error?.type === 'warning' ? 'Atención' : 'Error de registro'}
+                  {error?.type === "warning" ? "Atención" : "Error de registro"}
                 </h3>
               </div>
               <p className="text-red-700 text-sm mt-2">{error?.message}</p>
-              
+
               {error?.message?.toLowerCase().includes("debes esperar") && (
                 <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
                   <p className="text-yellow-800 text-xs">

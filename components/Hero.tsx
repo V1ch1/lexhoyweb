@@ -16,13 +16,13 @@ export default function Hero() {
         </p>
         <div className="flex space-x-4 mt-6">
           <Link
-            href="/register"
+            href="/sign-up"
             className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
           >
             Registrar Despacho
           </Link>
           <Link
-            href="/login"
+            href="/sign-in"
             className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition-colors"
           >
             Acceder al Portal

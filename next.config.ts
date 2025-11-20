@@ -53,8 +53,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value:
               process.env.NODE_ENV === "development"
-                ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://lexhoy.com ws://127.0.0.1:* ws://localhost:* http://127.0.0.1:* http://localhost:*;"
-                : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://lexhoy.com;",
+                ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://lexhoy.com https://*.clerk.accounts.dev https://clerk.com https://clerk-telemetry.com ws://127.0.0.1:* ws://localhost:* http://127.0.0.1:* http://localhost:*; frame-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com; worker-src 'self' blob:;"
+                : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.clerk.accounts.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://lexhoy.com https://*.clerk.accounts.dev https://clerk.com https://clerk-telemetry.com; frame-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com; worker-src 'self' blob:;",
           },
         ],
       },

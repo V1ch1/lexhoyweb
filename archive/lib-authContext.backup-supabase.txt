@@ -1,0 +1,8 @@
+(ARCHIVO ARCHIVADO) copia de lib/authContext.tsx.backup-supabase
+
+-- Este archivo es una copia de seguridad del antiguo adaptador de auth usado con Supabase.
+-- Contenido original archivado para referencia.
+
+"use client";
+
+/* backup content omitted in archive to avoid duplicating large legacy code; original is stored on developer machine */

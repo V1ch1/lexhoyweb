@@ -298,14 +298,15 @@ const DashboardPage = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          ¡Bienvenido, {user.name.split(" ")[0]}! 👋
+          ¡Bienvenido, {user?.name?.split(" ")[0] || user?.nombre || "Usuario"}!
+          👋
         </h1>
         <p className="text-lg text-gray-600">
-          {user.role === "super_admin" &&
+          {user?.role === "super_admin" &&
             "Panel de administración global de la plataforma"}
-          {user.role === "despacho_admin" &&
+          {user?.role === "despacho_admin" &&
             "Gestiona tu despacho y leads desde aquí"}
-          {user.role === "usuario" &&
+          {user?.role === "usuario" &&
             "Tu cuenta está activa. Solicita un despacho para acceder a más funciones"}
         </p>
       </div>

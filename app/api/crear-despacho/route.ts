@@ -310,19 +310,29 @@ export async function POST(request: Request) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Sincronización completa usando el nuevo sistema modular
-    console.log("🔄 Iniciando sincronización completa (Supabase → WordPress → Algolia)...");
+    console.log(
+      "🔄 Iniciando sincronización completa (Supabase → WordPress → Algolia)..."
+    );
     console.log(`   Despacho ID: ${despacho.id}`);
     console.log(`   Nombre: ${nombre}`);
     console.log(`   Sedes: ${sedes.length}`);
 
-    let syncResult: { success: boolean; objectId?: string; wordpressId?: number; error?: string } = { 
-      success: false, 
-      error: "No ejecutado" 
+    let syncResult: {
+      success: boolean;
+      objectId?: string;
+      wordpressId?: number;
+      error?: string;
+    } = {
+      success: false,
+      error: "No ejecutado",
     };
 
     try {
       const { SyncOrchestrator } = await import("@/lib/sync");
-      syncResult = await SyncOrchestrator.sincronizarCompleto(despacho.id, false);
+      syncResult = await SyncOrchestrator.sincronizarCompleto(
+        despacho.id,
+        false
+      );
 
       if (syncResult.success) {
         console.log("✅ Sincronización completa exitosa");
@@ -337,7 +347,8 @@ export async function POST(request: Request) {
       console.error("❌ Excepción en sincronización:", syncError);
       syncResult = {
         success: false,
-        error: syncError instanceof Error ? syncError.message : "Error desconocido",
+        error:
+          syncError instanceof Error ? syncError.message : "Error desconocido",
       };
       // No lanzar error, continuar con la respuesta
     }

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from '@/lib/authContext';
-import { UserService } from '@/lib/userService';
-import { AuthSimpleService } from '@/lib/auth/services/auth-simple.service';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useAuth } from "@/lib/authContext";
+import { UserService } from "@/lib/userService";
+import { AuthSimpleService } from "@/lib/auth/services/auth-simple.service";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import {
   UserIcon,
   KeyIcon,
@@ -14,22 +14,28 @@ import {
   ComputerDesktopIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ArrowRightIcon
-} from '@heroicons/react/24/outline';
-import ProfileTab from '@/components/settings/ProfileTab';
-import PasswordTab from '@/components/settings/PasswordTab';
-import NotificationsTab from '@/components/settings/NotificationsTab';
-import PrivacyTab from '@/components/settings/PrivacyTab';
-import SessionsTab from '@/components/settings/SessionsTab';
+  ArrowRightIcon,
+} from "@heroicons/react/24/outline";
+import ProfileTab from "@/components/settings/ProfileTab";
+import PasswordTab from "@/components/settings/PasswordTab";
+import NotificationsTab from "@/components/settings/NotificationsTab";
+import PrivacyTab from "@/components/settings/PrivacyTab";
+import SessionsTab from "@/components/settings/SessionsTab";
 
 // Types
-type SettingsSection = 'overview' | 'profile' | 'password' | 'notifications' | 'privacy' | 'sessions';
+type SettingsSection =
+  | "overview"
+  | "profile"
+  | "password"
+  | "notifications"
+  | "privacy"
+  | "sessions";
 
 interface UserProfile {
   id: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'despacho_admin' | 'usuario';
+  role: "super_admin" | "despacho_admin" | "usuario";
   nombre: string;
   apellidos: string;
   telefono: string;
@@ -54,18 +60,22 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
-  const [currentHash, setCurrentHash] = useState('');
+  const [activeSection, setActiveSection] =
+    useState<SettingsSection>("overview");
+  const [currentHash, setCurrentHash] = useState("");
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
-    id: '',
-    email: '',
-    name: '',
-    role: 'usuario',
-    nombre: '',
-    apellidos: '',
-    telefono: '',
+    id: "",
+    email: "",
+    name: "",
+    role: "usuario",
+    nombre: "",
+    apellidos: "",
+    telefono: "",
     fecha_registro: new Date().toISOString(),
     ultimo_acceso: new Date().toISOString(),
   });
@@ -74,26 +84,26 @@ export default function SettingsPage() {
   useEffect(() => {
     // Mapear hashes a secciones
     const hashToSection: Record<string, SettingsSection> = {
-      'perfil': 'profile',
-      'profile': 'profile',
-      'contrasena': 'password',
-      'password': 'password',
-      'notificaciones': 'notifications',
-      'notifications': 'notifications',
-      'privacidad': 'privacy',
-      'privacy': 'privacy',
-      'sesiones': 'sessions',
-      'sessions': 'sessions'
+      perfil: "profile",
+      profile: "profile",
+      contrasena: "password",
+      password: "password",
+      notificaciones: "notifications",
+      notifications: "notifications",
+      privacidad: "privacy",
+      privacy: "privacy",
+      sesiones: "sessions",
+      sessions: "sessions",
     };
 
     const updateSection = () => {
-      const hash = window.location.hash.replace('#', '');
+      const hash = window.location.hash.replace("#", "");
       if (hash && hashToSection[hash]) {
         setActiveSection(hashToSection[hash]);
         setCurrentHash(hash);
       } else {
-        setActiveSection('overview');
-        setCurrentHash('');
+        setActiveSection("overview");
+        setCurrentHash("");
       }
     };
 
@@ -107,15 +117,15 @@ export default function SettingsPage() {
 
     // Polling para detectar cambios (fallback)
     const interval = setInterval(() => {
-      const hash = window.location.hash.replace('#', '');
+      const hash = window.location.hash.replace("#", "");
       if (hash !== currentHash) {
         updateSection();
       }
     }, 100);
 
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener("hashchange", handleHashChange);
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener("hashchange", handleHashChange);
       clearInterval(interval);
     };
   }, [currentHash]);
@@ -124,37 +134,41 @@ export default function SettingsPage() {
   useEffect(() => {
     const loadUserData = async () => {
       if (!user) return;
-      
+
       try {
         setLoading(true);
         const userData = {
           id: user.id,
           email: user.email,
-          name: user.name || '',
-          role: user.role,
-          nombre: user.name?.split(' ')[0] || '',
-          apellidos: user.name?.split(' ').slice(1).join(' ') || '',
-          telefono: '',
+          name: user?.name || user?.nombre || "",
+          role: (user?.role || user?.rol || "usuario") as UserProfile["role"],
+          nombre: user?.name?.split(" ")[0] || user?.nombre || "",
+          apellidos:
+            user?.name?.split(" ").slice(1).join(" ") || user?.apellidos || "",
+          telefono: "",
           fecha_registro: new Date().toISOString(),
-          ultimo_acceso: new Date().toISOString()
+          ultimo_acceso: new Date().toISOString(),
         };
-        
+
         setProfile(userData);
-        
+
         try {
           const profileData = await userService.getUserProfile(user.id);
-          setProfile(prev => ({
+          setProfile((prev) => ({
             ...prev,
-            ...profileData
+            ...profileData,
           }));
         } catch (profileError) {
-          console.error('Error al cargar datos adicionales del perfil:', profileError);
+          console.error(
+            "Error al cargar datos adicionales del perfil:",
+            profileError
+          );
         }
       } catch (error) {
-        console.error('Error en loadUserData:', error);
+        console.error("Error en loadUserData:", error);
         setMessage({
-          type: 'error',
-          text: 'Error al cargar los datos del usuario'
+          type: "error",
+          text: "Error al cargar los datos del usuario",
         });
       } finally {
         setLoading(false);
@@ -167,78 +181,85 @@ export default function SettingsPage() {
   // Settings cards configuration
   const settingsCards: SettingsCard[] = [
     {
-      id: 'profile',
-      name: 'Perfil',
-      description: 'Actualiza tu información personal',
+      id: "profile",
+      name: "Perfil",
+      description: "Actualiza tu información personal",
       icon: UserIcon,
-      color: 'blue',
-      visible: true
+      color: "blue",
+      visible: true,
     },
     {
-      id: 'password',
-      name: 'Contraseña',
-      description: 'Cambia tu contraseña de acceso',
+      id: "password",
+      name: "Contraseña",
+      description: "Cambia tu contraseña de acceso",
       icon: KeyIcon,
-      color: 'purple',
-      visible: true
+      color: "purple",
+      visible: true,
     },
     {
-      id: 'notifications',
-      name: 'Notificaciones',
-      description: 'Gestiona tus preferencias de notificaciones',
+      id: "notifications",
+      name: "Notificaciones",
+      description: "Gestiona tus preferencias de notificaciones",
       icon: BellIcon,
-      color: 'yellow',
-      visible: true
+      color: "yellow",
+      visible: true,
     },
     {
-      id: 'privacy',
-      name: 'Privacidad',
-      description: 'Controla tu privacidad y datos',
+      id: "privacy",
+      name: "Privacidad",
+      description: "Controla tu privacidad y datos",
       icon: ShieldCheckIcon,
-      color: 'red',
-      visible: true
+      color: "red",
+      visible: true,
     },
     {
-      id: 'sessions',
-      name: 'Sesiones',
-      description: 'Gestiona tus sesiones activas',
+      id: "sessions",
+      name: "Sesiones",
+      description: "Gestiona tus sesiones activas",
       icon: ComputerDesktopIcon,
-      color: 'orange',
-      visible: true
-    }
+      color: "orange",
+      visible: true,
+    },
   ];
 
   // Handle password change
-  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+  const handleChangePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
-      
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email || '',
-        password: currentPassword
+        email: user.email || "",
+        password: currentPassword,
       });
 
       if (signInError) {
-        throw new Error('La contraseña actual es incorrecta');
+        throw new Error("La contraseña actual es incorrecta");
       }
 
-      const { error: updateError } = await AuthSimpleService.updatePassword(newPassword);
-      
+      const { error: updateError } =
+        await AuthSimpleService.updatePassword(newPassword);
+
       if (updateError) {
         throw new Error(updateError);
       }
-      
+
       setMessage({
-        type: 'success',
-        text: 'Contraseña actualizada correctamente'
+        type: "success",
+        text: "Contraseña actualizada correctamente",
       });
     } catch (error) {
-      console.error('Error al cambiar la contraseña:', error);
+      console.error("Error al cambiar la contraseña:", error);
       setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Error al cambiar la contraseña. Por favor, verifica tu contraseña actual e inténtalo de nuevo.'
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Error al cambiar la contraseña. Por favor, verifica tu contraseña actual e inténtalo de nuevo.",
       });
       throw error;
     } finally {
@@ -249,26 +270,26 @@ export default function SettingsPage() {
   // Handle profile update
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
-    
+
     try {
       setIsLoading(true);
       const updatedProfile = await userService.updateUserProfile(user.id, {
-        nombre: data.nombre || '',
-        apellidos: data.apellidos || '',
-        telefono: data.telefono || ''
+        nombre: data.nombre || "",
+        apellidos: data.apellidos || "",
+        telefono: data.telefono || "",
       });
-      
+
       setProfile(updatedProfile);
-      
+
       setMessage({
-        type: 'success',
-        text: 'Perfil actualizado correctamente'
+        type: "success",
+        text: "Perfil actualizado correctamente",
       });
     } catch (error) {
-      console.error('Error al actualizar el perfil:', error);
+      console.error("Error al actualizar el perfil:", error);
       setMessage({
-        type: 'error',
-        text: 'Error al actualizar el perfil. Por favor, inténtalo de nuevo.'
+        type: "error",
+        text: "Error al actualizar el perfil. Por favor, inténtalo de nuevo.",
       });
     } finally {
       setIsLoading(false);
@@ -277,7 +298,7 @@ export default function SettingsPage() {
 
   // Render section content
   const renderSectionContent = () => {
-    if (loading && activeSection !== 'overview') {
+    if (loading && activeSection !== "overview") {
       return (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -286,33 +307,46 @@ export default function SettingsPage() {
     }
 
     switch (activeSection) {
-      case 'profile':
+      case "profile":
         return (
-          <ProfileTab 
-            profileData={profile} 
-            onUpdate={handleUpdateProfile} 
-            loading={isLoading} 
+          <ProfileTab
+            profileData={profile}
+            onUpdate={handleUpdateProfile}
+            loading={isLoading}
           />
         );
-      case 'password':
+      case "password":
         return (
           <PasswordTab
             loading={isLoading}
             onChangePassword={handleChangePassword}
           />
         );
-      case 'notifications':
-        return <NotificationsTab loading={loading} notifications={{ email_nuevos_leads: false, email_actualizaciones: false, email_sistema: false, push_leads: false, push_mensajes: false }} onUpdate={() => {}} onSubmit={() => {}} />;
-      case 'privacy':
+      case "notifications":
+        return (
+          <NotificationsTab
+            loading={loading}
+            notifications={{
+              email_nuevos_leads: false,
+              email_actualizaciones: false,
+              email_sistema: false,
+              push_leads: false,
+              push_mensajes: false,
+            }}
+            onUpdate={() => {}}
+            onSubmit={() => {}}
+          />
+        );
+      case "privacy":
         return <PrivacyTab loading={loading} />;
-      case 'sessions':
+      case "sessions":
         return <SessionsTab loading={loading} />;
       default:
         return null;
     }
   };
 
-  if (isLoading && activeSection === 'overview') {
+  if (isLoading && activeSection === "overview") {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -324,18 +358,20 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-gray-600">Por favor, inicia sesión para acceder a la configuración.</p>
+          <p className="text-gray-600">
+            Por favor, inicia sesión para acceder a la configuración.
+          </p>
         </div>
       </div>
     );
   }
 
   // Settings Card Component
-  const SettingsCardComponent = ({ 
-    card, 
-    onClick 
-  }: { 
-    card: SettingsCard; 
+  const SettingsCardComponent = ({
+    card,
+    onClick,
+  }: {
+    card: SettingsCard;
     onClick: () => void;
   }) => {
     const colorClasses = {
@@ -365,23 +401,37 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          {activeSection === 'overview' ? 'Configuración' : 
-           settingsCards.find(c => c.id === activeSection)?.name || 'Configuración'}
+          {activeSection === "overview"
+            ? "Configuración"
+            : settingsCards.find((c) => c.id === activeSection)?.name ||
+              "Configuración"}
         </h1>
         <p className="text-lg text-gray-600">
-          {activeSection === 'overview' 
-            ? 'Gestiona tu perfil, seguridad y preferencias de la cuenta'
-            : settingsCards.find(c => c.id === activeSection)?.description || ''}
+          {activeSection === "overview"
+            ? "Gestiona tu perfil, seguridad y preferencias de la cuenta"
+            : settingsCards.find((c) => c.id === activeSection)?.description ||
+              ""}
         </p>
-        
+
         {/* Breadcrumb */}
-        {activeSection !== 'overview' && (
+        {activeSection !== "overview" && (
           <button
-            onClick={() => router.push('/dashboard/settings')}
+            onClick={() => router.push("/dashboard/settings")}
             className="mt-3 text-blue-600 hover:text-blue-700 font-medium flex items-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Volver a configuración
           </button>
@@ -391,10 +441,12 @@ export default function SettingsPage() {
       {message && (
         <div
           className={`mb-6 p-4 rounded-lg flex items-center ${
-            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            message.type === "success"
+              ? "bg-green-50 text-green-800"
+              : "bg-red-50 text-red-800"
           }`}
         >
-          {message.type === 'success' ? (
+          {message.type === "success" ? (
             <CheckCircleIcon className="h-5 w-5 mr-2 flex-shrink-0" />
           ) : (
             <ExclamationTriangleIcon className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -403,19 +455,29 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeSection === 'overview' ? (
+      {activeSection === "overview" ? (
         <>
           {/* User Info Card */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
             <div className="flex items-center">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-2xl mr-4">
-                {user.name?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'U'}
+                {user.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .substring(0, 2) || "U"}
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {user.name}
+                </h2>
                 <p className="text-gray-600">{user.email}</p>
                 <span className="inline-block mt-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
-                  {user.role === 'super_admin' ? 'Super Admin' : user.role === 'despacho_admin' ? 'Despacho Admin' : 'Usuario'}
+                  {user.role === "super_admin"
+                    ? "Super Admin"
+                    : user.role === "despacho_admin"
+                      ? "Despacho Admin"
+                      : "Usuario"}
                 </span>
               </div>
             </div>
@@ -423,32 +485,36 @@ export default function SettingsPage() {
 
           {/* Settings Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {settingsCards.filter(card => card.visible).map((card) => {
-              // Mapear IDs de sección a hashes en español
-              const sectionToHash: Record<SettingsSection, string> = {
-                'overview': '',
-                'profile': 'perfil',
-                'password': 'contrasena',
-                'notifications': 'notificaciones',
-                'privacy': 'privacidad',
-                'sessions': 'sesiones'
-              };
-              
-              return (
-                <SettingsCardComponent
-                  key={card.id}
-                  card={card}
-                  onClick={() => router.push(`/dashboard/settings#${sectionToHash[card.id]}`)}
-                />
-              );
-            })}
+            {settingsCards
+              .filter((card) => card.visible)
+              .map((card) => {
+                // Mapear IDs de sección a hashes en español
+                const sectionToHash: Record<SettingsSection, string> = {
+                  overview: "",
+                  profile: "perfil",
+                  password: "contrasena",
+                  notifications: "notificaciones",
+                  privacy: "privacidad",
+                  sessions: "sesiones",
+                };
+
+                return (
+                  <SettingsCardComponent
+                    key={card.id}
+                    card={card}
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/settings#${sectionToHash[card.id]}`
+                      )
+                    }
+                  />
+                );
+              })}
           </div>
         </>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-6">
-            {renderSectionContent()}
-          </div>
+          <div className="p-6">{renderSectionContent()}</div>
         </div>
       )}
     </div>

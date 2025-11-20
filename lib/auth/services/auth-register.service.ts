@@ -1,6 +1,6 @@
-import { supabase } from '@/lib/supabase';
-import { AuthResponse, RegisterUserData } from '../types/auth.types';
-import { EmailService } from './email.service';
+import { supabase } from "@/lib/supabase";
+import { AuthResponse, RegisterUserData } from "../types/auth.types";
+import { EmailService } from "./email.service";
 
 /**
  * Servicio para manejar el registro de nuevos usuarios en el sistema.
@@ -12,10 +12,10 @@ import { EmailService } from './email.service';
 export class AuthRegisterService {
   /**
    * Registra un nuevo usuario en el sistema.
-   * 
+   *
    * @param {RegisterUserData} userData - Datos del usuario a registrar
    * @returns {Promise<AuthResponse>} Respuesta con el usuario registrado o error
-   * 
+   *
    * @example
    * const { user, error } = await AuthRegisterService.register({
    *   nombre: 'Juan',
@@ -25,24 +25,31 @@ export class AuthRegisterService {
    *   telefono: '612345678'
    * });
    */
-  static async register(userData: RegisterUserData, retryCount = 0): Promise<AuthResponse> {
+  static async register(
+    userData: RegisterUserData,
+    retryCount = 0
+  ): Promise<AuthResponse> {
     try {
       const { email, password, ...userInfo } = userData;
-      
+
       // 1. Registrar usuario en Auth con reintentos automáticos
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userInfo,
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/confirm`,
-        },
-      });
+      const { data: authData, error: signUpError } = await supabase.auth.signUp(
+        {
+          email,
+          password,
+          options: {
+            data: userInfo,
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/confirm`,
+          },
+        }
+      );
 
       if (signUpError) {
         // 🔄 SISTEMA DE REINTENTOS: Si falla por rate limit y no hemos reintentado mucho
         if (this.isRateLimitError(signUpError) && retryCount < 3) {
-          console.log(`⏳ Rate limit detectado. Reintentando en ${(retryCount + 1) * 2} segundos... (intento ${retryCount + 1}/3)`);
+          console.log(
+            `⏳ Rate limit detectado. Reintentando en ${(retryCount + 1) * 2} segundos... (intento ${retryCount + 1}/3)`
+          );
           await this.delay((retryCount + 1) * 2000); // 2s, 4s, 6s
           return this.register(userData, retryCount + 1);
         }
@@ -52,7 +59,8 @@ export class AuthRegisterService {
       if (!authData.user) {
         return {
           user: null,
-          error: 'No se pudo crear el usuario. Por favor, inténtalo de nuevo más tarde.',
+          error:
+            "No se pudo crear el usuario. Por favor, inténtalo de nuevo más tarde.",
         };
       }
 
@@ -68,7 +76,7 @@ export class AuthRegisterService {
       if (createUserError || !user) {
         return {
           user: null,
-          error: createUserError || 'Error al crear el perfil del usuario',
+          error: createUserError || "Error al crear el perfil del usuario",
         };
       }
       // 3. Enviar notificación a administradores
@@ -79,22 +87,24 @@ export class AuthRegisterService {
           id: String(user.id),
           email: String(user.email),
           name: `${user.nombre} ${user.apellidos}`,
-          role: (user.rol as 'super_admin' | 'despacho_admin' | 'usuario') || 'usuario',
+          role:
+            (user.rol as "super_admin" | "despacho_admin" | "usuario") ||
+            "usuario",
         },
         error: null,
       };
     } catch (error) {
-      console.error('Error en AuthRegisterService.register:', error);
+      console.error("Error en AuthRegisterService.register:", error);
       return {
         user: null,
-        error: 'Ocurrió un error inesperado al registrar el usuario.',
+        error: "Ocurrió un error inesperado al registrar el usuario.",
       };
     }
   }
 
   /**
    * Crea un registro de usuario en la base de datos.
-   * 
+   *
    * @private
    * @param {string} userId - ID único del usuario en Auth
    * @param {string} email - Correo electrónico del usuario
@@ -109,21 +119,21 @@ export class AuthRegisterService {
     nombre: string,
     apellidos: string,
     telefono?: string
-  ): Promise<{ 
-    user: { 
-      id: string; 
-      email: string; 
-      nombre: string; 
-      apellidos: string; 
-      telefono?: string; 
+  ): Promise<{
+    user: {
+      id: string;
+      email: string;
+      nombre: string;
+      apellidos: string;
+      telefono?: string;
       rol: string;
       ultimo_acceso: string;
-    } | null; 
-    error: string | null 
+    } | null;
+    error: string | null;
   }> {
     try {
       const { data: userData, error } = await supabase
-        .from('users')
+        .from("users")
         .insert([
           {
             id: userId,
@@ -131,7 +141,7 @@ export class AuthRegisterService {
             nombre,
             apellidos,
             telefono,
-            rol: 'usuario',
+            rol: "usuario",
             ultimo_acceso: new Date().toISOString(),
           },
         ])
@@ -142,35 +152,38 @@ export class AuthRegisterService {
         throw error;
       }
 
-      return { 
-        user: userData, 
-        error: null 
+      return {
+        user: userData,
+        error: null,
       };
     } catch (error) {
-      console.error('Error al crear registro de usuario:', error);
-      return { 
-        user: null, 
-        error: error instanceof Error ? error.message : 'Error al crear el registro del usuario' 
+      console.error("Error al crear registro de usuario:", error);
+      return {
+        user: null,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Error al crear el registro del usuario",
       };
     }
   }
 
   /**
    * Envía una notificación por correo a los administradores sobre un nuevo registro.
-   * 
+   *
    * @private
    * @param {RegisterUserData} userData - Datos del usuario registrado
    * @returns {Promise<void>}
    */
   private static async notifyAdmins(userData: RegisterUserData): Promise<void> {
     try {
-      const subject = '👤 ¡Nuevo usuario registrado en LexHoy!';
-      const fechaRegistro = new Date().toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      const subject = "👤 ¡Nuevo usuario registrado en LexHoy!";
+      const fechaRegistro = new Date().toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
 
       const html = `
@@ -195,11 +208,15 @@ export class AuthRegisterService {
                   <td style="padding: 8px 0; color: #6b7280;"><strong>Correo electrónico:</strong></td>
                   <td style="padding: 8px 0;">${userData.email}</td>
                 </tr>
-                ${userData.telefono ? `
+                ${
+                  userData.telefono
+                    ? `
                 <tr>
                   <td style="padding: 8px 0; color: #6b7280;"><strong>Teléfono:</strong></td>
                   <td style="padding: 8px 0;">${userData.telefono}</td>
-                </tr>` : ''}
+                </tr>`
+                    : ""
+                }
                 <tr>
                   <td style="padding: 8px 0; color: #6b7280;"><strong>Fecha de registro:</strong></td>
                   <td style="padding: 8px 0;">${fechaRegistro}</td>
@@ -226,47 +243,54 @@ export class AuthRegisterService {
 
       await EmailService.sendToSuperAdmins({ subject, html });
     } catch (error) {
-      console.error('Error al enviar notificación a administradores:', error);
+      console.error("Error al enviar notificación a administradores:", error);
       // No fallar el registro si hay un error en la notificación
     }
   }
 
   /**
    * Maneja los errores específicos del registro de usuarios.
-   * 
+   *
    * @private
    * @param {any} error - Error capturado durante el registro
    * @returns {AuthResponse} Respuesta con el error correspondiente
    */
-  private static handleRegisterError(error: Error & { message: string }): AuthResponse {
-    console.error('Error en registro:', error);
+  private static handleRegisterError(
+    error: Error & { message: string }
+  ): AuthResponse {
+    console.error("Error en registro:", error);
 
-    if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+    if (
+      error.message.includes("already registered") ||
+      error.message.includes("User already registered")
+    ) {
       return {
         user: null,
-        error: 'Este correo ya está registrado. Por favor, inicia sesión o usa la opción de recuperación de contraseña si no la recuerdas.',
+        error:
+          "Este correo ya está registrado. Por favor, inicia sesión o usa la opción de recuperación de contraseña si no la recuerdas.",
         exists: true,
       };
     }
 
-    if (error.message.includes('Invalid email')) {
+    if (error.message.includes("Invalid email")) {
       return {
         user: null,
-        error: 'El formato del correo electrónico no es válido.',
+        error: "El formato del correo electrónico no es válido.",
       };
     }
 
-    if (error.message.includes('Password should be at least')) {
+    if (error.message.includes("Password should be at least")) {
       return {
         user: null,
-        error: 'La contraseña debe tener al menos 6 caracteres.',
+        error: "La contraseña debe tener al menos 6 caracteres.",
       };
     }
 
-    if (error.message.includes('email rate limit exceeded')) {
+    if (error.message.includes("email rate limit exceeded")) {
       return {
         user: null,
-        error: 'Se ha alcanzado el límite de envíos de correo. Por favor, inténtalo de nuevo más tarde.',
+        error:
+          "Se ha alcanzado el límite de envíos de correo. Por favor, inténtalo de nuevo más tarde.",
       };
     }
 
@@ -274,13 +298,14 @@ export class AuthRegisterService {
     if (this.isRateLimitError(error)) {
       return {
         user: null,
-        error: 'Alto volumen de registros en este momento. Por favor, espera 1-2 minutos e inténtalo de nuevo. Tu solicitud es importante para nosotros.',
+        error:
+          "Alto volumen de registros en este momento. Por favor, espera 1-2 minutos e inténtalo de nuevo. Tu solicitud es importante para nosotros.",
       };
     }
 
     return {
       user: null,
-      error: error.message || 'Error desconocido al registrar el usuario',
+      error: error.message || "Error desconocido al registrar el usuario",
     };
   }
 
@@ -290,13 +315,13 @@ export class AuthRegisterService {
    */
   private static isRateLimitError(error: Error & { message: string }): boolean {
     const rateLimitMessages = [
-      'rate limit',
-      'too many requests',
-      'exceeded',
-      '429',
-      'throttle'
+      "rate limit",
+      "too many requests",
+      "exceeded",
+      "429",
+      "throttle",
     ];
-    return rateLimitMessages.some(msg => 
+    return rateLimitMessages.some((msg) =>
       error.message.toLowerCase().includes(msg)
     );
   }
@@ -306,6 +331,6 @@ export class AuthRegisterService {
    * @private
    */
   private static delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

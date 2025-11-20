@@ -9,6 +9,7 @@ Migrar la autenticación de Supabase Auth a Clerk, **manteniendo toda la base de
 ## 📊 Arquitectura Actual vs Nueva
 
 ### **ANTES** (Supabase Auth + DB):
+
 ```
 ┌─────────────────────────────────────┐
 │         SUPABASE                    │
@@ -24,6 +25,7 @@ Migrar la autenticación de Supabase Auth a Clerk, **manteniendo toda la base de
 ```
 
 ### **DESPUÉS** (Clerk + Supabase DB):
+
 ```
 ┌──────────────┐       ┌──────────────────┐
 │    CLERK     │       │    SUPABASE      │
@@ -45,6 +47,7 @@ Migrar la autenticación de Supabase Auth a Clerk, **manteniendo toda la base de
 ### **Tabla `users` - CAMBIOS CRÍTICOS**
 
 #### **ANTES** (Supabase Auth):
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY,  -- ⚠️ ID de Supabase Auth
@@ -59,6 +62,7 @@ CREATE TABLE users (
 ```
 
 #### **DESPUÉS** (Clerk):
+
 ```sql
 CREATE TABLE users (
   id TEXT PRIMARY KEY,  -- ✅ CAMBIO: ID de Clerk (formato: user_xxxxxxxxx)
@@ -91,6 +95,7 @@ notificaciones.user_id → users.id
 ### **1. Registro de Usuarios**
 
 #### **ANTES** (Supabase):
+
 ```typescript
 // ❌ Rate limit: 4 emails/hora
 const { data, error } = await supabase.auth.signUp({
@@ -99,25 +104,26 @@ const { data, error } = await supabase.auth.signUp({
 });
 
 // Crear en tabla users
-await supabase.from('users').insert({
-  id: data.user.id,  // UUID de Supabase
+await supabase.from("users").insert({
+  id: data.user.id, // UUID de Supabase
   email,
-  rol: 'usuario',
+  rol: "usuario",
 });
 ```
 
 #### **DESPUÉS** (Clerk):
+
 ```typescript
 // ✅ Sin límite de emails
 // Clerk maneja registro automáticamente via componente <SignUp />
 
 // En webhook de Clerk (cuando se crea usuario):
-await supabase.from('users').insert({
-  id: clerkUserId,  // user_xxxxxxxxx
+await supabase.from("users").insert({
+  id: clerkUserId, // user_xxxxxxxxx
   clerk_id: clerkUserId,
   email,
-  rol: 'usuario',
-  email_verificado: true,  // Clerk ya lo verificó
+  rol: "usuario",
+  email_verificado: true, // Clerk ya lo verificó
 });
 ```
 
@@ -144,22 +150,24 @@ const { data: despacho } = await supabase
 ```
 
 **CON CLERK** - ✅ **COMPATIBLE**:
+
 ```typescript
 // Clerk proporciona el email del usuario
 const { userId, emailAddress } = auth();
 
 // ✅ Mismo código funciona
 const { data: despacho } = await supabase
-  .from('despachos')
-  .select('*')
-  .eq('id', despachoId)
-  .eq('owner_email', emailAddress)  // ✅ Email de Clerk
+  .from("despachos")
+  .select("*")
+  .eq("id", despachoId)
+  .eq("owner_email", emailAddress) // ✅ Email de Clerk
   .single();
 ```
 
 ### **3. Asignación de Despachos (user_despachos)**
 
 **SISTEMA ACTUAL**:
+
 ```sql
 -- Usuario puede administrar múltiples despachos
 user_despachos {
@@ -173,10 +181,11 @@ user_despachos {
 ```
 
 **CON CLERK**:
+
 ```typescript
 // ✅ Mismo flujo, solo cambia el tipo de user_id
-await supabase.from('user_despachos').insert({
-  user_id: clerkUserId,  // user_xxxxxxxxx (TEXT, no UUID)
+await supabase.from("user_despachos").insert({
+  user_id: clerkUserId, // user_xxxxxxxxx (TEXT, no UUID)
   despacho_id: despachoId,
   permisos: { leer: true, escribir: true },
   activo: true,
@@ -186,6 +195,7 @@ await supabase.from('user_despachos').insert({
 ### **4. Compra de Leads**
 
 **SISTEMA ACTUAL** (si existe):
+
 ```typescript
 // Usuario compra lead para su despacho
 leads {
@@ -198,18 +208,20 @@ leads {
 ```
 
 **CON CLERK**:
+
 ```typescript
 // ✅ Mismo flujo
-await supabase.from('leads').insert({
+await supabase.from("leads").insert({
   despacho_id: despachoId,
-  comprado_por: clerkUserId,  // TEXT en vez de UUID
-  precio: 50.00,
+  comprado_por: clerkUserId, // TEXT en vez de UUID
+  precio: 50.0,
 });
 ```
 
 ### **5. Roles y Permisos**
 
 **SISTEMA ACTUAL**:
+
 ```typescript
 users {
   rol: 'usuario' | 'despacho_admin' | 'super_admin',
@@ -218,16 +230,17 @@ users {
 ```
 
 **CON CLERK**:
+
 ```typescript
 // ✅ MANTENER en Supabase
 // Clerk solo autentica, roles se gestionan en tu DB
 const { data: user } = await supabase
-  .from('users')
-  .select('rol, plan')
-  .eq('id', clerkUserId)
+  .from("users")
+  .select("rol, plan")
+  .eq("id", clerkUserId)
   .single();
 
-if (user.rol === 'super_admin') {
+if (user.rol === "super_admin") {
   // Admin tiene acceso total
 }
 ```
@@ -281,25 +294,30 @@ CREATE TABLE users_new (
 ## 🚨 PUNTOS CRÍTICOS - NO ROMPER
 
 ### **1. Propiedad de Despachos**
+
 - ✅ **owner_email** en `despachos` → Seguir usando
 - ✅ Verificación por email → Compatible con Clerk
 - ⚠️ NO cambiar lógica de verificación
 
 ### **2. Asignación Múltiple**
+
 - ✅ `user_despachos` → Usuario puede tener múltiples despachos
 - ✅ Permisos granulares → Mantener sistema actual
 - ⚠️ Cambiar user_id de UUID a TEXT
 
 ### **3. Sistema de Leads**
+
 - ✅ Compra de leads → Vincular con user_id (Clerk)
 - ✅ Facturación → Debe seguir funcionando
 - ⚠️ Verificar referencias a user_id
 
 ### **4. Notificaciones**
+
 - ✅ Sistema actual → Ya usa TEXT para user_id
 - ✅ Compatible desde ya con Clerk
 
 ### **5. Historial**
+
 - ✅ `despacho_propiedad_historial` → Mantener
 - ✅ `aprobado_por` → Cambiar a TEXT
 - ⚠️ Migrar registros existentes
@@ -311,20 +329,22 @@ CREATE TABLE users_new (
 ### **Fase 1: Preparación** (Sin downtime)
 
 1. **Crear columna clerk_id en users**
+
    ```sql
    ALTER TABLE users ADD COLUMN clerk_id TEXT;
    CREATE INDEX idx_users_clerk_id ON users(clerk_id);
    ```
 
 2. **Duplicar tabla users**
+
    ```sql
    CREATE TABLE users_backup AS SELECT * FROM users;
    ```
 
 3. **Documentar usuarios existentes**
    ```sql
-   SELECT id, email, rol, plan, despacho_id 
-   FROM users 
+   SELECT id, email, rol, plan, despacho_id
+   FROM users
    WHERE activo = true;
    ```
 
@@ -345,11 +365,13 @@ CREATE TABLE users_new (
 ### **Fase 4: Migración de usuarios** (Planificada)
 
 **Opción A: Migración manual**
+
 - Usuarios deben re-registrarse con Clerk
 - Mantener datos en Supabase
 - Vincular por email
 
 **Opción B: Migración automática**
+
 - Crear usuarios en Clerk via API
 - Sincronizar con Supabase
 - Costoso en tiempo
@@ -366,25 +388,33 @@ CREATE TABLE users_new (
 ## ⚠️ RIESGOS Y MITIGACIONES
 
 ### **Riesgo 1: Pérdida de datos de usuarios**
+
 **Mitigación:**
+
 - ✅ Backup completo antes de migración
 - ✅ Tabla users_backup
 - ✅ Mantener Supabase Auth temporalmente
 
 ### **Riesgo 2: Referencias rotas (user_id UUID → TEXT)**
+
 **Mitigación:**
+
 - ✅ Mapeo de IDs antiguos → nuevos
 - ✅ Tabla users_migration_map
 - ✅ Scripts de actualización FK
 
 ### **Riesgo 3: Usuarios no pueden acceder a sus despachos**
+
 **Mitigación:**
+
 - ✅ Vincular por email (owner_email)
 - ✅ Script de re-asignación
 - ✅ Panel admin para resolver manualmente
 
 ### **Riesgo 4: Pérdida de historial de leads/compras**
+
 **Mitigación:**
+
 - ✅ NO modificar tabla leads
 - ✅ Mantener referencias por user_id (actualizar después)
 - ✅ Logging exhaustivo
@@ -411,6 +441,7 @@ CREATE TABLE users_new (
 ## 🎯 Resultado Final
 
 **Beneficios:**
+
 - ✅ Sin límites de registro
 - ✅ Verificación de email sin rate limit
 - ✅ Mejor UX de autenticación
@@ -420,6 +451,7 @@ CREATE TABLE users_new (
 - ✅ $0/mes hasta 10k usuarios
 
 **Lo que NO cambia:**
+
 - ✅ Base de datos Supabase
 - ✅ Lógica de negocio
 - ✅ Sistema de leads

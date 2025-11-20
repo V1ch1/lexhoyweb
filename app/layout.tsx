@@ -1,11 +1,11 @@
 "use client"; // Asegúrate de que este archivo sea un Client Component
 
 import { usePathname } from "next/navigation"; // Importamos el hook de Next.js para obtener la ruta actual
+import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
-import { AuthProvider } from "@/lib/authContext"; // Contexto de autenticación
 import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
-import { Toaster } from 'sonner';
+import { Toaster } from "sonner";
 import "./globals.css";
 
 // Fuentes
@@ -40,12 +40,15 @@ export default function RootLayout({
     pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   return (
-    <html lang="es" className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}>
-      <body
-        suppressHydrationWarning={true}
-        className={`${inter.className} font-sans bg-gray-50`}
+    <ClerkProvider>
+      <html
+        lang="es"
+        className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}
       >
-        <AuthProvider>
+        <body
+          suppressHydrationWarning={true}
+          className={`${inter.className} font-sans bg-gray-50`}
+        >
           {/* Solo mostramos el Navbar genérico si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Navbar />}
 
@@ -54,8 +57,8 @@ export default function RootLayout({
           {/* Solo mostramos el Footer si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Footer />}
           <Toaster position="top-right" richColors closeButton />
-        </AuthProvider>
-      </body>
-    </html>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

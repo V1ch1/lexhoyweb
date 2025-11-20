@@ -4,9 +4,18 @@
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 const NavbarDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { signOut } = useClerk();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/");
+  };
 
   return (
     <nav className="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
@@ -16,7 +25,9 @@ const NavbarDashboard = () => {
 
       <div className="flex items-center space-x-4">
         {/* Campana de notificaciones para todos los usuarios */}
-        {user && <NotificationBell userId={user.id} userRole={user.role} />}
+        {user && (
+          <NotificationBell userId={user.id} userRole={user.role ?? "usuario"} />
+        )}
 
         {/* Información del usuario */}
         {user && (
@@ -31,7 +42,7 @@ const NavbarDashboard = () => {
 
         {/* Botón de logout */}
         <button
-          onClick={logout}
+          onClick={handleLogout}
           className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-playfair"
         >
           Logout

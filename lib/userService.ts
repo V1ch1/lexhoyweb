@@ -7,7 +7,7 @@ import {
   UserStatus,
   PlanType,
   UserProfile,
-  UpdateUserProfileData
+  UpdateUserProfileData,
 } from "./types";
 
 // Interfaz para los datos raw de la base de datos
@@ -37,21 +37,24 @@ export class UserService {
   /**
    * Actualiza el perfil de un usuario
    */
-  async updateUserProfile(userId: string, profileData: UpdateUserProfileData): Promise<UserProfile> {
+  async updateUserProfile(
+    userId: string,
+    profileData: UpdateUserProfileData
+  ): Promise<UserProfile> {
     const { data, error } = await supabase
-      .from('users')
+      .from("users")
       .update({
         nombre: profileData.nombre,
         apellidos: profileData.apellidos,
         telefono: profileData.telefono,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', userId)
-      .select('*')
+      .eq("id", userId)
+      .select("*")
       .single();
 
     if (error) {
-      console.error('Error al actualizar el perfil del usuario:', error);
+      console.error("Error al actualizar el perfil del usuario:", error);
       throw error;
     }
 
@@ -62,10 +65,10 @@ export class UserService {
       role: data.rol,
       nombre: data.nombre,
       apellidos: data.apellidos,
-      telefono: data.telefono || '',
+      telefono: data.telefono || "",
       fecha_registro: data.fecha_registro || new Date().toISOString(),
       ultimo_acceso: data.ultimo_acceso || new Date().toISOString(),
-      despacho_nombre: data.despacho_nombre
+      despacho_nombre: data.despacho_nombre,
     };
   }
 
@@ -74,28 +77,28 @@ export class UserService {
    */
   async getUserProfile(userId: string): Promise<Record<string, unknown>> {
     const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
+      .from("users")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error) {
-      console.error('Error al obtener el perfil del usuario:', error);
+      console.error("Error al obtener el perfil del usuario:", error);
       throw error;
     }
 
     // Si el usuario tiene un despacho, obtener la información del mismo
     if (data.despacho_id) {
       const { data: despachoData } = await supabase
-        .from('despachos')
-        .select('nombre')
-        .eq('id', data.despacho_id)
+        .from("despachos")
+        .select("nombre")
+        .eq("id", data.despacho_id)
         .single();
 
       if (despachoData) {
         return {
           ...data,
-          despacho_nombre: despachoData.nombre
+          despacho_nombre: despachoData.nombre,
         };
       }
     }
@@ -500,11 +503,15 @@ export class UserService {
             .select("*")
             .eq("id", ud.despacho_id)
             .single();
-          
+
           return {
             ...ud,
             despachoId: ud.despacho_id, // ⚠️ IMPORTANTE: Normalizar el campo para la deduplicación
-            despachos: despacho || { nombre: "Despacho no encontrado", object_id: "", slug: "" }
+            despachos: despacho || {
+              nombre: "Despacho no encontrado",
+              object_id: "",
+              slug: "",
+            },
           };
         })
       );
@@ -518,37 +525,42 @@ export class UserService {
       if (ownedError) throw ownedError;
 
       // 4. Convertir despachos propios al formato UserDespacho
-      const ownedDespachosFormatted: UserDespacho[] = (ownedDespachos || []).map((d) => ({
+      const ownedDespachosFormatted: UserDespacho[] = (
+        ownedDespachos || []
+      ).map((d) => ({
         id: `owned-${d.id}`, // ID único para evitar conflictos
         userId,
         despachoId: d.id.toString(),
-        nombre: d.nombre || 'Sin nombre', // Asegurar que siempre haya un nombre
+        nombre: d.nombre || "Sin nombre", // Asegurar que siempre haya un nombre
         fechaAsignacion: new Date().toISOString(),
         activo: true,
         permisos: { leer: true, escribir: true, eliminar: true }, // Propietario tiene todos los permisos
         asignadoPor: "owner", // Indicador de que es propietario
         despachos: {
-          nombre: d.nombre || 'Sin nombre',
+          nombre: d.nombre || "Sin nombre",
           object_id: d.object_id,
           slug: d.slug,
           localidad: d.localidad,
-          provincia: d.provincia
-        }
+          provincia: d.provincia,
+        },
       }));
 
       // 5. Combinar ambas listas (evitando duplicados)
       // PRIORIDAD: Asignaciones manuales > Propiedad (owner)
       // Si existe asignación manual, no incluir la de propietario
       const assignedDespachoIds = new Set(
-        assignedDespachosWithData.map(d => d.despachoId)
+        assignedDespachosWithData.map((d) => d.despachoId)
       );
-      
+
       // Filtrar despachos propios que YA tienen asignación manual
       const ownedDespachosFiltered = ownedDespachosFormatted.filter(
-        d => !assignedDespachoIds.has(d.despachoId)
+        (d) => !assignedDespachoIds.has(d.despachoId)
       );
-      
-      const allDespachos = [...assignedDespachosWithData, ...ownedDespachosFiltered];
+
+      const allDespachos = [
+        ...assignedDespachosWithData,
+        ...ownedDespachosFiltered,
+      ];
 
       return allDespachos;
     } catch (error) {
@@ -640,7 +652,7 @@ export class UserService {
       if (unassignError) {
         console.warn("⚠️ No se encontró asignación manual:", unassignError);
       } else {
-        }
+      }
 
       // 3. Eliminar owner_email del despacho (si el usuario es propietario)
       const { error: ownerError } = await supabase
@@ -652,9 +664,8 @@ export class UserService {
       if (ownerError) {
         console.warn("⚠️ No se pudo eliminar owner_email:", ownerError);
       } else {
-        }
-
-      } catch (error) {
+      }
+    } catch (error) {
       console.error("❌ Error en unassignDespachoFromUser:", error);
       throw error;
     }
@@ -1096,8 +1107,7 @@ export class UserService {
           "No se pudo actualizar el usuario. Verifica los permisos."
         );
       }
-
-      } catch (error) {
+    } catch (error) {
       console.error("❌ Error en updateUserRole:", error);
       throw error;
     }
@@ -1180,12 +1190,12 @@ export class UserService {
       .select("*")
       .eq("id", solicitudId)
       .single();
-    
+
     if (solicitudError) {
       console.error("❌ Error obteniendo solicitud:", solicitudError);
       throw solicitudError;
     }
-    
+
     const objectId = solicitud.despacho_id;
     // Obtener el despacho por su ID
     const { data: despachoData, error: despachoError } = await supabase
@@ -1198,16 +1208,20 @@ export class UserService {
 
     // Si el despacho no existe, importarlo desde la API de Lexhoy
     if (despachoError || !despacho) {
-      console.warn("⚠️ Despacho no encontrado en Supabase, importando desde API...");
-      
+      console.warn(
+        "⚠️ Despacho no encontrado en Supabase, importando desde API..."
+      );
+
       try {
         // Importar el despacho desde la API
         const importedDespacho = await this.importDespachoFromAPI(objectId);
-        
+
         if (!importedDespacho) {
-          throw new Error(`No se pudo importar el despacho con object_id ${objectId}`);
+          throw new Error(
+            `No se pudo importar el despacho con object_id ${objectId}`
+          );
         }
-        
+
         despacho = { id: importedDespacho.id };
       } catch (importError) {
         console.error("❌ Error importando despacho:", importError);
@@ -1216,18 +1230,18 @@ export class UserService {
         );
       }
     } else {
-      }
+    }
 
     // Cambiar rol del usuario a despacho_admin
     const { error: roleError } = await supabase
       .from("users")
       .update({ rol: "despacho_admin" })
       .eq("id", solicitud.user_id);
-    
+
     if (roleError) {
       console.error("⚠️ Error cambiando rol:", roleError);
     } else {
-      }
+    }
 
     // Asignar despacho al usuario usando el ID numérico de Supabase
     await this.assignDespachoToUser(
@@ -1235,17 +1249,17 @@ export class UserService {
       despacho.id.toString(), // Convertir a string para consistencia
       approvedBy
     );
-    
+
     // Actualizar owner_email en la tabla despachos
     const { error: ownerError } = await supabase
       .from("despachos")
       .update({ owner_email: solicitud.user_email })
       .eq("id", despacho.id);
-    
+
     if (ownerError) {
       console.error("⚠️ Error actualizando owner_email:", ownerError);
     } else {
-      }
+    }
 
     // Actualizar solicitud
     const { error: updateError } = await supabase
@@ -1257,12 +1271,12 @@ export class UserService {
         notas_respuesta: notas,
       })
       .eq("id", solicitudId);
-      
+
     if (updateError) {
       console.error("❌ Error actualizando solicitud:", updateError);
       throw updateError;
     }
-    
+
     // Crear notificación para el usuario
     try {
       const { NotificationService } = await import("./notificationService");
@@ -1278,14 +1292,14 @@ export class UserService {
           despachoNombre: solicitud.despacho_nombre,
         },
       });
-      } catch (error) {
+    } catch (error) {
       console.error("⚠️ Error creando notificación:", error);
     }
 
     // Enviar email al usuario
     try {
       const { EmailService } = await import("./emailService");
-      
+
       await EmailService.send({
         to: solicitud.user_email,
         subject: "🎉 ¡Tu solicitud de despacho ha sido aprobada! - LexHoy",
@@ -1335,7 +1349,7 @@ export class UserService {
           </div>
         `,
       });
-      } catch (error) {
+    } catch (error) {
       console.error("⚠️ Error enviando email:", error);
     }
   }
@@ -1391,7 +1405,7 @@ export class UserService {
           motivoRechazo: notas,
         },
       });
-      } catch (error) {
+    } catch (error) {
       console.error("⚠️ Error creando notificación:", error);
     }
 
@@ -1411,7 +1425,7 @@ export class UserService {
           },
         }),
       });
-      } catch (error) {
+    } catch (error) {
       console.error("⚠️ Error enviando email:", error);
     }
   }
@@ -1419,21 +1433,23 @@ export class UserService {
   /**
    * Importar un despacho desde la API de Lexhoy.com usando su object_id
    */
-  async importDespachoFromAPI(objectId: string): Promise<{ id: number } | null> {
+  async importDespachoFromAPI(
+    objectId: string
+  ): Promise<{ id: number } | null> {
     try {
       // Llamar a la API de Lexhoy.com para obtener los datos del despacho
       const apiUrl = `https://lexhoy.com/wp-json/wp/v2/despacho/${objectId}`;
       const response = await fetch(apiUrl);
-      
+
       if (!response.ok) {
         throw new Error(`API respondió con status ${response.status}`);
       }
-      
+
       const despachoData = await response.json();
       // Extraer datos relevantes
       const nombre = despachoData.title?.rendered || "Despacho sin nombre";
       const slug = despachoData.slug || "";
-      
+
       // Insertar el despacho en Supabase
       const { data: insertedDespacho, error: insertError } = await supabase
         .from("despachos")
@@ -1448,12 +1464,12 @@ export class UserService {
         })
         .select("id")
         .single();
-      
+
       if (insertError) {
         console.error("❌ Error insertando despacho:", insertError);
         throw insertError;
       }
-      
+
       return insertedDespacho;
     } catch (error) {
       console.error("❌ Error importando despacho desde API:", error);

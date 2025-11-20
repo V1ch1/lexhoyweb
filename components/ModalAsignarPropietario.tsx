@@ -46,11 +46,11 @@ const ModalAsignarPropietario = ({
       setUserResults([]);
       return;
     }
-    
+
     const timeoutId = setTimeout(async () => {
       setUserLoading(true);
       setUserError(null);
-      
+
       try {
         // Buscar usuarios
         const { data: users, error: usersError } = await supabase
@@ -83,14 +83,14 @@ const ModalAsignarPropietario = ({
 
             return {
               ...user,
-              yaAdministraEsteDespacho: !!userDespachos || !!despacho
+              yaAdministraEsteDespacho: !!userDespachos || !!despacho,
             };
           })
         );
 
         setUserResults(usersWithDespacho);
       } catch (error) {
-        console.error('Error al buscar usuarios:', error);
+        console.error("Error al buscar usuarios:", error);
         setUserError("Error al buscar usuarios");
         setUserResults([]);
       } finally {
@@ -129,8 +129,10 @@ const ModalAsignarPropietario = ({
           .eq("id", existingAssignment.id);
 
         if (updateError) {
-          console.error('❌ Error al reactivar asignación:', updateError);
-          throw new Error(`Error al reactivar asignación: ${updateError.message}`);
+          console.error("❌ Error al reactivar asignación:", updateError);
+          throw new Error(
+            `Error al reactivar asignación: ${updateError.message}`
+          );
         }
       } else {
         // Crear nueva asignación en user_despachos
@@ -138,12 +140,12 @@ const ModalAsignarPropietario = ({
           .from("user_despachos")
           .insert({
             user_id: selectedUser.id,
-            despacho_id: despachoId
+            despacho_id: despachoId,
             // No incluir rol ni created_at - se asignarán por defecto en la BD
           });
 
         if (insertError) {
-          console.error('❌ Error al crear relación:', insertError);
+          console.error("❌ Error al crear relación:", insertError);
           throw new Error(`Error al crear relación: ${insertError.message}`);
         }
       }
@@ -151,25 +153,27 @@ const ModalAsignarPropietario = ({
       // Actualizar owner_email en despachos
       const { error: updateError } = await supabase
         .from("despachos")
-        .update({ 
+        .update({
           owner_email: selectedUser.email,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("id", despachoId);
 
       if (updateError) {
-        console.error('❌ Error al actualizar owner_email:', updateError);
-        throw new Error(`Error al actualizar owner_email: ${updateError.message}`);
+        console.error("❌ Error al actualizar owner_email:", updateError);
+        throw new Error(
+          `Error al actualizar owner_email: ${updateError.message}`
+        );
       }
 
       // Enviar email de notificación al usuario asignado
       try {
-        const emailResponse = await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const emailResponse = await fetch("/api/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: selectedUser.email,
-            subject: '🎉 Te han asignado un despacho en LexHoy',
+            subject: "🎉 Te han asignado un despacho en LexHoy",
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #2563eb;">¡Enhorabuena!</h2>
@@ -185,7 +189,7 @@ const ModalAsignarPropietario = ({
                   </ul>
                 </div>
                 <p>
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://lexhoy.com'}/dashboard/despachos" 
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://lexhoy.com"}/dashboard/despachos" 
                      style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">
                     Ir a Mis Despachos
                   </a>
@@ -198,16 +202,16 @@ const ModalAsignarPropietario = ({
                   El equipo de LexHoy
                 </p>
               </div>
-            `
-          })
+            `,
+          }),
         });
 
         if (!emailResponse.ok) {
-          console.error('⚠️ Error al enviar email de notificación');
+          console.error("⚠️ Error al enviar email de notificación");
         } else {
-          }
+        }
       } catch (emailError) {
-        console.error('⚠️ Error al enviar email:', emailError);
+        console.error("⚠️ Error al enviar email:", emailError);
         // No bloqueamos el flujo si falla el email
       }
 
@@ -217,8 +221,9 @@ const ModalAsignarPropietario = ({
       setSearchUser("");
       setUserResults([]);
     } catch (error) {
-      console.error('❌ Error al asignar propietario:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("❌ Error al asignar propietario:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
       setUserError(`Error al asignar propietario: ${errorMessage}`);
     } finally {
       setUserLoading(false);
@@ -270,7 +275,9 @@ const ModalAsignarPropietario = ({
                         ? "bg-blue-50 border-blue-300"
                         : ""
                     }`}
-                  onClick={() => !u.yaAdministraEsteDespacho && setSelectedUser(u)}
+                  onClick={() =>
+                    !u.yaAdministraEsteDespacho && setSelectedUser(u)
+                  }
                 >
                   <div className="font-semibold text-gray-900 text-base">
                     {u.nombre} {u.apellidos}
@@ -308,7 +315,9 @@ const ModalAsignarPropietario = ({
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg flex-1 transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             onClick={handleAsignar}
             disabled={
-              !selectedUser || userLoading || !!selectedUser?.yaAdministraEsteDespacho
+              !selectedUser ||
+              userLoading ||
+              !!selectedUser?.yaAdministraEsteDespacho
             }
           >
             Asignar propietario

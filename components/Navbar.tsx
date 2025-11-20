@@ -1,11 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Navbar() {
   return (
     <nav className="bg-white shadow-md h-20 px-6 flex justify-between items-center">
       {/* Logo */}
       <Link href="/" className="flex items-center">
-        <span className="text-2xl font-bold text-white font-playfair">
+        <span className="text-2xl font-bold text-gray-900 font-playfair">
           LexHoy
         </span>
       </Link>
@@ -33,19 +36,40 @@ export default function Navbar() {
       </div>
 
       {/* Botones de acción */}
-      <div className="flex space-x-4">
-        <Link
-          href="/login"
-          className="text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
-        >
-          Iniciar Sesión
-        </Link>
-        <Link
-          href="/register"
-          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-red-600 font-workSans transition-colors"
-        >
-          Registrar Despacho
-        </Link>
+      <div className="flex items-center space-x-4">
+        {/* Mostrar cuando NO está autenticado */}
+        <SignedOut>
+          <Link
+            href="/sign-in"
+            className="text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
+          >
+            Iniciar Sesión
+          </Link>
+          <Link
+            href="/sign-up"
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-red-600 font-workSans transition-colors"
+          >
+            Registrar Despacho
+          </Link>
+        </SignedOut>
+
+        {/* Mostrar cuando SÍ está autenticado */}
+        <SignedIn>
+          <Link
+            href="/dashboard"
+            className="text-gray-700 hover:text-primary font-workSans font-medium transition-colors"
+          >
+            Dashboard
+          </Link>
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                avatarBox: "w-10 h-10",
+              },
+            }}
+          />
+        </SignedIn>
       </div>
     </nav>
   );
