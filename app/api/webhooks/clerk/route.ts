@@ -108,10 +108,14 @@ async function handleUserCreated(data: ClerkWebhookData) {
       email: email,
       nombre: firstName,
       apellidos: lastName,
+      telefono: null,
       rol: rol,
       plan: plan,
       activo: true,
+      email_verificado: true, // Clerk ya verificó el email
+      estado: "aprobado",
       fecha_registro: new Date().toISOString(),
+      ultimo_acceso: new Date().toISOString(),
     });
 
     if (error) {
