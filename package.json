@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.28.1",
     "@clerk/nextjs": "^6.35.2",
     "@heroicons/react": "^2.2.0",
     "@supabase/postgrest-js": "^2.77.0",

@@ -29,7 +29,8 @@ type SettingsSection =
   | "password"
   | "notifications"
   | "privacy"
-  | "sessions";
+  | "sessions"
+  | "cuenta-clerk";
 
 interface UserProfile {
   id: string;
@@ -181,12 +182,20 @@ export default function SettingsPage() {
   // Settings cards configuration
   const settingsCards: SettingsCard[] = [
     {
+      id: "cuenta-clerk",
+      name: "Mi Cuenta",
+      description: "Gestiona tu perfil, seguridad y sesiones",
+      icon: ShieldCheckIcon,
+      color: "blue",
+      visible: true,
+    },
+    {
       id: "profile",
       name: "Perfil",
       description: "Actualiza tu información personal",
       icon: UserIcon,
-      color: "blue",
-      visible: true,
+      color: "green",
+      visible: false, // Ocultar porque Clerk lo maneja
     },
     {
       id: "password",
@@ -194,7 +203,7 @@ export default function SettingsPage() {
       description: "Cambia tu contraseña de acceso",
       icon: KeyIcon,
       color: "purple",
-      visible: true,
+      visible: false, // Ocultar porque Clerk lo maneja
     },
     {
       id: "notifications",
@@ -210,7 +219,7 @@ export default function SettingsPage() {
       description: "Controla tu privacidad y datos",
       icon: ShieldCheckIcon,
       color: "red",
-      visible: true,
+      visible: false, // Ocultar porque Clerk lo maneja
     },
     {
       id: "sessions",
@@ -218,7 +227,7 @@ export default function SettingsPage() {
       description: "Gestiona tus sesiones activas",
       icon: ComputerDesktopIcon,
       color: "orange",
-      visible: true,
+      visible: false, // Ocultar porque Clerk lo maneja
     },
   ];
 
@@ -488,14 +497,15 @@ export default function SettingsPage() {
             {settingsCards
               .filter((card) => card.visible)
               .map((card) => {
-                // Mapear IDs de sección a hashes en español
-                const sectionToHash: Record<SettingsSection, string> = {
+                // Mapear IDs de sección a hashes/rutas
+                const sectionToPath: Record<SettingsSection, string> = {
                   overview: "",
-                  profile: "perfil",
-                  password: "contrasena",
-                  notifications: "notificaciones",
-                  privacy: "privacidad",
-                  sessions: "sesiones",
+                  profile: "#perfil",
+                  password: "#contrasena",
+                  notifications: "#notificaciones",
+                  privacy: "#privacidad",
+                  sessions: "#sesiones",
+                  "cuenta-clerk": "/dashboard/settings/cuenta",
                 };
 
                 return (
@@ -504,7 +514,9 @@ export default function SettingsPage() {
                     card={card}
                     onClick={() =>
                       router.push(
-                        `/dashboard/settings#${sectionToHash[card.id]}`
+                        card.id === "cuenta-clerk"
+                          ? sectionToPath[card.id]
+                          : `/dashboard/settings${sectionToPath[card.id]}`
                       )
                     }
                   />

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"; // Importamos el hook de Next.js para obtener la ruta actual
 import { ClerkProvider } from "@clerk/nextjs";
+import { esES } from "@clerk/localizations";
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
 import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
@@ -40,7 +41,14 @@ export default function RootLayout({
     pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      localization={esES}
+      appearance={{
+        variables: {
+          colorPrimary: "#E04040",
+        },
+      }}
+    >
       <html
         lang="es"
         className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}

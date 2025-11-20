@@ -21,31 +21,10 @@ END $$;
 DO $$
 DECLARE tbl record;
 BEGIN
-  FOR tbl IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'users_backup_pre_clerk'
-  LOOP
-    EXECUTE format('ALTER TABLE %I DISABLE ROW LEVEL SECURITY', tbl.tablename);
-  END LOOP;
-END $$;
-
--- 4. DROP TODAS LAS FKs A users.id
-DO $$ 
-DECLARE fk record;
-BEGIN
-  FOR fk IN 
-    SELECT conrelid::regclass AS table_name, conname AS constraint_name
-    FROM pg_constraint WHERE confrelid = 'users'::regclass AND contype = 'f'
-  LOOP
-    EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', fk.table_name, fk.constraint_name);
-  END LOOP;
-END $$;
-
--- 5. TRUNCATE
-TRUNCATE TABLE users CASCADE;
-
--- 6. CAMBIAR users.id: UUID → TEXT
+-- 7. CAMBIAR users.id: UUID → TEXT
 ALTER TABLE users ALTER COLUMN id TYPE TEXT;
 
--- 7. CAMBIAR users.aprobado_por: UUID → TEXT (si existe)
+-- 8. CAMBIAR users.aprobado_por: UUID → TEXT (si existe)
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'aprobado_por') THEN
@@ -53,10 +32,22 @@ BEGIN
   END IF;
 END $$;
 
--- 8. AGREGAR clerk_id
+-- 9. AGREGAR clerk_id
 ALTER TABLE users ADD COLUMN IF NOT EXISTS clerk_id TEXT UNIQUE;
 
--- 9. CAMBIAR TODAS LAS COLUMNAS UUID → TEXT (SOLO PUBLIC SCHEMA)
+-- 9.5 ELIMINAR EXPLÍCITAMENTE FK DE participaciones_marketing (si existe)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'participaciones_marketing_user_id_fkey' 
+    AND table_name = 'participaciones_marketing'
+  ) THEN
+    ALTER TABLE participaciones_marketing DROP CONSTRAINT participaciones_marketing_user_id_fkey;
+  END IF;
+END $$;
+
+-- 10. CAMBIAR TODAS LAS COLUMNAS user_id UUID → TEXT (SOLO PUBLIC SCHEMA)
 DO $$ 
 DECLARE r record;
 BEGIN
@@ -72,7 +63,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- 10. RECREAR FKs (SOLO PUBLIC SCHEMA)
+-- 11. RECREAR FKs (SOLO PUBLIC SCHEMA)
 DO $$ 
 DECLARE r record;
 BEGIN
@@ -98,11 +89,11 @@ BEGIN
   END IF;
 END $$;
 
--- 11. ÍNDICES
+-- 12. ÍNDICES
 CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON users(clerk_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- 12. RE-ENABLE RLS Y RECREAR POLICIES
+-- 13. RE-ENABLE RLS Y RECREAR POLICIES
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Acceso publico anon" ON users FOR SELECT USING (true);
@@ -164,6 +155,12 @@ BEGIN
       EXISTS (SELECT 1 FROM users WHERE id = auth.uid()::text AND rol = 'super_admin')
     );
     CREATE POLICY "Todos pueden leer entradas" ON entradas_proyecto FOR SELECT USING (true);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'participaciones_marketing') THEN
+    ALTER TABLE participaciones_marketing ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY "Users can view own participations" ON participaciones_marketing FOR SELECT USING (auth.uid()::text = user_id);
+    CREATE POLICY "Users can create participations" ON participaciones_marketing FOR INSERT WITH CHECK (auth.uid()::text = user_id);
   END IF;
 END $$;
 
