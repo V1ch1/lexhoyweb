@@ -49,7 +49,7 @@ CREATE TABLE leads (
   )),
   
   -- Información de venta
-  comprador_id UUID REFERENCES users(id),
+  comprador_id TEXT REFERENCES users(id),
   precio_venta DECIMAL(10, 2),
   fecha_venta TIMESTAMP WITH TIME ZONE,
   
@@ -93,7 +93,7 @@ CREATE TABLE pujas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  despacho_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  despacho_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   
   monto DECIMAL(10, 2) NOT NULL CHECK (monto > 0),
   mensaje TEXT, -- Mensaje opcional del despacho
@@ -122,7 +122,7 @@ CREATE TABLE compras_leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  comprador_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  comprador_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   
   tipo_compra VARCHAR(20) NOT NULL CHECK (tipo_compra IN ('directa', 'subasta')),
   precio_pagado DECIMAL(10, 2) NOT NULL CHECK (precio_pagado > 0),
@@ -165,7 +165,7 @@ CREATE TABLE visualizaciones_leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
   lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
-  despacho_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  despacho_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   
   vistas INTEGER DEFAULT 1,
   primera_vista TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
