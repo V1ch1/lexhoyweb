@@ -256,7 +256,7 @@ CREATE POLICY "Super admins pueden ver todos los leads"
   USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.id = auth.uid()::text 
       AND users.rol = 'super_admin'
     )
   );
@@ -269,7 +269,7 @@ CREATE POLICY "Despachos ven leads procesados"
     estado IN ('procesado', 'en_subasta') 
     AND EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.id = auth.uid()::text 
       AND users.rol IN ('despacho_admin', 'usuario')
     )
   );
@@ -279,7 +279,7 @@ CREATE POLICY "Compradores ven sus leads completos"
   ON leads FOR SELECT
   TO authenticated
   USING (
-    comprador_id = auth.uid()
+    comprador_id = auth.uid()::text
   );
 
 -- Solo super admins pueden insertar leads
@@ -289,7 +289,7 @@ CREATE POLICY "Solo admins crean leads"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.id = auth.uid()::text 
       AND users.rol = 'super_admin'
     )
   );
@@ -298,29 +298,29 @@ CREATE POLICY "Solo admins crean leads"
 CREATE POLICY "Usuarios ven sus propias pujas"
   ON pujas FOR SELECT
   TO authenticated
-  USING (despacho_id = auth.uid());
+  USING (despacho_id = auth.uid()::text);
 
 CREATE POLICY "Usuarios pueden crear pujas"
   ON pujas FOR INSERT
   TO authenticated
-  WITH CHECK (despacho_id = auth.uid());
+  WITH CHECK (despacho_id = auth.uid()::text);
 
 -- Políticas para COMPRAS
 CREATE POLICY "Usuarios ven sus compras"
   ON compras_leads FOR SELECT
   TO authenticated
-  USING (comprador_id = auth.uid());
+  USING (comprador_id = auth.uid()::text);
 
 -- Políticas para VISUALIZACIONES
 CREATE POLICY "Usuarios ven sus visualizaciones"
   ON visualizaciones_leads FOR SELECT
   TO authenticated
-  USING (despacho_id = auth.uid());
+  USING (despacho_id = auth.uid()::text);
 
 CREATE POLICY "Usuarios registran visualizaciones"
   ON visualizaciones_leads FOR INSERT
   TO authenticated
-  WITH CHECK (despacho_id = auth.uid());
+  WITH CHECK (despacho_id = auth.uid()::text);
 
 -- =====================================================
 -- 8. DATOS DE EJEMPLO (OPCIONAL - COMENTADO)
