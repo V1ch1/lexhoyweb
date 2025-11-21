@@ -124,7 +124,7 @@ export default function UsersListPage() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => router.push("/admin/users")}
+          onClick={() => router.push("/dashboard/admin/users")}
           className="flex items-center text-blue-600 hover:text-blue-700 mb-4 font-medium"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
@@ -231,7 +231,7 @@ export default function UsersListPage() {
                 <option value="super_admin">Super Admin</option>
               </select>
               <button
-                onClick={() => router.push(`/admin/users/${user.id}`)}
+                onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
               >
                 Ver detalles

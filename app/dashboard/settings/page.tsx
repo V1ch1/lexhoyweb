@@ -50,13 +50,23 @@ export default function SettingsPage() {
 
     const updateSection = () => {
       const hash = window.location.hash.replace("#", "");
+      
+      // Si el hash comienza con "/" (navegación interna de Clerk), mantener la sección actual
+      if (hash.startsWith("/")) {
+        // No cambiar la sección activa, solo actualizar el currentHash
+        setCurrentHash(hash);
+        return;
+      }
+      
       if (hash && hashToSection[hash]) {
         setActiveSection(hashToSection[hash]);
         setCurrentHash(hash);
-      } else {
+      } else if (!hash) {
+        // Solo volver a overview si el hash está completamente vacío
         setActiveSection("overview");
         setCurrentHash("");
       }
+      // Si el hash no coincide pero no está vacío, mantener la sección actual
     };
 
     // Ejecutar al montar y cada vez que cambie la URL
@@ -81,6 +91,30 @@ export default function SettingsPage() {
       clearInterval(interval);
     };
   }, [currentHash]);
+
+  // Prevenir que Clerk limpie el hash cuando navegamos entre sus pestañas
+  useEffect(() => {
+    const preventHashClear = () => {
+      const currentHash = window.location.hash;
+      
+      // Si estamos en la sección account y el hash está vacío o es solo "#"
+      if (activeSection === "account" && (!currentHash || currentHash === "#")) {
+        // Restaurar el hash sin agregar al historial
+        window.history.replaceState(null, "", "#cuenta");
+        setCurrentHash("cuenta");
+      }
+    };
+
+    window.addEventListener("hashchange", preventHashClear);
+    
+    // También verificar periódicamente
+    const interval = setInterval(preventHashClear, 50);
+    
+    return () => {
+      window.removeEventListener("hashchange", preventHashClear);
+      clearInterval(interval);
+    };
+  }, [activeSection]);
 
   // Settings cards configuration
   const settingsCards: SettingsCard[] = [
@@ -117,6 +151,7 @@ export default function SettingsPage() {
         return (
           <div className="w-full">
             <UserProfile
+              routing="virtual"
               appearance={{
                 variables: {
                   colorPrimary: "#E04040",

@@ -33,107 +33,186 @@ const Sidebar = () => {
         </h2>
         <nav>
           <ul className="space-y-1">
-            {/* Dashboard - Visible para todos */}
-            <li>
-              <button
-                onClick={() => handleNavigation("/dashboard")}
-                className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                  pathname === "/dashboard"
-                    ? "bg-slate-800 text-white shadow-md"
-                    : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                }`}
-              >
-                <HomeIcon className="h-5 w-5" />
-                <span className="font-playfair text-sm">Dashboard</span>
-              </button>
-            </li>
+            {/* MENÚ PARA SUPER ADMIN */}
+            {user.role === "super_admin" ? (
+              <>
+                {/* Dashboard Admin */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/admin")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname === "/dashboard/admin"
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <HomeIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Dashboard Admin</span>
+                  </button>
+                </li>
 
-            {/* Despachos - Botón simple sin desplegable */}
-            <li>
-              <button
-                onClick={() => handleNavigation("/dashboard/despachos")}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                  pathname.startsWith("/dashboard/despachos")
-                    ? "bg-slate-800 text-white shadow-md"
-                    : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                }`}
-              >
-                <BuildingOfficeIcon className="h-5 w-5" />
-                <span className="font-playfair text-sm font-semibold">
-                  Despachos
-                </span>
-              </button>
-            </li>
+                {/* Gestión de Leads */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/admin/leads-list")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/admin/leads")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <ClipboardIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Gestión de Leads</span>
+                  </button>
+                </li>
 
-            {/* Leads - Solo para despacho_admin y super_admin */}
-            {(user.role === "despacho_admin" ||
-              user.role === "super_admin") && (
-              <li>
-                <button
-                  onClick={() => handleNavigation("/dashboard/leads")}
-                  className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                    pathname === "/dashboard/leads"
-                      ? "bg-slate-800 text-white shadow-md"
-                      : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                  }`}
-                >
-                  <ClipboardIcon className="h-5 w-5" />
-                  <span className="font-playfair text-sm">Leads</span>
-                </button>
-              </li>
+                {/* Gestión de Usuarios */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/admin/users")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/admin/users")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <UserGroupIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Gestión de Usuarios</span>
+                  </button>
+                </li>
+
+                {/* Despachos */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/despachos")}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/despachos")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <BuildingOfficeIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Despachos</span>
+                  </button>
+                </li>
+
+                {/* Gestión de Marketing (placeholder por ahora) */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/admin/marketing")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/admin/marketing")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <MegaphoneIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Gestión de Marketing</span>
+                  </button>
+                </li>
+
+                {/* Configuración */}
+                <li className="mt-8">
+                  <button
+                    onClick={() => router.push("/dashboard/settings")}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname === "/dashboard/settings"
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <CogIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm font-semibold">
+                      Configuración
+                    </span>
+                  </button>
+                </li>
+              </>
+            ) : (
+              <>
+                {/* MENÚ PARA DESPACHO ADMIN Y USUARIOS NORMALES */}
+                
+                {/* Dashboard */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname === "/dashboard"
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <HomeIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Dashboard</span>
+                  </button>
+                </li>
+
+                {/* Despachos */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/despachos")}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/despachos")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <BuildingOfficeIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm font-semibold">
+                      Despachos
+                    </span>
+                  </button>
+                </li>
+
+                {/* Leads - Para TODOS los usuarios */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/leads")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname === "/dashboard/leads"
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <ClipboardIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Leads</span>
+                  </button>
+                </li>
+
+                {/* Marketing - Para TODOS los usuarios */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/marketing")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/marketing")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <MegaphoneIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">Marketing</span>
+                  </button>
+                </li>
+
+
+                {/* Configuración */}
+                <li className="mt-8">
+                  <button
+                    onClick={() => router.push("/dashboard/settings")}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname === "/dashboard/settings"
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <CogIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm font-semibold">
+                      Configuración
+                    </span>
+                  </button>
+                </li>
+              </>
             )}
-
-            {/* Marketing - Solo para despacho_admin y super_admin */}
-            {(user.role === "despacho_admin" ||
-              user.role === "super_admin") && (
-              <li>
-                <button
-                  onClick={() => handleNavigation("/dashboard/marketing")}
-                  className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                    pathname.startsWith("/dashboard/marketing")
-                      ? "bg-slate-800 text-white shadow-md"
-                      : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                  }`}
-                >
-                  <MegaphoneIcon className="h-5 w-5" />
-                  <span className="font-playfair text-sm">Marketing</span>
-                </button>
-              </li>
-            )}
-
-            {/* Usuarios - Solo para super_admin */}
-            {user.role === "super_admin" && (
-              <li>
-                <button
-                  onClick={() => handleNavigation("/admin/users")}
-                  className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                    pathname === "/admin/users"
-                      ? "bg-slate-800 text-white shadow-md"
-                      : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                  }`}
-                >
-                  <UserGroupIcon className="h-5 w-5" />
-                  <span className="font-playfair text-sm">Usuarios</span>
-                </button>
-              </li>
-            )}
-
-            {/* Configuración - Botón simple sin desplegable */}
-            <li>
-              <button
-                onClick={() => router.push("/dashboard/settings")}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                  pathname === "/dashboard/settings"
-                    ? "bg-slate-800 text-white shadow-md"
-                    : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                }`}
-              >
-                <CogIcon className="h-5 w-5" />
-                <span className="font-playfair text-sm font-semibold">
-                  Configuración
-                </span>
-              </button>
-            </li>
           </ul>
         </nav>
       </div>

@@ -22,7 +22,7 @@ export interface Lead {
   ciudad?: string;
   urgencia?: "baja" | "media" | "alta" | "urgente";
   resumen_ia?: string;
-  precio_estimado?: number;
+  precio_estimado?: number; // Precio sugerido por IA
   palabras_clave?: string[];
   estado:
     | "pendiente"
@@ -34,7 +34,7 @@ export interface Lead {
   comprador_id?: string;
   precio_venta?: number;
   fecha_venta?: string;
-  precio_base?: number;
+  precio_base?: number; // Precio APROBADO por admin para subasta
   precio_actual?: number;
   fecha_inicio_subasta?: string;
   fecha_fin_subasta?: string;
@@ -42,6 +42,9 @@ export interface Lead {
   nivel_detalle?: "bajo" | "medio" | "alto";
   acepta_terminos?: boolean;
   acepta_privacidad?: boolean;
+  // Trazabilidad de aprobación
+  aprobado_por?: string; // ID del admin que aprobó el precio
+  fecha_aprobacion?: string; // Cuándo se aprobó el precio
   created_at: string;
   updated_at: string;
   procesado_at?: string;
@@ -140,6 +143,27 @@ export class LeadService {
       console.error("❌ Error creando lead:", error);
       throw error;
     }
+  }
+
+  /**
+   * Obtiene todos los leads (para admin)
+   */
+  static async getAllLeads() {
+    if (!supabaseAdmin) {
+      throw new Error("Database connection error");
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching all leads:", error);
+      throw error;
+    }
+
+    return data as Lead[];
   }
 
   /**

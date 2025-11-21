@@ -123,7 +123,7 @@ export default function EditUserPage() {
 
       // Redirigir después de un breve delay para mostrar el mensaje
       setTimeout(() => {
-        router.push("/admin/users");
+        router.push("/dashboard/admin/users");
       }, 2000);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -134,7 +134,7 @@ export default function EditUserPage() {
   };
 
   const handleCancel = () => {
-    router.push("/admin/users");
+    router.push("/dashboard/admin/users");
   };
 
   const handleDesasignarDespacho = async (despachoId: string) => {
@@ -174,7 +174,7 @@ export default function EditUserPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
             <button
-              onClick={() => router.push("/admin/users")}
+              onClick={() => router.push("/dashboard/admin/users")}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               Volver a Usuarios
@@ -195,7 +195,7 @@ export default function EditUserPage() {
       <div className="mb-6 flex items-center justify-between">
         <nav className="flex items-center space-x-2 text-sm text-gray-500">
           <button
-            onClick={() => router.push("/admin/users")}
+            onClick={() => router.push("/dashboard/admin/users")}
             className="hover:text-gray-700"
           >
             Usuarios
@@ -293,7 +293,7 @@ export default function EditUserPage() {
                   <button
                     onClick={() =>
                       router.push(
-                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/dashboard/admin/users/${user.id}`
                       )
                     }
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700"
@@ -305,7 +305,7 @@ export default function EditUserPage() {
                 <button
                   onClick={() =>
                     router.push(
-                      `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                      `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/dashboard/admin/users/${user.id}`
                     )
                   }
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -571,7 +571,7 @@ export default function EditUserPage() {
                   <button
                     onClick={() =>
                       router.push(
-                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/dashboard/admin/users/${user.id}`
                       )
                     }
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -645,7 +645,7 @@ export default function EditUserPage() {
                   <button
                     onClick={() =>
                       router.push(
-                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/admin/users/${user.id}`
+                        `/dashboard/despachos/ver-despachos?modo=asignar&userId=${user.id}&returnTo=/dashboard/admin/users/${user.id}`
                       )
                     }
                     className="w-full mt-4 border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors font-medium flex items-center justify-center gap-2"

@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { LeadService } from "@/lib/services/leadService";
+import { supabaseAdmin } from "@/lib/supabase";
+import { EmailService } from "@/lib/services/emailService";
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +59,30 @@ export async function POST(
     if (action === "buy") {
       // Compra directa
       const lead = await LeadService.buyLead(id, userId);
+
+      // Enviar email de confirmación
+      try {
+        if (!supabaseAdmin) {
+          console.error("Database connection error - cannot send email");
+        } else {
+          const { data: user } = await supabaseAdmin
+            .from("users")
+            .select("email")
+            .eq("id", userId)
+            .single();
+
+          if (user?.email) {
+            await EmailService.sendLeadPurchasedEmail(
+              user.email,
+              lead.nombre,
+              lead.id
+            );
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending email:", emailError);
+        // No fallamos la request si el email falla
+      }
 
       return NextResponse.json({
         success: true,

@@ -144,7 +144,7 @@ export async function POST(request: Request) {
         tipo: "solicitud_recibida",
         titulo: "📨 Nueva solicitud de despacho",
         mensaje: `${userName} ha solicitado acceso al despacho "${despachoNombre}"`,
-        url: "/admin/users?tab=solicitudes",
+        url: "/dashboard/admin/users?tab=solicitudes",
         metadata: {
           userId,
           despachoId: objectId,

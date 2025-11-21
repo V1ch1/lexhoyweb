@@ -186,7 +186,7 @@ export default function SolicitudesPage() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => router.push("/admin/users")}
+          onClick={() => router.push("/dashboard/admin/users")}
           className="flex items-center text-blue-600 hover:text-blue-700 mb-4 font-medium"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />

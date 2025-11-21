@@ -19,19 +19,6 @@ import {
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 
-// Interfaces
-interface SystemStats {
-  totalUsers: number;
-  supabaseDespachos: number;
-  newDespachos: number;
-  totalLeads: number;
-  usersByRole: {
-    super_admin: number;
-    despacho_admin: number;
-    usuario: number;
-  };
-}
-
 interface DespachoStats {
   leadsToday: number;
   leadsThisMonth: number;
@@ -61,14 +48,12 @@ function decodeHtmlEntities(text: string): string {
 const DashboardPage = () => {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-  const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [despachoStats, setDespachoStats] = useState<DespachoStats | null>(
     null
   );
   const [statsLoading, setStatsLoading] = useState(true);
   const [userDespachos, setUserDespachos] = useState<UserDespacho[]>([]);
   const [despachosLoading, setDespachosLoading] = useState(false);
-  const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
 
   // Cargar despachos del usuario
@@ -93,24 +78,6 @@ const DashboardPage = () => {
     loadDespachos();
   }, [user?.id, user?.role]);
 
-  // Cargar solicitudes pendientes para super_admin
-  useEffect(() => {
-    if (user?.role !== "super_admin") return;
-
-    fetch("/api/solicitudes-despacho-pendientes")
-      .then((res) => res.json())
-      .then((response) => {
-        const pendientes =
-          response.solicitudes?.filter(
-            (s: { estado: string }) => s.estado === "pendiente"
-          ).length || 0;
-        setSolicitudesPendientes(pendientes);
-      })
-      .catch((err) => {
-        console.error("Error cargando solicitudes:", err);
-      });
-  }, [user?.role]);
-
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {
     if (!user?.id || !user?.role) return;
@@ -118,13 +85,7 @@ const DashboardPage = () => {
     const loadStats = async () => {
       setStatsLoading(true);
       try {
-        if (user.role === "super_admin") {
-          const response = await fetch("/api/admin/stats");
-          if (response.ok) {
-            const stats = await response.json();
-            setSystemStats(stats);
-          }
-        } else if (user.role === "despacho_admin") {
+        if (user.role === "despacho_admin") {
           // Generar estadísticas aleatorias para demo
           const totalLeads = Math.floor(Math.random() * 150) + 50; // 50-200
           const leadsThisMonth = Math.floor(Math.random() * 30) + 10; // 10-40
@@ -201,6 +162,12 @@ const DashboardPage = () => {
         </div>
       </div>
     );
+  }
+
+  // Redirigir super_admin a su dashboard específico
+  if (user.role === "super_admin") {
+    router.push("/dashboard/admin");
+    return null;
   }
 
   // Componente de tarjeta de acción rápida
@@ -302,8 +269,6 @@ const DashboardPage = () => {
           👋
         </h1>
         <p className="text-lg text-gray-600">
-          {user?.role === "super_admin" &&
-            "Panel de administración global de la plataforma"}
           {user?.role === "despacho_admin" &&
             "Gestiona tu despacho y leads desde aquí"}
           {user?.role === "usuario" &&
@@ -311,98 +276,7 @@ const DashboardPage = () => {
         </p>
       </div>
 
-      {/* Alerta de solicitudes pendientes para super_admin */}
-      {user.role === "super_admin" && statsLoading && (
-        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4 animate-pulse">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center flex-1">
-              <div className="h-6 w-6 bg-yellow-300 rounded mr-3"></div>
-              <div className="flex-1">
-                <div className="h-5 bg-yellow-200 rounded w-48 mb-2"></div>
-                <div className="h-4 bg-yellow-200 rounded w-64"></div>
-              </div>
-            </div>
-            <div className="h-10 w-32 bg-yellow-300 rounded-lg"></div>
-          </div>
-        </div>
-      )}
-
-      {user.role === "super_admin" &&
-        !statsLoading &&
-        solicitudesPendientes > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-3" />
-                <div>
-                  <h3 className="text-lg font-semibold text-yellow-900">
-                    {solicitudesPendientes}{" "}
-                    {solicitudesPendientes === 1
-                      ? "solicitud pendiente"
-                      : "solicitudes pendientes"}
-                  </h3>
-                  <p className="text-sm text-yellow-800">
-                    Hay solicitudes de despacho esperando tu revisión
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push("/admin/users?tab=solicitudes")}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
-              >
-                Revisar ahora
-              </button>
-            </div>
-          </div>
-        )}
-
-      {/* Estadísticas principales */}
-      {user.role === "super_admin" && statsLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
-              </div>
-              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-20"></div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {user.role === "super_admin" && !statsLoading && systemStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Usuarios"
-            value={systemStats.totalUsers}
-            icon={UserGroupIcon}
-            color="blue"
-          />
-          <StatCard
-            title="Despachos en Supabase"
-            value={systemStats.supabaseDespachos}
-            icon={BuildingOfficeIcon}
-            color="green"
-          />
-          <StatCard
-            title="Leads Totales"
-            value={systemStats.totalLeads}
-            icon={ClipboardDocumentListIcon}
-            color="purple"
-          />
-          <StatCard
-            title="Admins Despacho"
-            value={systemStats.usersByRole.despacho_admin}
-            icon={UserGroupIcon}
-            color="orange"
-          />
-        </div>
-      )}
+      {/* Estadísticas principales - Solo para despacho_admin */}
 
       {user.role === "despacho_admin" && statsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -591,54 +465,6 @@ const DashboardPage = () => {
           Accesos Rápidos
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {user.role === "super_admin" && (
-            <>
-              <QuickActionCard
-                title="Gestionar Usuarios"
-                description="Administra usuarios, roles y permisos"
-                icon={UserGroupIcon}
-                onClick={() => router.push("/admin/users")}
-                color="purple"
-              />
-              <QuickActionCard
-                title="Ver Solicitudes"
-                description="Revisa solicitudes de despachos pendientes"
-                icon={DocumentTextIcon}
-                onClick={() => router.push("/admin/users?tab=solicitudes")}
-                color="yellow"
-                badge={solicitudesPendientes}
-              />
-              <QuickActionCard
-                title="Gestionar Despachos"
-                description="Administra todos los despachos del sistema"
-                icon={BuildingOfficeIcon}
-                onClick={() => router.push("/dashboard/despachos")}
-                color="green"
-              />
-              <QuickActionCard
-                title="Ver Todos los Leads"
-                description="Accede a todos los leads del sistema"
-                icon={ClipboardDocumentListIcon}
-                onClick={() => router.push("/dashboard/leads")}
-                color="blue"
-              />
-              <QuickActionCard
-                title="Estadísticas"
-                description="Visualiza métricas y reportes del sistema"
-                icon={ChartBarIcon}
-                onClick={() => router.push("/admin/stats")}
-                color="orange"
-              />
-              <QuickActionCard
-                title="Configuración"
-                description="Ajusta tu perfil y preferencias"
-                icon={CogIcon}
-                onClick={() => router.push("/dashboard/settings")}
-                color="blue"
-              />
-            </>
-          )}
-
           {user.role === "despacho_admin" && (
             <>
               <QuickActionCard
@@ -835,8 +661,6 @@ const DashboardPage = () => {
             <ClockIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 mb-1">No hay actividad reciente</p>
             <p className="text-sm text-gray-400">
-              {user.role === "super_admin" &&
-                "Las actividades del sistema aparecerán aquí"}
               {user.role === "despacho_admin" &&
                 "Los nuevos leads aparecerán aquí"}
               {user.role === "usuario" && "Tus actividades aparecerán aquí"}

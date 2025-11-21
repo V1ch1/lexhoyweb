@@ -6,6 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 
+import BidForm from "@/components/leads/BidForm";
+
 interface LeadDetail {
   id: string;
   nombre: string;
@@ -18,6 +20,8 @@ interface LeadDetail {
   ciudad: string;
   urgencia: string;
   precio_base: number;
+  precio_actual?: number;
+  fecha_fin_subasta?: string;
   puntuacion_calidad: number;
   nivel_detalle: string;
   estado: string;
@@ -111,6 +115,7 @@ export default function LeadDetailPage() {
   }
 
   const isPurchased = lead.estado === "vendido" && lead.comprador_id;
+  const isAuction = lead.estado === "en_subasta";
 
   return (
     <div className="p-6 w-full">
@@ -138,6 +143,11 @@ export default function LeadDetailPage() {
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 uppercase">
                   {lead.urgencia}
                 </span>
+                {isAuction && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 uppercase">
+                    Subasta Activa
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Consulta Legal #{lead.id.slice(0, 8)}
@@ -151,9 +161,11 @@ export default function LeadDetailPage() {
               </p>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500 mb-1">Precio</div>
+              <div className="text-sm text-gray-500 mb-1">
+                {isAuction ? "Precio Actual" : "Precio"}
+              </div>
               <div className="text-3xl font-bold text-gray-900">
-                {lead.precio_base}€
+                {lead.precio_actual || lead.precio_base}€
               </div>
             </div>
           </div>
@@ -238,23 +250,34 @@ export default function LeadDetailPage() {
 
           {!isPurchased && (
             <div className="flex justify-end pt-6 border-t border-gray-100">
-              <button
-                onClick={handleBuy}
-                disabled={buying}
-                className="bg-[#E04040] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#c83838] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {buying ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Procesando...
-                  </>
-                ) : (
-                  `Comprar Lead por ${lead.precio_base}€`
-                )}
-              </button>
+              {isAuction ? (
+                <div className="w-full max-w-md">
+                  <BidForm 
+                    leadId={lead.id}
+                    currentPrice={lead.precio_actual || lead.precio_base}
+                    minBid={(lead.precio_actual || lead.precio_base) + 5}
+                    endDate={lead.fecha_fin_subasta || new Date().toISOString()}
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={handleBuy}
+                  disabled={buying}
+                  className="bg-[#E04040] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#c83838] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {buying ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Procesando...
+                    </>
+                  ) : (
+                    `Comprar Lead por ${lead.precio_base}€`
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
