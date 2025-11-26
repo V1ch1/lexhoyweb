@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
 
 export default function Navbar() {
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   return (
     <nav className="bg-white shadow-md h-20 px-6 flex justify-between items-center">
       {/* Logo */}
@@ -37,39 +41,52 @@ export default function Navbar() {
 
       {/* Botones de acción */}
       <div className="flex items-center space-x-4">
-        {/* Mostrar cuando NO está autenticado */}
-        <SignedOut>
-          <Link
-            href="/sign-in"
-            className="text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
-          >
-            Iniciar Sesión
-          </Link>
-          <Link
-            href="/sign-up"
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-red-600 font-workSans transition-colors"
-          >
-            Registrar Despacho
-          </Link>
-        </SignedOut>
-
-        {/* Mostrar cuando SÍ está autenticado */}
-        <SignedIn>
-          <Link
-            href="/dashboard"
-            className="text-gray-700 hover:text-primary font-workSans font-medium transition-colors"
-          >
-            Dashboard
-          </Link>
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                avatarBox: "w-10 h-10",
-              },
-            }}
-          />
-        </SignedIn>
+        {!isAuthenticated ? (
+          <>
+            <Link
+              href="/login"
+              className="text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white font-workSans transition-colors"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              href="/register"
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-red-600 font-workSans transition-colors"
+            >
+              Registrar Despacho
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/dashboard"
+              className="text-gray-700 hover:text-primary font-workSans font-medium transition-colors"
+            >
+              Dashboard
+            </Link>
+            <div className="flex items-center gap-3 border-l pl-4 ml-2">
+              {session?.user?.image ? (
+                <Image
+                  src={session.user.image}
+                  alt="Avatar"
+                  width={32}
+                  height={32}
+                  className="rounded-full border border-gray-200"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">
+                  {session?.user?.name?.charAt(0) || "U"}
+                </div>
+              )}
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="text-sm text-gray-500 hover:text-red-600 font-medium"
+              >
+                Salir
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </nav>
   );

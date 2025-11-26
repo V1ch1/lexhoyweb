@@ -28,9 +28,27 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-gradient-to-b from-slate-50 to-slate-100 border-r border-slate-200 h-full flex flex-col shadow-sm">
       <div className="flex-1 p-6">
-        <h2 className="text-3xl font-playfair font-semibold mb-8 text-slate-800 tracking-tight">
+        <h2 className="text-3xl font-playfair font-semibold mb-2 text-slate-800 tracking-tight">
           LexHoy
         </h2>
+        {/* Role Indicator */}
+        <div className="mb-6">
+          {user.role === "super_admin" && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              🛡️ Super Admin
+            </span>
+          )}
+          {user.role === "despacho_admin" && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              👔 Admin Despacho
+            </span>
+          )}
+          {user.role === "usuario" && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              👤 Usuario
+            </span>
+          )}
+        </div>
         <nav>
           <ul className="space-y-1">
             {/* MENÚ PARA SUPER ADMIN */}

@@ -1,8 +1,7 @@
 "use client"; // Asegúrate de que este archivo sea un Client Component
 
 import { usePathname } from "next/navigation"; // Importamos el hook de Next.js para obtener la ruta actual
-import { ClerkProvider } from "@clerk/nextjs";
-import { esES } from "@clerk/localizations";
+import { SessionProvider } from "next-auth/react";
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
 import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
@@ -41,14 +40,7 @@ export default function RootLayout({
     pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
 
   return (
-    <ClerkProvider
-      localization={esES}
-      appearance={{
-        variables: {
-          colorPrimary: "#E04040",
-        },
-      }}
-    >
+    <SessionProvider>
       <html
         lang="es"
         className={`${inter.variable} ${workSans.variable} ${playfair.variable}`}
@@ -67,6 +59,6 @@ export default function RootLayout({
           <Toaster position="top-right" richColors closeButton />
         </body>
       </html>
-    </ClerkProvider>
+    </SessionProvider>
   );
 }

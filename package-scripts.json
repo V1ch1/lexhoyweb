@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "cleanup:users": "tsx scripts/cleanup-orphaned-users.ts"
+  }
+}

@@ -10,13 +10,58 @@ export default function PrivacyTab({ loading }: PrivacyTabProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   const handleExportData = async () => {
-    // TODO: Implement data export
-    };
+    try {
+      const response = await fetch('/api/user/export-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ format: exportFormat }),
+      });
 
-  const handleRequestDataDeletion = () => {
-    if (deleteConfirmation === 'DELETE MY DATA') {
-      // TODO: Implement data deletion request
+      if (!response.ok) {
+        throw new Error('Error al exportar datos');
       }
+
+      // Descargar el archivo
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mis-datos-lexhoy.${exportFormat}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      alert('Datos exportados exitosamente');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al exportar datos. Por favor, inténtalo de nuevo.');
+    }
+  };
+
+  const handleRequestDataDeletion = async () => {
+    if (deleteConfirmation === 'DELETE MY DATA') {
+      try {
+        const response = await fetch('/api/user/request-deletion', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al solicitar eliminación');
+        }
+
+        alert('Solicitud de eliminación enviada. Recibirás un correo de confirmación.');
+        setDeleteConfirmation('');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al solicitar eliminación. Por favor, inténtalo de nuevo.');
+      }
+    }
   };
 
   return (

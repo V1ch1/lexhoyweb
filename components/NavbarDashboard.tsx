@@ -4,20 +4,18 @@
 import { UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 import { NotificationBell } from "@/components/NotificationBell";
-import { useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import { signOut } from "next-auth/react";
 
 const NavbarDashboard = () => {
   const { user } = useAuth();
-  const { signOut } = useClerk();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
-    await signOut();
-    router.push("/");
+    await signOut({ callbackUrl: "/" });
   };
 
   // Cerrar dropdown al hacer click fuera

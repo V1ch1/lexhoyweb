@@ -1,8 +1,13 @@
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+"use client";
+
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Hero() {
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   return (
     <section className="w-full h-screen flex">
       {/* Bloque Izquierdo - Texto centrado */}
@@ -16,29 +21,29 @@ export default function Hero() {
           despachos en España.
         </p>
         <div className="flex space-x-4 mt-6">
-          <SignedOut>
-            <Link
-              href="/sign-up"
-              className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Registrar Despacho
-            </Link>
-            <Link
-              href="/sign-in"
-              className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition-colors"
-            >
-              Acceder al Portal
-            </Link>
-          </SignedOut>
-
-          <SignedIn>
+          {!isAuthenticated ? (
+            <>
+              <Link
+                href="/register"
+                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Registrar Despacho
+              </Link>
+              <Link
+                href="/login"
+                className="border border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition-colors"
+              >
+                Acceder al Portal
+              </Link>
+            </>
+          ) : (
             <Link
               href="/dashboard"
               className="bg-primary text-white px-8 py-3 rounded-lg hover:bg-red-600 transition-colors font-medium text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
             >
               Ir a mi Dashboard
             </Link>
-          </SignedIn>
+          )}
         </div>
       </div>
 

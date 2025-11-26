@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/authContext";
-import { UserProfile } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   UserCircleIcon,
@@ -150,18 +149,36 @@ export default function SettingsPage() {
       case "account":
         return (
           <div className="w-full">
-            <UserProfile
-              routing="virtual"
-              appearance={{
-                variables: {
-                  colorPrimary: "#E04040",
-                },
-                elements: {
-                  rootBox: "w-full",
-                  card: "shadow-none border-0 w-full",
-                },
-              }}
-            />
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4">Información de la Cuenta</h3>
+              <div className="grid grid-cols-1 gap-6 max-w-2xl">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900">
+                    {user?.name || "No especificado"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900">
+                    {user?.email}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Rol del Usuario</label>
+                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900 capitalize">
+                    {user?.role?.replace('_', ' ') || "Usuario"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 p-4 bg-blue-50 rounded-md border border-blue-100">
+                <h4 className="text-sm font-medium text-blue-800 mb-1">Gestión de Perfil</h4>
+                <p className="text-sm text-blue-600">
+                  Actualmente la edición de perfil está deshabilitada temporalmente por mantenimiento. 
+                  Si necesitas cambiar tus datos, por favor contacta con soporte.
+                </p>
+              </div>
+            </div>
           </div>
         );
       case "notifications":

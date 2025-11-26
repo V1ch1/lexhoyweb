@@ -1,13 +1,12 @@
 ﻿/**
- * Hook adaptador para migración de Supabase Auth a Clerk
+ * Hook adaptador para migración a NextAuth
  * Mantiene compatibilidad con código existente que usa useAuth()
  */
 
 "use client";
 
-import { useUser, useAuth as useClerkAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import { supabase } from "./supabase";
+import { useSession, signOut } from "next-auth/react";
+import { useState, useEffect } from "react";
 
 export interface User {
   id: string;
@@ -22,94 +21,43 @@ export interface User {
   despacho_id?: string;
   fecha_registro?: string;
   ultimo_acceso?: string;
+  image?: string;
 }
 
 export function useAuth() {
-  const { user: clerkUser, isLoaded } = useUser();
-  const { isSignedIn } = useClerkAuth();
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const isLoading = status === "loading";
+  const isAuthenticated = status === "authenticated";
 
-  useEffect(() => {
-    async function loadUser() {
-      if (!isLoaded) {
-        setIsLoading(true);
-        return;
-      }
-
-      if (!isSignedIn || !clerkUser) {
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Obtener datos del usuario desde Supabase usando Clerk ID
-        const { data, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", clerkUser.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching user from Supabase:", error);
-          // Si no existe en Supabase, crear un usuario básico con datos de Clerk
-          setUser({
-            id: clerkUser.id,
-            email: clerkUser.emailAddresses[0]?.emailAddress || "",
-            name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
-            role: "usuario",
-          });
-        } else {
-          // Normalizar campos para compatibilidad
-          const normalizedUser = {
-            ...data,
-            name: data.nombre || data.name,
-            role: data.rol || data.role,
-          } as User;
-          setUser(normalizedUser);
-        }
-      } catch (error) {
-        console.error("Error in useAuth:", error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadUser();
-  }, [clerkUser, isSignedIn, isLoaded]);
+  const user: User | null = session?.user ? {
+    id: session.user.id || "",
+    email: session.user.email || "",
+    name: session.user.name || "",
+    image: session.user.image || "",
+    // @ts-ignore
+    role: session.user.rol || "usuario",
+    // @ts-ignore
+    rol: session.user.rol || "usuario",
+    // @ts-ignore
+    plan: session.user.plan,
+    // @ts-ignore
+    activo: session.user.activo,
+  } : null;
 
   return {
     user,
     isLoading,
-    isAuthenticated: isSignedIn,
-    login: (payload?: Partial<User>) => {
-      if (payload) {
-        const newUser: User = {
-          id: payload.id || "",
-          email: payload.email || "",
-          name: payload.name || payload.nombre || "",
-          nombre: payload.nombre || payload.name || "",
-          apellidos: payload.apellidos || "",
-          role: (payload.role || payload.rol || "usuario") as User["role"],
-          plan: payload.plan,
-          activo: payload.activo,
-          despacho_id: payload.despacho_id,
-          fecha_registro: payload.fecha_registro,
-          ultimo_acceso: payload.ultimo_acceso,
-        };
-        setUser(newUser);
-      }
+    isAuthenticated,
+    // Deprecated but kept for compatibility
+    login: (payload?: any) => {
+      console.warn("useAuth.login is deprecated. NextAuth handles session automatically.");
       return true;
     },
-    logout: () => {
-      setUser(null);
-    },
+    logout: () => signOut({ callbackUrl: "/login" }),
   };
 }
 
-// Mantener compatibilidad con AuthProvider (no hace nada ahora, Clerk maneja todo)
+// Mantener compatibilidad con AuthProvider
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

@@ -505,4 +505,213 @@ export class EmailService {
       return false;
     }
   }
+
+  /**
+   * Template: Verificación de Email (Para Nuevo Usuario)
+   */
+  static templateVerificationEmail(data: { userName: string; verificationUrl: string }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+              line-height: 1.6; 
+              color: #1f2937;
+              margin: 0;
+              padding: 0;
+              background-color: #f3f4f6;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              padding: 20px; 
+            }
+            .header { 
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+              color: white; 
+              padding: 30px 20px; 
+              text-align: center; 
+              border-radius: 10px 10px 0 0; 
+            }
+            .content { 
+              background: #ffffff; 
+              padding: 30px; 
+              border-radius: 0 0 10px 10px; 
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .button { 
+              display: inline-block; 
+              background: #ef4444; 
+              color: white !important; 
+              padding: 14px 32px; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: 500;
+              text-align: center;
+            }
+            .button:hover {
+              background: #dc2626;
+            }
+            .footer { 
+              text-align: center; 
+              color: #6b7280; 
+              font-size: 13px; 
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-weight: 600; font-size: 24px;">✉️ Verifica tu Email</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${data.userName}</strong>,</p>
+              <p>¡Gracias por registrarte en LexHoy! Para completar tu registro, por favor verifica tu dirección de email haciendo clic en el siguiente botón:</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${data.verificationUrl}" class="button">Verificar Email</a>
+              </div>
+
+              <p style="color: #6b7280; font-size: 14px;">O copia y pega este enlace en tu navegador:</p>
+              <p style="word-break: break-all; color: #ef4444; font-size: 13px;">${data.verificationUrl}</p>
+
+              <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
+                <strong>Nota:</strong> Este enlace expira en 24 horas. Si no creaste esta cuenta, puedes ignorar este email.
+              </p>
+
+              <div class="footer">
+                <p style="margin: 5px 0;">
+                  <a href="https://lexhoy.com" style="color: #ef4444; text-decoration: none;">
+                    <strong>LexHoy</strong> - Plataforma de Leads Legales
+                  </a>
+                </p>
+                <p style="margin: 5px 0; color: #9ca3af;">
+                  Este es un mensaje automático, por favor no respondas a este correo.
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Template: Recuperación de Contraseña
+   */
+  static templatePasswordReset(data: { userName: string; resetUrl: string }): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+              line-height: 1.6; 
+              color: #1f2937;
+              margin: 0;
+              padding: 0;
+              background-color: #f3f4f6;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 0 auto; 
+              padding: 20px; 
+            }
+            .header { 
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+              color: white; 
+              padding: 30px 20px; 
+              text-align: center; 
+              border-radius: 10px 10px 0 0; 
+            }
+            .content { 
+              background: #ffffff; 
+              padding: 30px; 
+              border-radius: 0 0 10px 10px; 
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .warning-box {
+              background: #fef2f2;
+              border-left: 4px solid #ef4444;
+              padding: 15px;
+              margin: 20px 0;
+              border-radius: 4px;
+            }
+            .button { 
+              display: inline-block; 
+              background: #ef4444; 
+              color: white !important; 
+              padding: 14px 32px; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: 500;
+              text-align: center;
+            }
+            .button:hover {
+              background: #dc2626;
+            }
+            .footer { 
+              text-align: center; 
+              color: #6b7280; 
+              font-size: 13px; 
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0; font-weight: 600; font-size: 24px;">🔒 Recuperación de Contraseña</h1>
+            </div>
+            <div class="content">
+              <p>Hola <strong>${data.userName}</strong>,</p>
+              <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en LexHoy.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${data.resetUrl}" class="button">Restablecer Contraseña</a>
+              </div>
+
+              <p style="color: #6b7280; font-size: 14px;">O copia y pega este enlace en tu navegador:</p>
+              <p style="word-break: break-all; color: #ef4444; font-size: 13px;">${data.resetUrl}</p>
+
+              <div class="warning-box">
+                <p style="margin: 0; font-size: 14px; color: #991b1b;">
+                  <strong>⚠️ Importante:</strong> Este enlace expira en 1 hora por seguridad.
+                </p>
+              </div>
+
+              <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
+                Si no solicitaste restablecer tu contraseña, puedes ignorar este email de forma segura. Tu contraseña no cambiará.
+              </p>
+
+              <div class="footer">
+                <p style="margin: 5px 0;">
+                  <a href="https://lexhoy.com" style="color: #ef4444; text-decoration: none;">
+                    <strong>LexHoy</strong> - Plataforma de Leads Legales
+                  </a>
+                </p>
+                <p style="margin: 5px 0; color: #9ca3af;">
+                  Este es un mensaje automático, por favor no respondas a este correo.
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
 }
