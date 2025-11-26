@@ -33,11 +33,11 @@ export async function PUT(
     if (!result.success) {
       console.error("❌ Error en sincronización:", result.error);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: result.error || "Error al actualizar verificación",
           wordpressId: result.wordpressId,
-          objectId: result.objectId
+          objectId: result.objectId,
         },
         { status: 500 }
       );

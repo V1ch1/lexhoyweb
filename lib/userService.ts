@@ -252,81 +252,6 @@ export class UserService {
   }
 
   /**
-   * Crear usuario con cuenta de autenticación y contraseña temporal
-   */
-  async createUserWithAuth(userData: {
-    email: string;
-    nombre: string;
-    apellidos: string;
-    telefono?: string;
-    rol: UserRole;
-  }): Promise<{ user: User; temporaryPassword: string }> {
-    try {
-      // 1. Generar contraseña temporal
-      const temporaryPassword = this.generateTemporaryPassword();
-
-      // 2. Crear cuenta de autenticación en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: temporaryPassword,
-        options: {
-          data: {
-            nombre: userData.nombre,
-            apellidos: userData.apellidos,
-            telefono: userData.telefono,
-            created_by_admin: true,
-          },
-          emailRedirectTo: `${
-            typeof window !== "undefined"
-              ? window.location.origin
-              : "http://localhost:3000"
-          }/auth/confirm`,
-        },
-      });
-
-      if (authError) {
-        console.error("Error creating auth user:", authError);
-        throw new Error(`Error de autenticación: ${authError.message}`);
-      }
-
-      if (!authData.user) {
-        throw new Error("No se pudo crear la cuenta de usuario");
-      }
-
-      // 3. Crear registro en nuestra tabla users con el ID de Supabase Auth
-      const { data: localUser, error: localError } = await supabase
-        .from("users")
-        .insert({
-          id: authData.user.id, // Usar el ID de Supabase Auth
-          email: userData.email,
-          nombre: userData.nombre,
-          apellidos: userData.apellidos,
-          telefono: userData.telefono,
-          rol: userData.rol,
-          estado: "activo", // Activo porque fue creado por admin
-          fecha_registro: new Date().toISOString(),
-          activo: true,
-          email_verificado: authData.user.email_confirmed_at ? true : false,
-          plan: "basico",
-        })
-        .select()
-        .maybeSingle();
-
-      if (localError) {
-        console.error("Error creating local user record:", localError);
-        throw new Error(
-          `Error creando perfil de usuario: ${localError.message}`
-        );
-      }
-
-      return { user: localUser, temporaryPassword };
-    } catch (error) {
-      console.error("Error in createUserWithAuth:", error);
-      throw error;
-    }
-  }
-
-  /**
    * Generar contraseña temporal segura
    */
   private generateTemporaryPassword(): string {
@@ -878,40 +803,12 @@ export class UserService {
   /**
    * Verificar si el usuario actual es super admin
    */
-  async isCurrentUserSuperAdmin(): Promise<boolean> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (error) return false;
-    return data?.rol === "super_admin";
-  }
+  // [ELIMINADO] isCurrentUserSuperAdmin: lógica de usuario actual Supabase Auth eliminada. Usar sesión NextAuth y consultar rol por id.
 
   /**
    * Obtener usuario actual con sus despachos
    */
-  async getCurrentUserWithDespachos(): Promise<{
-    user: User;
-    despachos: UserDespacho[];
-  } | null> {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    if (!authUser) return null;
-
-    const user = await this.getUserById(authUser.id);
-    if (!user) return null;
-
-    const despachos = await this.getUserDespachos(user.id);
-    return { user, despachos };
-  }
+  // [ELIMINADO] getCurrentUserWithDespachos: lógica de usuario actual Supabase Auth eliminada. Usar sesión NextAuth y getUserById.
 
   /**
    * Obtener estadísticas del sistema (solo para super_admin)

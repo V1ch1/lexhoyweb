@@ -10,26 +10,30 @@ import { SyncService } from "@/lib/syncService"; // Mantener para webhook (impor
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
-    
+
     // Caso 1: Sincronizar DESDE Next.js HACIA WordPress (usar nuevo sistema)
     if (payload.despachoId && payload.objectId) {
-      const result = await SyncOrchestrator.sincronizarCompleto(payload.despachoId, false);
-      
+      const result = await SyncOrchestrator.sincronizarCompleto(
+        payload.despachoId,
+        false
+      );
+
       if (!result.success) {
-        console.error('❌ Error en sincronización:', result.error);
+        console.error("❌ Error en sincronización:", result.error);
         return NextResponse.json(
-          { 
-            status: 'error',
+          {
+            status: "error",
             error: result.error,
           },
           { status: 500 }
         );
       }
-      
+
       return NextResponse.json(
-        { 
-          status: 'success',
-          message: 'Despacho sincronizado completamente (Supabase → WordPress → Algolia)',
+        {
+          status: "success",
+          message:
+            "Despacho sincronizado completamente (Supabase → WordPress → Algolia)",
           wordpressId: result.wordpressId,
           objectId: result.objectId,
           timestamp: new Date().toISOString(),
@@ -37,15 +41,15 @@ export async function POST(request: Request) {
         { status: 200 }
       );
     }
-    
+
     // Caso 2: Recibir webhook DESDE WordPress HACIA Next.js
     // Validar que tenemos los datos mínimos necesarios
     if (!payload || !payload.id) {
-      console.error('❌ Payload inválido: falta ID');
+      console.error("❌ Payload inválido: falta ID");
       return NextResponse.json(
-        { 
-          status: 'error',
-          error: 'Payload inválido: se requiere ID del despacho',
+        {
+          status: "error",
+          error: "Payload inválido: se requiere ID del despacho",
         },
         { status: 400 }
       );
@@ -55,10 +59,10 @@ export async function POST(request: Request) {
     const result = await SyncService.sincronizarDesdeWebhook(payload);
 
     if (!result.success) {
-      console.error('❌ Error en sincronización:', result.error);
+      console.error("❌ Error en sincronización:", result.error);
       return NextResponse.json(
-        { 
-          status: 'error',
+        {
+          status: "error",
           error: result.error,
           details: result.details,
         },
@@ -67,8 +71,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { 
-        status: 'success',
+      {
+        status: "success",
         message: result.message,
         despachoId: result.despachoId,
         objectId: result.objectId,
@@ -76,14 +80,13 @@ export async function POST(request: Request) {
       },
       { status: 200 }
     );
-    
   } catch (error) {
-    console.error('❌ Error en el servidor:', error);
+    console.error("❌ Error en el servidor:", error);
     return NextResponse.json(
-      { 
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        timestamp: new Date().toISOString()
+      {
+        status: "error",
+        error: error instanceof Error ? error.message : "Error desconocido",
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

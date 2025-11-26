@@ -46,12 +46,17 @@ export async function PUT(
     }
 
     // 2. Sincronizar completo usando el nuevo sistema modular
-    const syncResult = await SyncOrchestrator.sincronizarCompleto(despachoId, true);
+    const syncResult = await SyncOrchestrator.sincronizarCompleto(
+      despachoId,
+      true
+    );
 
     if (!syncResult.success) {
       console.warn("⚠️ Error en sincronización:", syncResult.error);
     } else {
-      console.log("✅ Sincronización completa exitosa (Supabase → WordPress → Algolia)");
+      console.log(
+        "✅ Sincronización completa exitosa (Supabase → WordPress → Algolia)"
+      );
     }
 
     return NextResponse.json({
