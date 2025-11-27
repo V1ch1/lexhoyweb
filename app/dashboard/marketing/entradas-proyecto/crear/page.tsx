@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import { ImageUploader } from "@/components/ImageUploader";
 
 export default function CrearEntradaPage() {
   const router = useRouter();
@@ -140,39 +141,17 @@ export default function CrearEntradaPage() {
             </p>
           </div>
 
-          {/* Imagen URL */}
+          {/* Imagen */}
           <div>
-            <label htmlFor="imagen_url" className="block text-sm font-medium text-gray-700 mb-2">
-              URL de la Imagen
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Imagen de la Entrada
             </label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <input
-                  type="url"
-                  id="imagen_url"
-                  name="imagen_url"
-                  value={formData.imagen_url}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Opcional. Si no se proporciona, se usará una imagen por defecto.
-                </p>
-              </div>
-              {formData.imagen_url && (
-                <div className="w-20 h-20 border border-gray-300 rounded-lg overflow-hidden flex-shrink-0">
-                  <img
-                    src={formData.imagen_url}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/80?text=Error";
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            <ImageUploader
+              onImageUploaded={(url) =>
+                setFormData((prev) => ({ ...prev, imagen_url: url }))
+              }
+              currentImageUrl={formData.imagen_url}
+            />
           </div>
 
           {/* Estado */}

@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { PhotoIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { supabase } from "@/lib/supabase";
 
 interface ImageUploaderProps {
   onImageUploaded: (url: string) => void;
@@ -78,28 +77,24 @@ export function ImageUploader({
       // Convertir a WebP
       const webpBlob = await convertToWebP(file);
 
-      // Generar nombre único
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(7);
-      const fileName = `${timestamp}-${randomString}.webp`;
+      // Crear FormData para enviar a la API
+      const formData = new FormData();
+      formData.append("file", webpBlob, "image.webp");
+      formData.append("bucket", bucketName);
 
-      // Subir a Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(fileName, webpBlob, {
-          contentType: "image/webp",
-          cacheControl: "3600",
-          upsert: false,
-        });
+      // Subir usando la API route
+      const response = await fetch("/api/upload/image", {
+        method: "POST",
+        body: formData,
+      });
 
-      if (uploadError) {
-        throw uploadError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al subir la imagen");
       }
 
-      // Obtener URL pública
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucketName).getPublicUrl(data.path);
+      const data = await response.json();
+      const publicUrl = data.url;
 
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);

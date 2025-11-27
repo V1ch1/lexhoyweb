@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import { requireSuperAdmin } from "@/lib/api-auth";
+import { getRequiredEnvVar } from "@/lib/env";
 
 // GET - Listar entradas en proyecto
 // Las RLS policies de Supabase se encargan de la seguridad
@@ -10,6 +11,18 @@ export async function GET(request: Request) {
     const estado = searchParams.get("estado");
     const page = parseInt(searchParams.get("page") || "1");
     const perPage = parseInt(searchParams.get("per_page") || "9");
+
+    // Crear cliente Supabase
+    const supabase = createClient(
+      getRequiredEnvVar("NEXT_PUBLIC_SUPABASE_URL"),
+      getRequiredEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     // Construir query - RLS se encarga de filtrar según permisos
     let query = supabase
@@ -95,6 +108,18 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Crear cliente Supabase con Service Role para bypass RLS
+    const supabase = createClient(
+      getRequiredEnvVar("NEXT_PUBLIC_SUPABASE_URL"),
+      getRequiredEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     // Crear entrada
     const { data: entrada, error: insertError } = await supabase

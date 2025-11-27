@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { EntradaCard } from "@/components/marketing/EntradaCard";
 import { PopupContacto } from "@/components/marketing/PopupContacto";
-import { supabase } from "@/lib/supabase";
 
 interface Entrada {
   id: string;
@@ -45,31 +44,27 @@ export default function EntradasProyectoPage() {
       }
 
       const perPage = 9;
-      const from = (pageNum - 1) * perPage;
-      const to = from + perPage - 1;
 
-      // Obtener solo entradas publicadas
-      const { data: entradasData, error: fetchError, count } = await supabase
-        .from("entradas_proyecto")
-        .select("*", { count: "exact" })
-        .eq("estado", "publicada")
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      // Usar la API route en lugar de consulta directa
+      const response = await fetch(
+        `/api/marketing/entradas-proyecto?estado=publicada&page=${pageNum}&per_page=${perPage}`
+      );
 
-      if (fetchError) {
-        throw fetchError;
+      if (!response.ok) {
+        throw new Error("Error al cargar las entradas");
       }
 
+      const data = await response.json();
+
       if (reset) {
-        setEntradas(entradasData || []);
-        setTotalEntradas(count || 0);
+        setEntradas(data.entradas || []);
+        setTotalEntradas(data.pagination.total || 0);
       } else {
-        setEntradas((prev) => [...prev, ...(entradasData || [])]);
+        setEntradas((prev) => [...prev, ...(data.entradas || [])]);
       }
 
       setPage(pageNum);
-      const totalPages = count ? Math.ceil(count / perPage) : 0;
-      setHasMore(pageNum < totalPages);
+      setHasMore(data.pagination.hasMore || false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
