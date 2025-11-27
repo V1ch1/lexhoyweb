@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SyncService } from "@/lib/syncService";
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from "@/lib/api-auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,24 +23,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Obtener usuario autenticado
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
+    // Obtener usuario autenticado con NextAuth
+    const { user, error: authError } = await requireAuth();
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'No autenticado' },
-        { status: 401 }
-      );
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Usuario no autenticado' },
-        { status: 401 }
-      );
+    if (authError) {
+      return authError;
     }
 
     // Importar usando SyncService

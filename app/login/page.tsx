@@ -5,8 +5,6 @@ import { useState, Suspense } from 'react';
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
-import { AuthSimpleService } from "@/lib/auth/services/auth-simple.service";
-import { useAuth } from "@/lib/authContext";
 import { toast } from 'sonner';
 import { signIn } from "next-auth/react";
 
@@ -20,7 +18,6 @@ interface FormState {
 function LoginPageContent() {
   const router = useRouter(); // Used for navigation after login
   const searchParams = useSearchParams();
-  const { login } = useAuth();
 
   const isConfirmed = searchParams.get("confirmed") === "true";
   const [showPassword, setShowPassword] = useState(false);

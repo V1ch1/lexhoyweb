@@ -252,6 +252,58 @@ export class UserService {
   }
 
   /**
+   * Crear nuevo usuario con autenticación (solo super_admin)
+   * Llama a la API interna para usar privilegios de admin
+   */
+  async createUserWithAuth(userData: {
+    email: string;
+    nombre: string;
+    apellidos: string;
+    telefono?: string;
+    rol: UserRole;
+  }): Promise<{ user: User; temporaryPassword: string }> {
+    const response = await fetch("/api/admin/users/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Error al crear usuario");
+    }
+
+    // Mapear el usuario devuelto al tipo User
+    const userRaw = result.user;
+    const user: User = {
+      id: userRaw.id,
+      email: userRaw.email,
+      nombre: userRaw.nombre,
+      apellidos: userRaw.apellidos,
+      telefono: userRaw.telefono,
+      fechaRegistro: new Date(userRaw.fecha_registro),
+      ultimoAcceso: userRaw.ultimo_acceso ? new Date(userRaw.ultimo_acceso) : undefined,
+      activo: userRaw.activo,
+      emailVerificado: userRaw.email_verificado,
+      plan: userRaw.plan as PlanType,
+      rol: userRaw.rol,
+      estado: userRaw.estado,
+      fechaAprobacion: userRaw.fecha_aprobacion ? new Date(userRaw.fecha_aprobacion) : undefined,
+      aprobadoPor: userRaw.aprobado_por,
+      notasAdmin: userRaw.notas_admin,
+      despachoId: userRaw.despacho_id,
+    };
+
+    return {
+      user,
+      temporaryPassword: result.temporaryPassword,
+    };
+  }
+
+  /**
    * Generar contraseña temporal segura
    */
   private generateTemporaryPassword(): string {

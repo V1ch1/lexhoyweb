@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { cookies } from "next/headers";
+import { requireSuperAdmin } from "@/lib/api-auth";
 
 // PATCH - Actualizar estado de entrada (solo super_admin)
 export async function PATCH(
@@ -9,47 +9,11 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get("sb-access-token");
+    // Verificar autenticación y rol de super admin con NextAuth
+    const { user, error: authError } = await requireSuperAdmin();
 
-    if (!authCookie) {
-      return NextResponse.json(
-        { error: "No autenticado" },
-        { status: 401 }
-      );
-    }
-
-    // Obtener usuario actual
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authCookie.value
-    );
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Usuario no válido" },
-        { status: 401 }
-      );
-    }
-
-    // Verificar que sea super_admin
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: "Error al obtener datos del usuario" },
-        { status: 500 }
-      );
-    }
-
-    if (userData.rol !== "super_admin") {
-      return NextResponse.json(
-        { error: "No tienes permisos para actualizar entradas" },
-        { status: 403 }
-      );
+    if (authError) {
+      return authError;
     }
 
     // Obtener datos del body
@@ -137,47 +101,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get("sb-access-token");
+    // Verificar autenticación y rol de super admin con NextAuth
+    const { user, error: authError } = await requireSuperAdmin();
 
-    if (!authCookie) {
-      return NextResponse.json(
-        { error: "No autenticado" },
-        { status: 401 }
-      );
-    }
-
-    // Obtener usuario actual
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authCookie.value
-    );
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Usuario no válido" },
-        { status: 401 }
-      );
-    }
-
-    // Verificar que sea super_admin
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: "Error al obtener datos del usuario" },
-        { status: 500 }
-      );
-    }
-
-    if (userData.rol !== "super_admin") {
-      return NextResponse.json(
-        { error: "No tienes permisos para eliminar entradas" },
-        { status: 403 }
-      );
+    if (authError) {
+      return authError;
     }
 
     // Eliminar entrada

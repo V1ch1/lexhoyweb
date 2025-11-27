@@ -3,47 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 import { UserService } from "@/lib/userService";
 import { validateUUID, ValidationError, sanitizeString, validateNotEmpty } from "@/lib/validation";
 import { getRequiredEnvVar } from "@/lib/env";
+import { requireSuperAdmin } from "@/lib/api-auth";
 
 const userService = new UserService();
 
 export async function POST(request: Request) {
   try {
-    // Leer el JWT del header Authorization
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-    
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Crear cliente Supabase con el token del usuario
-    const SUPABASE_URL = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_URL');
-    const SUPABASE_ANON_KEY = getRequiredEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-
-    // Verificar que el usuario sea super admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Obtener el rol del usuario
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData || userData.rol !== "super_admin") {
-      console.error("❌ Error de permisos:", { userError, userData });
-      return NextResponse.json(
-        { error: "No tienes permisos para realizar esta acción" },
-        { status: 403 }
-      );
-    }
+    // Verificar autenticación y rol de super admin con NextAuth
+    const { user, error: authError } = await requireSuperAdmin();
+    if (authError) return authError;
 
     // Obtener datos del body
     const body = await request.json();

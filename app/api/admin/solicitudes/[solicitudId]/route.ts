@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { EmailService } from "@/lib/emailService";
 import { NotificationService } from "@/lib/notificationService";
+import { requireSuperAdmin } from "@/lib/api-auth";
 
 /**
  * PATCH /api/admin/solicitudes/[solicitudId]
@@ -29,37 +30,11 @@ export async function PATCH(
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Verificar autenticación del admin
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
+    // Verificar autenticación y rol de super admin con NextAuth
+    const { user, error: authError } = await requireSuperAdmin();
 
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Usuario no válido" },
-        { status: 401 }
-      );
-    }
-
-    // Verificar que sea super_admin
-    const { data: userData } = await supabase
-      .from("users")
-      .select("rol")
-      .eq("id", user.id)
-      .single();
-
-    if (userData?.rol !== "super_admin") {
-      return NextResponse.json(
-        { error: "No tienes permisos para realizar esta acción" },
-        { status: 403 }
-      );
+    if (authError) {
+      return authError;
     }
 
     // Obtener la solicitud

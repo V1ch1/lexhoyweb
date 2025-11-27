@@ -26,9 +26,11 @@ export default function UsersListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
   const [filterStatus, setFilterStatus] = useState<UserStatus | "all">("all");
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
   const loadUsers = useCallback(async () => {
     try {
+      setLoadingUsers(true);
       const allUsers = await userService.getAllUsers();
       setUsers(allUsers);
 
@@ -45,14 +47,20 @@ export default function UsersListPage() {
       setUserDespachos(despachoMap);
     } catch (error) {
       console.error("Error loading users:", error);
+    } finally {
+      setLoadingUsers(false);
     }
   }, []);
 
   useEffect(() => {
-    if (user?.role === "super_admin") {
+    const role = user?.role as string | undefined;
+    
+    if (role === "super_admin") {
       loadUsers();
+    } else if (!isLoading && role !== "super_admin") {
+       setLoadingUsers(false);
     }
-  }, [user, loadUsers]);
+  }, [user?.role, loadUsers, isLoading]);
 
   const handleChangeUserRole = async (userId: string, newRole: UserRole) => {
     try {
@@ -108,7 +116,7 @@ export default function UsersListPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  if (isLoading) {
+  if (isLoading || loadingUsers) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

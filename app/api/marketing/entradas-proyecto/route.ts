@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { cookies } from "next/headers";
+import { requireSuperAdmin } from "@/lib/api-auth";
 
 // GET - Listar entradas en proyecto
 // Las RLS policies de Supabase se encargan de la seguridad
@@ -62,48 +62,20 @@ export async function GET(request: Request) {
 // POST - Crear nueva entrada (solo super_admin)
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get("sb-access-token");
+    // Verificar autenticación y rol de super admin con NextAuth
+    const { user, error: authError } = await requireSuperAdmin();
 
-    if (!authCookie) {
-      return NextResponse.json(
-        { error: "No autenticado" },
-        { status: 401 }
-      );
+    if (authError) {
+      return authError;
     }
 
-    // Obtener usuario actual
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authCookie.value
-    );
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Usuario no válido" },
-        { status: 401 }
-      );
-    }
-
-    // Verificar que sea super_admin
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("rol, name, email")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: "Error al obtener datos del usuario" },
-        { status: 500 }
-      );
-    }
-
-    if (userData.rol !== "super_admin") {
-      return NextResponse.json(
-        { error: "No tienes permisos para crear entradas" },
-        { status: 403 }
-      );
-    }
+    // Obtener datos adicionales del usuario si es necesario (aunque requireSuperAdmin ya verifica el rol)
+    // En este caso, requireSuperAdmin devuelve el usuario con el rol verificado
+    const userData = {
+      name: user.name || user.email?.split('@')[0] || 'Admin',
+      email: user.email,
+      rol: user.rol
+    };
 
     // Obtener datos del body
     const body = await request.json();

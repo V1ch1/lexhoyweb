@@ -6,7 +6,7 @@ import { DespachoSummary } from "@/types/despachos";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DespachosListSkeleton } from "@/components/despachos/skeletons";
 import { DespachosList } from "@/components/despachos/DespachosList";
 
@@ -272,7 +272,7 @@ const VerDespachosPage = () => {
   const [loadingDespachos, setLoadingDespachos] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Fetch despachos con búsqueda unificada (Supabase + WordPress)
-  const fetchDespachos = async () => {
+  const fetchDespachos = useCallback(async () => {
     setLoadingDespachos(true);
     setError(null);
 
@@ -331,14 +331,14 @@ const VerDespachosPage = () => {
     } finally {
       setLoadingDespachos(false);
     }
-  };
+  }, [user?.id, search, page]);
 
   // useEffect: llama a fetchDespachos cuando user está cargado y cambia page/search
   useEffect(() => {
     if (!user) return;
     fetchDespachos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, page, search]);
+  }, [user?.id, search, page]);
 
   // Calcular totalPages para la paginación
   const totalPages = Math.ceil(total / PAGE_SIZE);

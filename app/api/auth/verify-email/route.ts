@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .update({ 
         email_verificado: true,
+        estado: 'activo',
         // updated_at: new Date().toISOString() // Columna no existe en el esquema actual
       })
       .eq('id', tokenData.user_id);

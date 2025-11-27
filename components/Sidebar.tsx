@@ -110,7 +110,7 @@ const Sidebar = () => {
                     }`}
                   >
                     <BuildingOfficeIcon className="h-5 w-5" />
-                    <span className="font-playfair text-sm">Despachos</span>
+                    <span className="font-playfair text-sm">Gestion de Despachos</span>
                   </button>
                 </li>
 

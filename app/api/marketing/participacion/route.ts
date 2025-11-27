@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
   try {
@@ -15,12 +16,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verificar que el usuario existe y está autenticado
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Verificar que el usuario existe y está autenticado con NextAuth
+    const { user, error: authError } = await requireAuth();
 
-    if (!user || user.id !== userId) {
+    if (authError || !user || user.id !== userId) {
       return NextResponse.json(
         { error: "No autorizado" },
         { status: 401 }

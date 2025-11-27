@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 const WORDPRESS_API_URL = "https://lexhoy.com/wp-json/wp/v2";
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    // Verificar autenticación con NextAuth
+    const { user, error: authError } = await requireAuth();
+    if (authError) return authError;
 
     const body = await request.json();
     const { despachoId, origen, wordpressId } = body;
@@ -18,12 +16,6 @@ export async function POST(request: Request) {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-    // Obtener usuario
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: "Usuario no válido" }, { status: 401 });
-    }
 
     // Obtener datos del usuario
     const { data: userData } = await supabase
@@ -164,7 +156,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Despacho no encontrado" }, { status: 404 });
     }
 
-    const sede = despacho.sedes?.[0] || {};
+    const sede: any = despacho.sedes?.[0] || {};
 
     // Verificar si el usuario ya es propietario del despacho
     const { data: despachoCompleto } = await supabase

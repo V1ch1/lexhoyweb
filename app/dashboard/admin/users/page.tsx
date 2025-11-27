@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
         {count !== undefined && (
           <p className="text-3xl font-bold mb-3">{count}</p>
         )}
-        <div className="flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 ">
           <span>Ir a {title.toLowerCase()}</span>
           <ArrowRightIcon className="h-5 w-5 ml-2" />
         </div>

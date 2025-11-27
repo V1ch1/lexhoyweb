@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/authContext";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { slugify } from "@/lib/slugify";
@@ -191,26 +192,78 @@ export default function DespachoPage() {
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [cambiandoVerificacion, setCambiandoVerificacion] = useState(false);
   const [deletingSede, setDeletingSede] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  // Estado para edición del nombre del despacho
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
-  useEffect(() => {
-    // Obtener el rol del usuario
-    const fetchUserRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userData, error } = await supabase
-          .from("users")
-          .select("rol")
-          .eq("id", user.id)
-          .single();
+  const handleSaveName = async () => {
+    if (!despacho || !editNameValue.trim()) return;
 
-        setUserRole(userData?.rol || null);
+    try {
+      setSavingName(true);
+      setError(null);
+
+      const { error: updateError } = await supabase
+        .from("despachos")
+        .update({
+          nombre: editNameValue,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", despacho.id);
+
+      if (updateError) throw updateError;
+
+      // Actualizar estado local
+      setDespacho((prev) => (prev ? { ...prev, nombre: editNameValue } : null));
+      setFormData((prev) => ({ ...prev, nombre: editNameValue }));
+
+      // Sincronizar con WordPress
+      try {
+        const syncResponse = await fetch(`/api/despachos/${despacho.id}/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const syncResult = await syncResponse.json();
+        if (!syncResult.success) {
+          console.warn("⚠️ No se pudo sincronizar con WordPress", syncResult.error);
+        }
+      } catch (syncError) {
+        console.error("❌ Error en sincronización:", syncError);
       }
-    };
-    fetchUserRole();
-  }, []);
+
+      setSuccess(true);
+      setIsEditingName(false);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error al actualizar nombre:", error);
+      setError("Error al actualizar el nombre del despacho");
+    } finally {
+      setSavingName(false);
+    }
+  };
+  const { user } = useAuth();
+  const userRole = user?.rol;
+
+  // useEffect(() => {
+  //   // Obtener el rol del usuario
+  //   const fetchUserRole = async () => {
+  //     const {
+  //       data: { user },
+  //     } = await supabase.auth.getUser();
+  //     if (user) {
+  //       const { data: userData, error } = await supabase
+  //         .from("users")
+  //         .select("rol")
+  //         .eq("id", user.id)
+  //         .single();
+
+  //       setUserRole(userData?.rol || null);
+  //     }
+  //   };
+  //   fetchUserRole();
+  // }, []);
 
   useEffect(() => {
     const fetchDespachoData = async () => {
@@ -282,6 +335,7 @@ export default function DespachoPage() {
               : [],
           };
 
+          setEditNameValue(processedDespacho.nombre);
           setDespacho(processedDespacho);
           const sedesOrdenadas = [...(processedDespacho.sedes || [])].sort(
             (a, b) => {
@@ -357,6 +411,7 @@ export default function DespachoPage() {
             : [],
         };
 
+        setEditNameValue(processedDespacho.nombre);
         setDespacho(processedDespacho);
         // Ordenar sedes: principal primero
         const sedesOrdenadas = [...(processedDespacho.sedes || [])].sort(
@@ -893,9 +948,62 @@ export default function DespachoPage() {
             <div className="px-8 py-6 border-b border-gray-200 bg-white">
               <div className="flex items-start justify-between gap-6">
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2 truncate">
-                    {decodeHtmlEntities(formData.nombre)}
-                  </h1>
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        className="text-4xl font-bold text-gray-900 border-b-2 border-blue-500 focus:outline-none bg-transparent w-full"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveName();
+                          if (e.key === "Escape") {
+                            setIsEditingName(false);
+                            setEditNameValue(despacho?.nombre || "");
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleSaveName}
+                        disabled={savingName}
+                        className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                        title="Guardar nombre"
+                      >
+                        {savingName ? (
+                          <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+                        ) : (
+                          <CheckCircleIcon className="h-6 w-6" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setEditNameValue(despacho?.nombre || "");
+                        }}
+                        className="p-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+                        title="Cancelar"
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 mb-2 group">
+                      <h1 className="text-4xl font-bold text-gray-900 truncate">
+                        {decodeHtmlEntities(formData.nombre)}
+                      </h1>
+                      <button
+                        onClick={() => {
+                          setEditNameValue(despacho?.nombre || "");
+                          setIsEditingName(true);
+                        }}
+                        className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Editar nombre"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <svg
                       className="w-4 h-4"

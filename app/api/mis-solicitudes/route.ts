@@ -1,28 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
   try {
-    // Leer el JWT del header Authorization
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
+    // Obtener usuario autenticado con NextAuth
+    const { user, error: userError } = await requireAuth();
     
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    if (userError) {
+      return userError;
     }
 
     // Crear cliente Supabase con Service Role para bypass RLS
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-    // Obtener el usuario del token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.error('❌ Error obteniendo usuario:', userError);
-      return NextResponse.json({ error: "Usuario no válido" }, { status: 401 });
-    }
 
     // Obtener solicitudes del usuario
     const { data: solicitudes, error } = await supabase

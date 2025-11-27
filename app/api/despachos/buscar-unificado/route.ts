@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { auth } from "@/lib/auth";
 
 const WORDPRESS_API_URL = "https://lexhoy.com/wp-json/wp/v2";
 
 export async function GET(request: Request) {
   try {
+    // Verificar autenticación
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "No autenticado" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("query") || "";
     const page = parseInt(searchParams.get("page") || "1");
