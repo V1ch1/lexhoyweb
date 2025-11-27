@@ -16,6 +16,9 @@ export interface User {
   apellidos?: string;
   role?: "super_admin" | "despacho_admin" | "usuario";
   rol?: "super_admin" | "despacho_admin" | "usuario";
+  telefono?: string;
+  localidad?: string;
+  provincia?: string;
   plan?: string;
   activo?: boolean;
   despacho_id?: string;

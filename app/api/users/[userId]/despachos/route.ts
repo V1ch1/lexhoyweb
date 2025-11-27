@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function GET(
   request: Request,
@@ -8,7 +9,28 @@ export async function GET(
   try {
     const { userId } = await params;
 
+    console.log("🔍 [API /users/[userId]/despachos] Solicitud recibida para userId:", userId);
+
+    // Verificar autenticación
+    const { user, error: authError } = await requireAuth();
+    if (authError) {
+      console.error("❌ [API /users/[userId]/despachos] Error de autenticación");
+      return authError;
+    }
+
+    console.log("✅ [API /users/[userId]/despachos] Usuario autenticado:", user.id);
+
+    // Verificar que el usuario está solicitando sus propios despachos
+    if (user.id !== userId) {
+      console.error("❌ [API /users/[userId]/despachos] Usuario intenta acceder a despachos de otro usuario");
+      return NextResponse.json(
+        { error: "No autorizado para ver despachos de otro usuario" },
+        { status: 403 }
+      );
+    }
+
     if (!userId) {
+      console.error("❌ [API /users/[userId]/despachos] User ID no proporcionado");
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
@@ -22,6 +44,7 @@ export async function GET(
 
     try {
       // 1. Primero, obtener los despachos asociados al usuario
+      console.log("📊 [API /users/[userId]/despachos] Consultando user_despachos...");
       const { data: userDespachos, error: userDespachosError } = await supabase
         .from("user_despachos")
         .select("id, despacho_id, fecha_asignacion")
@@ -29,17 +52,21 @@ export async function GET(
         .eq("activo", true);
 
       if (userDespachosError) {
-        console.error("Error al obtener user_despachos:", userDespachosError);
+        console.error("❌ [API /users/[userId]/despachos] Error al obtener user_despachos:", userDespachosError);
         throw userDespachosError;
       }
 
+      console.log(`📊 [API /users/[userId]/despachos] Encontrados ${userDespachos?.length || 0} despachos asignados`);
+
       // Si no hay despachos, devolver array vacío
       if (!userDespachos || userDespachos.length === 0) {
+        console.log("ℹ️ [API /users/[userId]/despachos] No hay despachos asignados, devolviendo array vacío");
         return NextResponse.json([]);
       }
 
       // 2. Obtener los IDs de los despachos
       const despachoIds = userDespachos.map((ud) => ud.despacho_id);
+      console.log("📊 [API /users/[userId]/despachos] IDs de despachos:", despachoIds);
 
       // 3. Obtener los detalles de los despachos
       const { data: despachos, error: despachosError } = await supabase
@@ -48,9 +75,11 @@ export async function GET(
         .in("id", despachoIds);
 
       if (despachosError) {
-        console.error("Error al obtener los despachos:", despachosError);
+        console.error("❌ [API /users/[userId]/despachos] Error al obtener los despachos:", despachosError);
         throw despachosError;
       }
+
+      console.log(`📊 [API /users/[userId]/despachos] Encontrados ${despachos?.length || 0} despachos en la tabla despachos`);
 
       // 4. Contar las sedes activas de cada despacho
       const sedesCount: Record<string, number> = {};
@@ -77,7 +106,7 @@ export async function GET(
           // Si el despacho no existe en la tabla, retornar null
           if (!despacho) {
             console.warn(
-              `⚠️ Despacho ${ud.despacho_id} asignado al usuario pero no existe en tabla despachos`
+              `⚠️ [API /users/[userId]/despachos] Despacho ${ud.despacho_id} asignado al usuario pero no existe en tabla despachos`
             );
             return null;
           }
@@ -98,14 +127,15 @@ export async function GET(
         })
         .filter((d): d is NonNullable<typeof d> => d !== null); // Filtrar nulls y asegurar tipo
 
+      console.log(`✅ [API /users/[userId]/despachos] Devolviendo ${transformedDespachos.length} despachos transformados`);
       return NextResponse.json(transformedDespachos, { status: 200 });
     } catch (error) {
-      console.error("❌ Error al consultar despachos:", error);
+      console.error("❌ [API /users/[userId]/despachos] Error al consultar despachos:", error);
       // En caso de error, devolver array vacío
       return NextResponse.json([], { status: 200 });
     }
   } catch (error) {
-    console.error("❌ Error inesperado:", error);
+    console.error("❌ [API /users/[userId]/despachos] Error inesperado:", error);
     return NextResponse.json(
       {
         error: "Error procesando la solicitud",

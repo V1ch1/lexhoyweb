@@ -14,6 +14,8 @@ export interface UserProfile {
   nombre: string;
   apellidos: string;
   telefono: string;
+  localidad?: string;
+  provincia?: string;
   fecha_registro: string;
   ultimo_acceso: string;
   despacho_nombre?: string;
@@ -25,6 +27,8 @@ export interface User {
   nombre: string;
   apellidos: string;
   telefono?: string;
+  localidad?: string;
+  provincia?: string;
   fechaRegistro: Date;
   ultimoAcceso?: Date;
   activo: boolean;

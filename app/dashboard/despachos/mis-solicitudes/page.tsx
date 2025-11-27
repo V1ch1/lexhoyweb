@@ -30,9 +30,9 @@ export default function MisSolicitudesPage() {
 
   // Load user's solicitudes
   useEffect(() => {
+    if (!user?.id) return;
+    
     const loadSolicitudes = async () => {
-      if (!user) return;
-      
       try {
         setLoading(true);
 
@@ -58,7 +58,7 @@ export default function MisSolicitudesPage() {
     };
 
     loadSolicitudes();
-  }, [user]);
+  }, [user?.id]); // SOLO user.id como dependencia para evitar bucles
 
   // Cancelar solicitud
   const handleCancelarSolicitud = async (solicitudId: string) => {

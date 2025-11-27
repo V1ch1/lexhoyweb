@@ -29,10 +29,114 @@ interface SettingsCard {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [activeSection, setActiveSection] =
-    useState<SettingsSection>("overview");
+  const [activeSection, setActiveSection] = useState<SettingsSection>("overview");
+  
+  // Estados para el formulario de perfil
+  const [nombre, setNombre] = useState("");
+  const [apellidos, setApellidos] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [localidad, setLocalidad] = useState("");
+  const [provincia, setProvincia] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Cargar datos del usuario desde la API para asegurar datos frescos
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        // Primero intentamos cargar desde la API para tener datos frescos
+        const response = await fetch('/api/user/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setNombre(data.nombre || "");
+          setApellidos(data.apellidos || "");
+          setTelefono(data.telefono || "");
+          setLocalidad(data.localidad || "");
+          setProvincia(data.provincia || "");
+        } else {
+          // Fallback al usuario de la sesión si falla la API
+          console.warn("No se pudo cargar el perfil fresco, usando datos de sesión");
+          setNombre(user.nombre || "");
+          setApellidos(user.apellidos || "");
+          setTelefono(user.telefono || "");
+          setLocalidad(user.localidad || "");
+          setProvincia(user.provincia || "");
+        }
+      } catch (error) {
+        console.error("Error cargando perfil:", error);
+        // Fallback en caso de error
+        setNombre(user.nombre || "");
+        setApellidos(user.apellidos || "");
+        setTelefono(user.telefono || "");
+        setLocalidad(user.localidad || "");
+        setProvincia(user.provincia || "");
+      }
+    };
+
+    fetchUserData();
+  }, [user?.id]);
+
+  // Función para guardar el perfil
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true);
+      setSaveMessage(null);
+
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          nombre: nombre.trim() || null,
+          apellidos: apellidos.trim() || null,
+          telefono: telefono.trim() || null,
+          localidad: localidad.trim() || null,
+          provincia: provincia.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar el perfil');
+      }
+
+      setSaveMessage({
+        type: 'success',
+        text: '✅ Perfil actualizado correctamente',
+      });
+
+      // Recargar la página después de 1.5 segundos para refrescar los datos
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Error al guardar perfil:', error);
+      setSaveMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Error al guardar el perfil',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Verificar si hay cambios
+  const hasChanges = () => {
+    return (
+      nombre !== (user?.nombre || "") ||
+      apellidos !== (user?.apellidos || "") ||
+      telefono !== (user?.telefono || "") ||
+      localidad !== (user?.localidad || "") ||
+      provincia !== (user?.provincia || "")
+    );
+  };
   const [currentHash, setCurrentHash] = useState("");
 
   // Detectar hash en la URL y cambiar sección activa
@@ -153,34 +257,130 @@ export default function SettingsPage() {
               <h3 className="text-xl font-semibold mb-4">Información de la Cuenta</h3>
               <div className="grid grid-cols-1 gap-6 max-w-2xl">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900">
-                    {user?.name || "No especificado"}
-                  </div>
+                  <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    id="nombre"
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                    placeholder="Ej: José"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700">
+                    Apellidos
+                  </label>
+                  <input
+                    type="text"
+                    id="apellidos"
+                    value={apellidos}
+                    onChange={(e) => setApellidos(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                    placeholder="Ej: García López"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
                   <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900">
                     {user?.email}
                   </div>
+                  <p className="mt-1 text-xs text-gray-500">El email no se puede editar</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Rol del Usuario</label>
                   <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900 capitalize">
                     {user?.role?.replace('_', ' ') || "Usuario"}
                   </div>
+                  <p className="mt-1 text-xs text-gray-500">El rol no se puede editar</p>
                 </div>
-              </div>
-              <div className="mt-8 p-4 bg-blue-50 rounded-md border border-blue-100">
-                <h4 className="text-sm font-medium text-blue-800 mb-1">Gestión de Perfil</h4>
-                <p className="text-sm text-blue-600">
-                  Actualmente la edición de perfil está deshabilitada temporalmente por mantenimiento. 
-                  Si necesitas cambiar tus datos, por favor contacta con soporte.
-                </p>
+                
+                {/* Campos editables */}
+                <div className="border-t pt-6 mt-2">
+                  <h4 className="text-lg font-semibold mb-4 text-gray-900">Información de Contacto</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
+                        Teléfono
+                      </label>
+                      <input
+                        type="tel"
+                        id="telefono"
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                        placeholder="Ej: +34 600 000 000"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="localidad" className="block text-sm font-medium text-gray-700">
+                        Localidad
+                      </label>
+                      <input
+                        type="text"
+                        id="localidad"
+                        value={localidad}
+                        onChange={(e) => setLocalidad(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                        placeholder="Ej: Madrid"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="provincia" className="block text-sm font-medium text-gray-700">
+                        Provincia
+                      </label>
+                      <input
+                        type="text"
+                        id="provincia"
+                        value={provincia}
+                        onChange={(e) => setProvincia(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                        placeholder="Ej: Madrid"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Botón de guardar */}
+                  <div className="mt-6">
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={!hasChanges() || isSaving}
+                      className={`w-full sm:w-auto px-6 py-3 rounded-lg font-semibold transition-colors ${
+                        !hasChanges() || isSaving
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                    </button>
+                  </div>
+                  
+                  {/* Mensaje de éxito/error */}
+                  {saveMessage && (
+                    <div
+                      className={`mt-4 p-4 rounded-md ${
+                        saveMessage.type === 'success'
+                          ? 'bg-green-50 border border-green-200'
+                          : 'bg-red-50 border border-red-200'
+                      }`}
+                    >
+                      <p
+                        className={`text-sm ${
+                          saveMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
+                        }`}
+                      >
+                        {saveMessage.text}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         );
+
       case "notifications":
         return (
           <NotificationsTab

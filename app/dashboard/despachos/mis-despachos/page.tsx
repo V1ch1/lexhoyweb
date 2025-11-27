@@ -29,9 +29,9 @@ export default function MisDespachosPage() {
 
   // Load user's despachos
   useEffect(() => {
+    if (!user?.id) return;
+    
     const loadUserDespachos = async () => {
-      if (!user) return;
-      
       try {
         setLoading(true);
         const response = await fetch(`/api/users/${user.id}/despachos`);
@@ -53,7 +53,7 @@ export default function MisDespachosPage() {
     };
 
     loadUserDespachos();
-  }, [user]);
+  }, [user?.id]); // SOLO user.id como dependencia para evitar bucles
 
   // Handle despacho deletion (desasignar usuario, no eliminar despacho)
   const handleDeleteDespacho = async (despachoId: string) => {

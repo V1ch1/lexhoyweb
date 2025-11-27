@@ -58,7 +58,14 @@ const DashboardPage = () => {
 
   // Cargar despachos del usuario
   useEffect(() => {
-    if (!user?.id || user.role === "usuario") return;
+    if (!user?.id) return;
+    
+    // Solo cargar despachos si el usuario NO es un usuario básico
+    if (user.role === "usuario") {
+      setUserDespachos([]);
+      setDespachosLoading(false);
+      return;
+    }
 
     const loadDespachos = async () => {
       setDespachosLoading(true);
@@ -76,11 +83,11 @@ const DashboardPage = () => {
     };
 
     loadDespachos();
-  }, [user?.id, user?.role]);
+  }, [user?.id]); // SOLO user.id como dependencia para evitar bucles
 
   // Cargar estadísticas según el rol del usuario
   useEffect(() => {
-    if (!user?.id || !user?.role) return;
+    if (!user?.id) return;
 
     const loadStats = async () => {
       setStatsLoading(true);
@@ -151,7 +158,7 @@ const DashboardPage = () => {
       }
     };
     loadStats();
-  }, [user?.id, user?.role]);
+  }, [user?.id]); // SOLO user.id como dependencia
 
   if (isLoading || !user) {
     return (
@@ -239,6 +246,47 @@ const DashboardPage = () => {
         </div>
       )}
 
+      {/* Acceso directo al despacho principal - Nuevo */}
+      {user.role === "despacho_admin" &&
+        userDespachos.length === 1 &&
+        !despachosLoading && (
+          <div className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-sm border-2 border-green-200 p-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <BuildingOfficeIcon className="h-10 w-10 text-green-600" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Acceso Rápido a tu Despacho
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  {decodeHtmlEntities(
+                    userDespachos[0].nombre ||
+                      userDespachos[0].despachos?.nombre ||
+                      "Tu despacho"
+                  )}
+                </p>
+                <button
+                  onClick={() => {
+                    const nombreDespacho = decodeHtmlEntities(
+                      userDespachos[0].nombre ||
+                        userDespachos[0].despachos?.nombre ||
+                        "Sin nombre"
+                    );
+                    const despachoSlug = slugify(nombreDespacho);
+                    router.push(`/dashboard/despachos/${despachoSlug}`);
+                  }}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center"
+                >
+                  <BuildingOfficeIcon className="h-5 w-5 mr-2" />
+                  Ir a mi Despacho
+                  <ArrowRightIcon className="h-5 w-5 ml-2" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* Call to action: Importar despacho */}
       {user.role === "despacho_admin" &&
         userDespachos.length === 0 &&
@@ -269,8 +317,8 @@ const DashboardPage = () => {
           </div>
         )}
 
-      {/* Mostrar Mis Despachos para despacho_admin (con skeleton mientras carga) */}
-      {user.role === "despacho_admin" && (
+      {/* Mostrar Mis Despachos para despacho_admin SOLO si tiene más de 1 despacho */}
+      {user.role === "despacho_admin" && userDespachos.length > 1 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Mis Despachos</h2>
@@ -313,6 +361,7 @@ const DashboardPage = () => {
                     despacho.nombre || despacho.despachos?.nombre || "";
                   return nombre && nombre !== "Sin nombre";
                 })
+                .slice(0, 3) // Solo mostrar los primeros 3
                 .map((despacho) => {
                   // Obtener el nombre del despacho, probando ambas ubicaciones posibles
                   const nombreDespacho = decodeHtmlEntities(
@@ -356,20 +405,11 @@ const DashboardPage = () => {
                     </div>
                   );
                 })
-            ) : (
-              <div className="col-span-3 text-center py-8 bg-white rounded-lg border border-gray-100">
-                <BuildingOfficeIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-1">
-                  No tienes despachos asignados
-                </p>
-                <p className="text-sm text-gray-400">
-                  Solicita un despacho para empezar
-                </p>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
+
 
       {/* Acciones rápidas */}
       <div className="mb-8">
@@ -390,7 +430,7 @@ const DashboardPage = () => {
                 title="Mis Despachos"
                 description="Importa o gestiona tus despachos de Lexhoy.com"
                 icon={BuildingOfficeIcon}
-                onClick={() => router.push("/dashboard/despachos")}
+                onClick={() => router.push("/dashboard/despachos/mis-despachos")}
                 color="green"
               />
               <QuickActionCard
