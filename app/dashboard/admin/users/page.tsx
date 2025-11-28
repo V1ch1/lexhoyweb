@@ -2,15 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { UserService } from "@/lib/userService";
 import { User, SolicitudRegistro } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
+import { QuickActionCard } from "@/components/dashboard/shared";
 import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
   UserPlusIcon,
-  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 
 const userService = new UserService();
@@ -98,56 +97,11 @@ export default function AdminUsersPage() {
     );
   }
 
-  // Componente de tarjeta de acción rápida
-  const QuickActionCard = ({ 
-    title, 
-    description, 
-    icon: Icon, 
-    href, 
-    color = "blue",
-    badge,
-    count
-  }: { 
-    title: string; 
-    description: string; 
-    icon: React.ComponentType<{ className?: string }>; 
-    href: string; 
-    color?: string;
-    badge?: number;
-    count?: number;
-  }) => {
-    const colorClasses = {
-      blue: "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200",
-      green: "bg-green-50 text-green-600 hover:bg-green-100 border-green-200",
-      purple: "bg-purple-50 text-purple-600 hover:bg-purple-100 border-purple-200",
-      orange: "bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-200",
-    };
-
-    return (
-      <Link
-        href={href}
-        className={`${colorClasses[color as keyof typeof colorClasses]} block relative w-full p-8 rounded-xl transition-all duration-200 hover:shadow-lg text-left border-2`}
-      >
-        {badge !== undefined && badge > 0 && (
-          <span className="absolute top-6 right-6 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
-            {badge}
-          </span>
-        )}
-        <Icon className="h-12 w-12 mb-4" />
-        <h3 className="text-2xl font-bold mb-2">{title}</h3>
-        <p className="text-base opacity-80 mb-4">{description}</p>
-        {count !== undefined && (
-          <p className="text-3xl font-bold">{count}</p>
-        )}
-      </Link>
-    );
-  };
-
   const solicitudesPendientes = solicitudes.filter((s) => s.estado === "pendiente").length;
 
   return (
     <div className="w-full">
-      {/* Header moderno */}
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
           Gestión de Usuarios
@@ -165,7 +119,6 @@ export default function AdminUsersPage() {
           icon={UserGroupIcon}
           href="/dashboard/admin/users/list"
           color="blue"
-          count={users.length}
         />
         
         <QuickActionCard
@@ -175,7 +128,6 @@ export default function AdminUsersPage() {
           href="/dashboard/admin/users/solicitudes"
           color="purple"
           badge={solicitudesPendientes}
-          count={solicitudesPendientes}
         />
         
         <QuickActionCard
@@ -186,6 +138,43 @@ export default function AdminUsersPage() {
           color="green"
         />
       </div>
+
+      {/* Estadísticas adicionales */}
+      {users.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Usuarios</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{users.length}</p>
+              </div>
+              <UserGroupIcon className="h-12 w-12 text-blue-500 opacity-20" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Solicitudes Pendientes</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{solicitudesPendientes}</p>
+              </div>
+              <ClipboardDocumentListIcon className="h-12 w-12 text-purple-500 opacity-20" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Admins Despacho</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {users.filter(u => u.rol === "despacho_admin").length}
+                </p>
+              </div>
+              <UserGroupIcon className="h-12 w-12 text-green-500 opacity-20" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

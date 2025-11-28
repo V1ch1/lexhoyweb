@@ -86,6 +86,31 @@ export async function PATCH(
 
     // Si se aprueba, asignar el propietario
     if (accion === "aprobar") {
+      // 0. Verificar que el despacho no tenga ya un propietario
+      const { data: despachoActual, error: despachoError } = await supabase
+        .from("despachos")
+        .select("owner_email")
+        .eq("id", solicitud.despacho_id)
+        .single();
+
+      if (despachoError) {
+        console.error("Error verificando despacho:", despachoError);
+        return NextResponse.json(
+          { error: "Error al verificar el despacho" },
+          { status: 500 }
+        );
+      }
+
+      if (despachoActual?.owner_email) {
+        return NextResponse.json(
+          { 
+            error: "Este despacho ya tiene un propietario asignado",
+            details: `El despacho ya pertenece a ${despachoActual.owner_email}`
+          },
+          { status: 400 }
+        );
+      }
+
       // 1. Actualizar owner_email en despachos
       const { error: ownerError } = await supabase
         .from("despachos")
@@ -121,9 +146,24 @@ export async function PATCH(
         if (userDespachoError.code !== '23505') {
           console.error("Error creando relación user_despachos:", userDespachoError);
         } else {
-          }
-      } else {
+          console.log("✅ Relación user_despachos ya existía");
         }
+      } else {
+        console.log("✅ Relación user_despachos creada");
+      }
+
+      // 3. Promover al usuario a despacho_admin
+      const { error: roleError } = await supabase
+        .from("users")
+        .update({ rol: "despacho_admin" })
+        .eq("id", solicitud.user_id);
+
+      if (roleError) {
+        console.error("⚠️ Error promocionando usuario a despacho_admin:", roleError);
+        // No revertir la operación, solo logear el error
+      } else {
+        console.log("✅ Usuario promocionado a despacho_admin");
+      }
     }
 
     // Enviar notificación al usuario
