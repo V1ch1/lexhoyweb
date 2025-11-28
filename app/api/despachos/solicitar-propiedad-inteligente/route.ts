@@ -158,18 +158,29 @@ export async function POST(request: Request) {
 
     const sede: any = despacho.sedes?.[0] || {};
 
-    // Verificar si el usuario ya es propietario del despacho
+    // Verificar si el despacho ya tiene un propietario
     const { data: despachoCompleto } = await supabase
       .from("despachos")
       .select("owner_email")
       .eq("id", finalDespachoId)
       .single();
 
-    if (despachoCompleto?.owner_email === userEmail) {
-      return NextResponse.json(
-        { error: "Ya eres propietario de este despacho" },
-        { status: 400 }
-      );
+    if (despachoCompleto?.owner_email) {
+      // Si el despacho ya tiene propietario, verificar si es el usuario actual
+      if (despachoCompleto.owner_email === userEmail) {
+        return NextResponse.json(
+          { error: "Ya eres propietario de este despacho" },
+          { status: 400 }
+        );
+      } else {
+        return NextResponse.json(
+          { 
+            error: "Este despacho ya tiene un propietario asignado",
+            details: "No se pueden solicitar despachos que ya tienen propietario"
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Verificar si ya tiene acceso a través de user_despachos
