@@ -70,17 +70,16 @@ export default function LeadDetailPage() {
 
     try {
       setBuying(true);
-      const res = await fetch(`/api/leads/${lead.id}`, {
+      const res = await fetch(`/api/leads/${lead.id}/comprar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "buy" }),
       });
       const data = await res.json();
 
       if (data.success) {
         // Recargar datos para ver información completa
         await fetchLead(lead.id);
-        alert("¡Lead comprado exitosamente!");
+        alert("¡Lead comprado exitosamente! Ahora puedes ver todos los datos de contacto.");
       } else {
         alert(data.error || "Error al comprar lead");
       }

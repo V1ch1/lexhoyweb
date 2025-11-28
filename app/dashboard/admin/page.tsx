@@ -190,7 +190,7 @@ export default function AdminDashboard() {
             title="Gestión de Leads"
             description="Administra leads, precios, campos y configuración"
             icon={ClipboardDocumentListIcon}
-            onClick={() => router.push("/dashboard/admin/leads-list")}
+            onClick={() => router.push("/dashboard/admin/listado-leads")}
             color="blue"
           />
           <QuickActionCard
