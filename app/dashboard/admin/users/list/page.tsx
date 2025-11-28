@@ -72,6 +72,17 @@ export default function UsersListPage() {
     }
   };
 
+  const handleChangeUserStatus = async (userId: string, newStatus: UserStatus) => {
+    try {
+      // Usamos updateUser ya que updateUserStatus no existe explícitamente en el servicio pero updateUser lo maneja
+      await userService.updateUser(userId, { estado: newStatus });
+      await loadUsers();
+    } catch (error) {
+      console.error("Error changing user status:", error);
+      alert("Error al cambiar el estado del usuario");
+    }
+  };
+
   const StatusBadge = ({ status }: { status: UserStatus }) => {
     const isActive = status === "activo";
     return (
@@ -229,20 +240,36 @@ export default function UsersListPage() {
             </div>
 
             <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <select
-                value={user.rol}
-                onChange={(e) => handleChangeUserRole(user.id, e.target.value as UserRole)}
-                className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="usuario">Usuario</option>
-                <option value="despacho_admin">Admin Despacho</option>
-                <option value="super_admin">Super Admin</option>
-              </select>
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <select
+                  value={user.rol}
+                  onChange={(e) => handleChangeUserRole(user.id, e.target.value as UserRole)}
+                  className="text-sm border border-gray-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Cambiar rol"
+                >
+                  <option value="usuario">Usuario</option>
+                  <option value="despacho_admin">Admin Despacho</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+                <select
+                  value={user.estado}
+                  onChange={(e) => handleChangeUserStatus(user.id, e.target.value as UserStatus)}
+                  className={`text-sm border border-gray-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    user.estado === "activo" ? "text-green-700 bg-green-50" : "text-gray-700"
+                  }`}
+                  title="Cambiar estado"
+                >
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="suspendido">Suspendido</option>
+                </select>
+              </div>
               <button
                 onClick={() => router.push(`/dashboard/admin/users/${user.id}`)}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
               >
-                Ver detalles
+                Detalles
               </button>
             </div>
           </div>
