@@ -8,16 +8,19 @@ import {
   BellIcon,
   ShieldCheckIcon,
   ArrowRightIcon,
+  ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
 import NotificationsTab from "@/components/settings/NotificationsTab";
 import PrivacyTab from "@/components/settings/PrivacyTab";
+import SolicitudesTab from "@/components/settings/SolicitudesTab";
 
 // Types
 type SettingsSection =
   | "overview"
   | "account"
   | "notifications"
-  | "privacy";
+  | "privacy"
+  | "solicitudes";
 
 interface SettingsCard {
   id: SettingsSection;
@@ -145,6 +148,7 @@ export default function SettingsPage() {
     const hashToSection: Record<string, SettingsSection> = {
       cuenta: "account",
       account: "account",
+      solicitudes: "solicitudes",
       notificaciones: "notifications",
       notifications: "notifications",
       privacidad: "privacy",
@@ -227,6 +231,14 @@ export default function SettingsPage() {
       description: "Gestiona tu perfil, contraseña y sesiones",
       icon: UserCircleIcon,
       color: "blue",
+      visible: true,
+    },
+    {
+      id: "solicitudes",
+      name: "Mis Solicitudes",
+      description: "Ver el estado de tus solicitudes de despacho",
+      icon: ClipboardDocumentListIcon,
+      color: "purple",
       visible: true,
     },
     {
@@ -381,6 +393,8 @@ export default function SettingsPage() {
           </div>
         );
 
+      case "solicitudes":
+        return <SolicitudesTab />;
       case "notifications":
         return (
           <NotificationsTab
@@ -524,6 +538,7 @@ export default function SettingsPage() {
                 const sectionToHash: Record<SettingsSection, string> = {
                   overview: "",
                   account: "cuenta",
+                  solicitudes: "solicitudes",
                   notifications: "notificaciones",
                   privacy: "privacidad",
                 };
