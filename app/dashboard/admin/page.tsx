@@ -190,21 +190,21 @@ export default function AdminDashboard() {
             title="Gestión de Leads"
             description="Administra leads, precios, campos y configuración"
             icon={ClipboardDocumentListIcon}
-            onClick={() => router.push("/dashboard/admin/listado-leads")}
+            href="/dashboard/admin/listado-leads"
             color="blue"
           />
           <QuickActionCard
             title="Gestión de Usuarios"
             description="Administra usuarios, roles y permisos"
             icon={UserGroupIcon}
-            onClick={() => router.push("/dashboard/admin/users")}
+            href="/dashboard/admin/users"
             color="purple"
           />
           <QuickActionCard
             title="Ver Solicitudes"
             description="Revisa solicitudes de despachos pendientes"
             icon={DocumentTextIcon}
-            onClick={() => router.push("/dashboard/admin/users/solicitudes")}
+            href="/dashboard/admin/users/solicitudes"
             color="yellow"
             badge={solicitudesPendientes}
           />
@@ -212,21 +212,21 @@ export default function AdminDashboard() {
             title="Gestionar Despachos"
             description="Administra todos los despachos del sistema"
             icon={BuildingOfficeIcon}
-            onClick={() => router.push("/dashboard/despachos")}
+            href="/dashboard/despachos"
             color="green"
           />
           <QuickActionCard
             title="Gestión de Marketing"
             description="Administra campañas y contenido de marketing"
             icon={ChartBarIcon}
-            onClick={() => router.push("/dashboard/admin/marketing")}
+            href="/dashboard/admin/marketing"
             color="orange"
           />
           <QuickActionCard
             title="Configuración"
             description="Ajusta tu perfil y preferencias"
             icon={CogIcon}
-            onClick={() => router.push("/dashboard/settings")}
+            href="/dashboard/settings"
             color="blue"
           />
         </div>

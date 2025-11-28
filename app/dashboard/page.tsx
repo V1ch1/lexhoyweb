@@ -423,28 +423,28 @@ const DashboardPage = () => {
                 title="Ver Leads"
                 description="Gestiona los leads de tu despacho"
                 icon={ClipboardDocumentListIcon}
-                onClick={() => router.push("/dashboard/leads")}
+                href="/dashboard/leads"
                 color="blue"
               />
               <QuickActionCard
                 title="Mis Despachos"
                 description="Importa o gestiona tus despachos de Lexhoy.com"
                 icon={BuildingOfficeIcon}
-                onClick={() => router.push("/dashboard/despachos/mis-despachos")}
+                href="/dashboard/despachos/mis-despachos"
                 color="green"
               />
               <QuickActionCard
                 title="Notificaciones"
                 description="Revisa tus notificaciones y alertas"
                 icon={BellIcon}
-                onClick={() => router.push("/dashboard/notificaciones")}
+                href="/dashboard/notificaciones"
                 color="yellow"
               />
               <QuickActionCard
                 title="Configuración"
                 description="Ajusta tu perfil y preferencias"
                 icon={CogIcon}
-                onClick={() => router.push("/dashboard/settings")}
+                href="/dashboard/settings"
                 color="purple"
               />
             </>
@@ -456,23 +456,21 @@ const DashboardPage = () => {
                 title="Buscar Despachos"
                 description="Encuentra y solicita acceso a despachos"
                 icon={BuildingOfficeIcon}
-                onClick={() => router.push("/dashboard/despachos")}
+                href="/dashboard/despachos"
                 color="orange"
               />
               <QuickActionCard
                 title="Mis Solicitudes"
                 description="Revisa el estado de tus solicitudes"
                 icon={DocumentTextIcon}
-                onClick={() =>
-                  router.push("/dashboard/settings?tab=solicitudes")
-                }
+                href="/dashboard/settings?tab=solicitudes"
                 color="blue"
               />
               <QuickActionCard
                 title="Mi Perfil"
                 description="Actualiza tu información personal"
                 icon={CogIcon}
-                onClick={() => router.push("/dashboard/settings")}
+                href="/dashboard/settings"
                 color="green"
               />
             </>

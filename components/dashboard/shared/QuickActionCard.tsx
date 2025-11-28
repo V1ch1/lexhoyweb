@@ -1,12 +1,11 @@
-"use client";
-
+import Link from "next/link";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 
 interface QuickActionCardProps {
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  onClick: () => void;
+  href: string;
   color?: "blue" | "green" | "purple" | "orange" | "yellow" | "red";
   badge?: number;
 }
@@ -15,7 +14,7 @@ export const QuickActionCard = ({
   title,
   description,
   icon: Icon,
-  onClick,
+  href,
   color = "blue",
   badge,
 }: QuickActionCardProps) => {
@@ -29,9 +28,9 @@ export const QuickActionCard = ({
   };
 
   return (
-    <button
-      onClick={onClick}
-      className={`${colorClasses[color]} relative w-full p-6 rounded-xl transition-all duration-200 hover:shadow-md text-left group`}
+    <Link
+      href={href}
+      className={`${colorClasses[color]} block relative w-full p-6 rounded-xl transition-all duration-200 hover:shadow-md text-left group`}
     >
       {badge !== undefined && badge > 0 && (
         <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -42,6 +41,6 @@ export const QuickActionCard = ({
       <h3 className="text-lg font-semibold mb-1">{title}</h3>
       <p className="text-sm opacity-80">{description}</p>
       <ArrowRightIcon className="h-5 w-5 mt-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </button>
+    </Link>
   );
 };

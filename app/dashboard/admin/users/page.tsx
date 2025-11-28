@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { UserService } from "@/lib/userService";
 import { User, SolicitudRegistro } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
@@ -102,7 +103,7 @@ export default function AdminUsersPage() {
     title, 
     description, 
     icon: Icon, 
-    onClick, 
+    href, 
     color = "blue",
     badge,
     count
@@ -110,7 +111,7 @@ export default function AdminUsersPage() {
     title: string; 
     description: string; 
     icon: React.ComponentType<{ className?: string }>; 
-    onClick: () => void; 
+    href: string; 
     color?: string;
     badge?: number;
     count?: number;
@@ -123,9 +124,9 @@ export default function AdminUsersPage() {
     };
 
     return (
-      <button
-        onClick={onClick}
-        className={`${colorClasses[color as keyof typeof colorClasses]} relative w-full p-8 rounded-xl transition-all duration-200 hover:shadow-lg text-left group border-2`}
+      <Link
+        href={href}
+        className={`${colorClasses[color as keyof typeof colorClasses]} block relative w-full p-8 rounded-xl transition-all duration-200 hover:shadow-lg text-left group border-2`}
       >
         {badge !== undefined && badge > 0 && (
           <span className="absolute top-6 right-6 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
@@ -138,11 +139,11 @@ export default function AdminUsersPage() {
         {count !== undefined && (
           <p className="text-3xl font-bold mb-3">{count}</p>
         )}
-        <div className="flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 ">
+        <div className="flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <span>Ir a {title.toLowerCase()}</span>
           <ArrowRightIcon className="h-5 w-5 ml-2" />
         </div>
-      </button>
+      </Link>
     );
   };
 
@@ -166,7 +167,7 @@ export default function AdminUsersPage() {
           title="Usuarios"
           description="Ver y gestionar todos los usuarios del sistema"
           icon={UserGroupIcon}
-          onClick={() => router.push("/dashboard/admin/users/list")}
+          href="/dashboard/admin/users/list"
           color="blue"
           count={users.length}
         />
@@ -175,7 +176,7 @@ export default function AdminUsersPage() {
           title="Solicitudes"
           description="Revisar solicitudes de despachos pendientes"
           icon={ClipboardDocumentListIcon}
-          onClick={() => router.push("/dashboard/admin/users/solicitudes")}
+          href="/dashboard/admin/users/solicitudes"
           color="purple"
           badge={solicitudesPendientes}
           count={solicitudesPendientes}
@@ -185,7 +186,7 @@ export default function AdminUsersPage() {
           title="Crear Usuario"
           description="Añadir un nuevo usuario al sistema"
           icon={UserPlusIcon}
-          onClick={() => router.push("/dashboard/admin/users/create")}
+          href="/dashboard/admin/users/create"
           color="green"
         />
       </div>
