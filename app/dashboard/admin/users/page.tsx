@@ -126,7 +126,7 @@ export default function AdminUsersPage() {
     return (
       <Link
         href={href}
-        className={`${colorClasses[color as keyof typeof colorClasses]} block relative w-full p-8 rounded-xl transition-all duration-200 hover:shadow-lg text-left group border-2`}
+        className={`${colorClasses[color as keyof typeof colorClasses]} block relative w-full p-8 rounded-xl transition-all duration-200 hover:shadow-lg text-left border-2`}
       >
         {badge !== undefined && badge > 0 && (
           <span className="absolute top-6 right-6 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">
@@ -137,12 +137,8 @@ export default function AdminUsersPage() {
         <h3 className="text-2xl font-bold mb-2">{title}</h3>
         <p className="text-base opacity-80 mb-4">{description}</p>
         {count !== undefined && (
-          <p className="text-3xl font-bold mb-3">{count}</p>
+          <p className="text-3xl font-bold">{count}</p>
         )}
-        <div className="flex items-center text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <span>Ir a {title.toLowerCase()}</span>
-          <ArrowRightIcon className="h-5 w-5 ml-2" />
-        </div>
       </Link>
     );
   };
