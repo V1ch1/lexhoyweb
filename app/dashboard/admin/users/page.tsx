@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
           title="Solicitudes"
           description="Revisar solicitudes de despachos pendientes"
           icon={ClipboardDocumentListIcon}
-          href="/dashboard/admin/users/solicitudes"
+          href="/dashboard/admin/solicitudes"
           color="purple"
           badge={solicitudesPendientes}
         />

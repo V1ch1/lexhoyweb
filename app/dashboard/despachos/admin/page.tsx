@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { SyncService } from "@/lib/syncService";
 import { useRouter } from "next/navigation";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
+import { QuickActionCard } from "@/components/dashboard/shared";
+import { DocumentTextIcon } from "@heroicons/react/24/outline";
 
 interface WordPressDespacho {
   id?: number;
@@ -69,6 +71,7 @@ export default function AdminDespachosPage() {
   const [selectedDespacho, setSelectedDespacho] = useState<Despacho | null>(
     null
   );
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
 
   // Verificar permisos de super admin
   useEffect(() => {
@@ -107,6 +110,25 @@ export default function AdminDespachosPage() {
 
     checkPermissions();
   }, [user, router]);
+
+  // Cargar solicitudes pendientes
+  useEffect(() => {
+    const loadSolicitudes = async () => {
+      if (userRole !== "super_admin") return;
+      
+      try {
+        const response = await fetch("/api/admin/solicitudes?estado=pendiente");
+        if (response.ok) {
+          const data = await response.json();
+          setSolicitudesPendientes(data.total || 0);
+        }
+      } catch (error) {
+        console.error("Error cargando solicitudes:", error);
+      }
+    };
+
+    loadSolicitudes();
+  }, [userRole]);
 
   // Función para obtener despachos de WordPress
   const fetchWordPressDespachos = async () => {
@@ -595,6 +617,21 @@ Escribe "ELIMINAR" para confirmar:`;
           Panel de administración para super admins - Gestión completa de
           despachos
         </p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Accesos Rápidos</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <QuickActionCard
+            title="Solicitudes de Despacho"
+            description="Revisar y gestionar solicitudes de propiedad"
+            icon={DocumentTextIcon}
+            href="/dashboard/admin/solicitudes"
+            color="purple"
+            badge={solicitudesPendientes}
+          />
+        </div>
       </div>
 
       {/* Controles */}

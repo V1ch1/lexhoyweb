@@ -58,7 +58,7 @@ export default function DespachosPage() {
       description: 'Administra los despachos a los que tienes acceso',
       icon: BuildingOfficeIcon,
       color: 'blue',
-      visible: true,
+      visible: !isSuperAdmin, // Ocultar para super admins
       path: '/dashboard/despachos/mis-despachos'
     },
     {
@@ -67,7 +67,7 @@ export default function DespachosPage() {
       description: 'Revisa el estado de tus solicitudes de acceso',
       icon: DocumentTextIcon,
       color: 'yellow',
-      visible: true,
+      visible: !isSuperAdmin, // Ocultar para super admins
       path: '/dashboard/despachos/mis-solicitudes'
     },
     {

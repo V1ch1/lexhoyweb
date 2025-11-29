@@ -14,11 +14,15 @@ export async function PATCH(
 ) {
   try {
     const { solicitudId } = await params;
-    const { accion, motivo } = await request.json();
+    
+    // Leer el body UNA SOLA VEZ al principio
+    const body = await request.json();
+    const { accion, motivo, nuevoEstado: nuevoEstadoBody } = body;
 
-    if (!accion || !["aprobar", "rechazar"].includes(accion)) {
+    // Validar acción
+    if (!accion || !["aprobar", "rechazar", "revocar", "modificar"].includes(accion)) {
       return NextResponse.json(
-        { error: "Acción inválida. Debe ser 'aprobar' o 'rechazar'" },
+        { error: "Acción inválida. Debe ser 'aprobar', 'rechazar', 'revocar' o 'modificar'" },
         { status: 400 }
       );
     }
@@ -51,14 +55,49 @@ export async function PATCH(
       );
     }
 
-    if (solicitud.estado !== "pendiente") {
-      return NextResponse.json(
-        { error: "La solicitud ya ha sido procesada" },
-        { status: 400 }
-      );
+    // Validar estado según acción
+    if (accion === "aprobar" || accion === "rechazar") {
+      // Aprobar/Rechazar solo si está pendiente
+      if (solicitud.estado !== "pendiente") {
+        return NextResponse.json(
+          { error: "Solo se pueden aprobar/rechazar solicitudes pendientes" },
+          { status: 400 }
+        );
+      }
+    } else if (accion === "revocar") {
+      // Revocar solo si está aprobada
+      if (solicitud.estado !== "aprobado") {
+        return NextResponse.json(
+          { error: "Solo se pueden revocar solicitudes aprobadas" },
+          { status: 400 }
+        );
+      }
+    } else if (accion === "modificar") {
+      // Modificar puede aplicarse a cualquier estado
+      // Se requiere el nuevo estado en el body
+      if (!nuevoEstadoBody || !["pendiente", "aprobado", "rechazado", "cancelada"].includes(nuevoEstadoBody)) {
+        return NextResponse.json(
+          { error: "Para modificar se requiere un 'nuevoEstado' válido (pendiente, aprobado, rechazado, cancelada)" },
+          { status: 400 }
+        );
+      }
     }
 
-    const nuevoEstado = accion === "aprobar" ? "aprobado" : "rechazado";
+    // Determinar el nuevo estado
+    let nuevoEstado: string;
+    if (accion === "aprobar") {
+      nuevoEstado = "aprobado";
+    } else if (accion === "rechazar") {
+      nuevoEstado = "rechazado";
+    } else if (accion === "revocar") {
+      nuevoEstado = "rechazado"; // Al revocar, marcamos como rechazada
+    } else {
+      // modificar - usar el nuevoEstado del body ya parseado
+      nuevoEstado = nuevoEstadoBody;
+    }
+
+    const estadoAnterior = solicitud.estado;
+    console.log(`🔄 Cambio de estado: ${estadoAnterior} → ${nuevoEstado}`);
 
     // Actualizar la solicitud
     const updateData: Record<string, unknown> = {
@@ -66,8 +105,8 @@ export async function PATCH(
       fecha_respuesta: new Date().toISOString(),
     };
     
-    // Solo añadir notas si es rechazo
-    if (accion === "rechazar" && motivo) {
+    // Añadir notas si es rechazo o revocación
+    if ((accion === "rechazar" || accion === "revocar") && motivo) {
       updateData.notas_respuesta = motivo;
     }
     
@@ -82,6 +121,224 @@ export async function PATCH(
         { error: "Error al actualizar solicitud" },
         { status: 500 }
       );
+    }
+
+    // ========================================
+    // LÓGICA DE TRANSICIÓN DE ESTADOS
+    // ========================================
+    
+    // Para la acción "modificar", necesitamos manejar las transiciones de estado
+    if (accion === "modificar") {
+      const estabaAprobado = estadoAnterior === "aprobado";
+      const seraAprobado = nuevoEstado === "aprobado";
+
+      // CASO 1: De APROBADO → (PENDIENTE, RECHAZADO, CANCELADA)
+      // Necesitamos revocar el acceso
+      if (estabaAprobado && !seraAprobado) {
+        console.log("🔄 Revocando acceso al despacho...");
+        
+        // 1. Eliminar owner_email del despacho
+        const { error: removeOwnerError } = await supabase
+          .from("despachos")
+          .update({ owner_email: null })
+          .eq("id", solicitud.despacho_id);
+
+        if (removeOwnerError) {
+          console.error("Error eliminando propietario:", removeOwnerError);
+        } else {
+          console.log("✅ owner_email eliminado del despacho");
+        }
+
+        // 2. Eliminar relación en user_despachos
+        const { error: deleteRelError } = await supabase
+          .from("user_despachos")
+          .delete()
+          .eq("user_id", solicitud.user_id)
+          .eq("despacho_id", solicitud.despacho_id);
+
+        if (deleteRelError) {
+          console.error("⚠️ Error eliminando relación user_despachos:", deleteRelError);
+        } else {
+          console.log("✅ Relación user_despachos eliminada");
+        }
+
+        // 3. Verificar si el usuario tiene otros despachos
+        const { data: otrosDespachos, error: otrosError } = await supabase
+          .from("user_despachos")
+          .select("id")
+          .eq("user_id", solicitud.user_id);
+
+        if (otrosError) {
+          console.error("Error verificando otros despachos:", otrosError);
+        }
+
+        // 4. Si no tiene otros despachos, degradar a usuario normal
+        if (!otrosDespachos || otrosDespachos.length === 0) {
+          const { error: roleError } = await supabase
+            .from("users")
+            .update({ rol: "usuario" })
+            .eq("id", solicitud.user_id);
+
+          if (roleError) {
+            console.error("⚠️ Error degradando usuario:", roleError);
+          } else {
+            console.log("✅ Usuario degradado a 'usuario'");
+          }
+        }
+      }
+
+      // CASO 2: De (PENDIENTE, RECHAZADO, CANCELADA) → APROBADO
+      // Necesitamos asignar el acceso
+      if (!estabaAprobado && seraAprobado) {
+        console.log("🔄 Asignando acceso al despacho...");
+        
+        // 0. Verificar que el despacho no tenga ya un propietario
+        const { data: despachoActual, error: despachoError } = await supabase
+          .from("despachos")
+          .select("owner_email")
+          .eq("id", solicitud.despacho_id)
+          .single();
+
+        if (despachoError) {
+          console.error("Error verificando despacho:", despachoError);
+          // Revertir el cambio de estado
+          await supabase
+            .from("solicitudes_despacho")
+            .update({ estado: estadoAnterior })
+            .eq("id", solicitudId);
+          
+          return NextResponse.json(
+            { error: "Error al verificar el despacho" },
+            { status: 500 }
+          );
+        }
+
+        if (despachoActual?.owner_email) {
+          // Revertir el cambio de estado
+          await supabase
+            .from("solicitudes_despacho")
+            .update({ estado: estadoAnterior })
+            .eq("id", solicitudId);
+          
+          return NextResponse.json(
+            { 
+              error: "Este despacho ya tiene un propietario asignado",
+              details: `El despacho ya pertenece a ${despachoActual.owner_email}`
+            },
+            { status: 400 }
+          );
+        }
+
+        // 1. Actualizar owner_email en despachos
+        const { error: ownerError } = await supabase
+          .from("despachos")
+          .update({ owner_email: solicitud.user_email })
+          .eq("id", solicitud.despacho_id);
+
+        if (ownerError) {
+          console.error("Error asignando propietario:", ownerError);
+          // Revertir el estado de la solicitud
+          await supabase
+            .from("solicitudes_despacho")
+            .update({ estado: estadoAnterior })
+            .eq("id", solicitudId);
+
+          return NextResponse.json(
+            { error: "Error al asignar propietario" },
+            { status: 500 }
+          );
+        } else {
+          console.log("✅ owner_email asignado al despacho");
+        }
+
+        // 2. Crear entrada en user_despachos si no existe
+        const { error: userDespachoError } = await supabase
+          .from("user_despachos")
+          .insert({
+            user_id: solicitud.user_id,
+            despacho_id: solicitud.despacho_id,
+          })
+          .select()
+          .single();
+
+        if (userDespachoError) {
+          // Si el error es por duplicado, no pasa nada
+          if (userDespachoError.code !== '23505') {
+            console.error("Error creando relación user_despachos:", userDespachoError);
+          } else {
+            console.log("✅ Relación user_despachos ya existía");
+          }
+        } else {
+          console.log("✅ Relación user_despachos creada");
+        }
+
+        // 3. Promover al usuario a despacho_admin
+        const { error: roleError } = await supabase
+          .from("users")
+          .update({ rol: "despacho_admin" })
+          .eq("id", solicitud.user_id);
+
+        if (roleError) {
+          console.error("⚠️ Error promoviendo usuario:", roleError);
+        } else {
+          console.log("✅ Usuario promovido a 'despacho_admin'");
+        }
+      }
+    }
+
+    // REVOCAR: Eliminar propietario del despacho y degradar rol del usuario
+    if (accion === "revocar") {
+      // 1. Eliminar owner_email del despacho
+      const { error: removeOwnerError } = await supabase
+        .from("despachos")
+        .update({ owner_email: null })
+        .eq("id", solicitud.despacho_id);
+
+      if (removeOwnerError) {
+        console.error("Error eliminando propietario:", removeOwnerError);
+        return NextResponse.json(
+          { error: "Error al eliminar propietario del despacho" },
+          { status: 500 }
+        );
+      }
+
+      // 2. Verificar si el usuario tiene otros despachos
+      const { data: otrosDespachos, error: otrosError } = await supabase
+        .from("user_despachos")
+        .select("id")
+        .eq("user_id", solicitud.user_id)
+        .neq("despacho_id", solicitud.despacho_id);
+
+      if (otrosError) {
+        console.error("Error verificando otros despachos:", otrosError);
+      }
+
+      // 3. Si no tiene otros despachos, degradar a usuario normal
+      if (!otrosDespachos || otrosDespachos.length === 0) {
+        const { error: roleError } = await supabase
+          .from("users")
+          .update({ rol: "usuario" })
+          .eq("id", solicitud.user_id);
+
+        if (roleError) {
+          console.error("⚠️ Error degradando usuario:", roleError);
+        } else {
+          console.log("✅ Usuario degradado a 'usuario'");
+        }
+      }
+
+      // 4. Eliminar relación en user_despachos
+      const { error: deleteRelError } = await supabase
+        .from("user_despachos")
+        .delete()
+        .eq("user_id", solicitud.user_id)
+        .eq("despacho_id", solicitud.despacho_id);
+
+      if (deleteRelError) {
+        console.error("⚠️ Error eliminando relación user_despachos:", deleteRelError);
+      } else {
+        console.log("✅ Relación user_despachos eliminada");
+      }
     }
 
     // Si se aprueba, asignar el propietario

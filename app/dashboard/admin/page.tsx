@@ -124,7 +124,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <button
-              onClick={() => router.push("/dashboard/admin/users/solicitudes")}
+              onClick={() => router.push("/dashboard/admin/solicitudes")}
               className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
             >
               Revisar ahora
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
             title="Ver Solicitudes"
             description="Revisa solicitudes de despachos pendientes"
             icon={DocumentTextIcon}
-            href="/dashboard/admin/users/solicitudes"
+            href="/dashboard/admin/solicitudes"
             color="yellow"
             badge={solicitudesPendientes}
           />
