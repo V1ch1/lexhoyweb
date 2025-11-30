@@ -1,4 +1,7 @@
 import { supabase } from "./supabase";
+import { templateSolicitudBienvenida } from "./email-templates/solicitud-bienvenida";
+import { templateSolicitudAccesoRestaurado } from "./email-templates/solicitud-acceso-restaurado";
+import { templateSolicitudAccesoRevocado } from "./email-templates/solicitud-acceso-revocado";
 
 // Configuración de emails
 const FROM_EMAIL = process.env.NEXT_PUBLIC_RESEND_FROM_EMAIL || "notificaciones@lexhoy.com";
@@ -713,5 +716,29 @@ export class EmailService {
         </body>
       </html>
     `;
+  }
+
+  /**
+   * Template: Bienvenida - Primera Aprobación
+   * Usado cuando: pendiente → aprobado
+   */
+  static templateSolicitudBienvenida(data: EmailTemplateData): string {
+    return templateSolicitudBienvenida(data);
+  }
+
+  /**
+   * Template: Acceso Restaurado - Re-aprobación
+   * Usado cuando: rechazado/cancelada → aprobado
+   */
+  static templateSolicitudAccesoRestaurado(data: EmailTemplateData): string {
+    return templateSolicitudAccesoRestaurado(data);
+  }
+
+  /**
+   * Template: Acceso Revocado - Remoción de Propietario
+   * Usado cuando: aprobado → rechazado/cancelada
+   */
+  static templateSolicitudAccesoRevocado(data: EmailTemplateData): string {
+    return templateSolicitudAccesoRevocado(data);
   }
 }

@@ -423,58 +423,124 @@ export async function PATCH(
       }
     }
 
-    // Enviar notificación al usuario
-    try {
-      // Crear notificación en la base de datos
-      await NotificationService.create({
-        userId: solicitud.user_id,
-        tipo: accion === "aprobar" ? "solicitud_aprobada" : "solicitud_rechazada",
-        titulo:
-          accion === "aprobar"
-            ? "Solicitud aprobada"
-            : "Solicitud rechazada",
-        mensaje:
-          accion === "aprobar"
+    // ========================================
+    // NOTIFICACIONES Y EMAILS
+    // ========================================
+    
+    // Determinar qué tipo de notificación enviar basado en la transición de estado
+    let tipoNotificacion: "aprobacion" | "rechazo" | "ninguna" = "ninguna";
+    let tipoTemplate: "bienvenida" | "acceso-restaurado" | "rechazo-inicial" | "acceso-revocado" | null = null;
+    
+    // Transiciones que resultan en APROBACIÓN
+    if (nuevoEstado === "aprobado" && estadoAnterior !== "aprobado") {
+      tipoNotificacion = "aprobacion";
+      // Determinar si es primera aprobación o re-aprobación
+      tipoTemplate = estadoAnterior === "pendiente" ? "bienvenida" : "acceso-restaurado";
+      console.log(`📧 Transición ${estadoAnterior} → ${nuevoEstado}: Enviando email de ${tipoTemplate === "bienvenida" ? "BIENVENIDA" : "ACCESO RESTAURADO"}`);
+    }
+    // Transiciones que resultan en RECHAZO
+    else if (nuevoEstado === "rechazado" && estadoAnterior !== "rechazado") {
+      tipoNotificacion = "rechazo";
+      // Determinar si es primer rechazo o revocación de acceso
+      tipoTemplate = estadoAnterior === "aprobado" ? "acceso-revocado" : "rechazo-inicial";
+      console.log(`📧 Transición ${estadoAnterior} → ${nuevoEstado}: Enviando email de ${tipoTemplate === "acceso-revocado" ? "ACCESO REVOCADO" : "RECHAZO INICIAL"}`);
+    }
+    // CANCELACIÓN desde aprobado (similar a revocación)
+    else if (nuevoEstado === "cancelada" && estadoAnterior === "aprobado") {
+      tipoNotificacion = "rechazo";
+      tipoTemplate = "acceso-revocado";
+      console.log(`📧 Transición ${estadoAnterior} → ${nuevoEstado}: Enviando email de ACCESO REVOCADO`);
+    }
+    // Otras transiciones no envían email
+    else {
+      console.log(`ℹ️ Transición ${estadoAnterior} → ${nuevoEstado}: No se envía email`);
+    }
+
+    if (tipoNotificacion !== "ninguna" && tipoTemplate) {
+      try {
+        const esAprobacion = tipoNotificacion === "aprobacion";
+
+        // Crear notificación en la base de datos
+        await NotificationService.create({
+          userId: solicitud.user_id,
+          tipo: esAprobacion ? "solicitud_aprobada" : "solicitud_rechazada",
+          titulo: esAprobacion ? "Solicitud aprobada" : "Solicitud rechazada",
+          mensaje: esAprobacion
             ? `Tu solicitud para el despacho "${solicitud.despacho_nombre}" ha sido aprobada. Ya puedes gestionar tu despacho.`
             : `Tu solicitud para el despacho "${solicitud.despacho_nombre}" ha sido rechazada.${motivo ? ` Motivo: ${motivo}` : ""}`,
-        url: accion === "aprobar" ? "/dashboard/despachos" : "/dashboard",
-        metadata: {
-          solicitudId,
-          despachoId: solicitud.despacho_id,
-          despachoNombre: solicitud.despacho_nombre,
-        },
-      });
+          url: esAprobacion ? "/dashboard/despachos" : "/dashboard",
+          metadata: {
+            solicitudId,
+            despachoId: solicitud.despacho_id,
+            despachoNombre: solicitud.despacho_nombre,
+          },
+        });
 
-      // Enviar email al usuario
-      const emailSent = await EmailService.send({
-        to: solicitud.user_email,
-        subject:
-          accion === "aprobar"
-            ? "Solicitud de despacho aprobada - LexHoy"
-            : "Solicitud de despacho rechazada - LexHoy",
-        html:
-          accion === "aprobar"
-            ? EmailService.templateSolicitudAprobada({
-                userName: solicitud.user_name,
-                userEmail: solicitud.user_email,
-                despachoName: solicitud.despacho_nombre,
-                url: "https://despachos.lexhoy.com/dashboard/despachos",
-              })
-            : EmailService.templateSolicitudRechazada({
-                userName: solicitud.user_name,
-                userEmail: solicitud.user_email,
-                despachoName: solicitud.despacho_nombre,
-                motivoRechazo: motivo || "No se especificó un motivo",
-              }),
-      });
+        // Seleccionar la plantilla de email correcta según el contexto
+        let emailHtml: string;
+        let emailSubject: string;
 
-      if (emailSent) {
+        switch (tipoTemplate) {
+          case "bienvenida":
+            emailSubject = "🎉 ¡Bienvenido a LexHoy! Tu despacho ha sido aprobado";
+            emailHtml = EmailService.templateSolicitudBienvenida({
+              userName: solicitud.user_name,
+              userEmail: solicitud.user_email,
+              despachoName: solicitud.despacho_nombre,
+              url: "https://despachos.lexhoy.com/dashboard/despachos",
+            });
+            break;
+
+          case "acceso-restaurado":
+            emailSubject = "✅ Tu acceso al despacho ha sido restaurado - LexHoy";
+            emailHtml = EmailService.templateSolicitudAccesoRestaurado({
+              userName: solicitud.user_name,
+              userEmail: solicitud.user_email,
+              despachoName: solicitud.despacho_nombre,
+              url: "https://despachos.lexhoy.com/dashboard/despachos",
+            });
+            break;
+
+          case "rechazo-inicial":
+            emailSubject = "Actualización sobre tu solicitud - LexHoy";
+            emailHtml = EmailService.templateSolicitudRechazada({
+              userName: solicitud.user_name,
+              userEmail: solicitud.user_email,
+              despachoName: solicitud.despacho_nombre,
+              motivoRechazo: motivo || "No se especificó un motivo",
+            });
+            break;
+
+          case "acceso-revocado":
+            emailSubject = "⚠️ Actualización importante sobre tu despacho - LexHoy";
+            emailHtml = EmailService.templateSolicitudAccesoRevocado({
+              userName: solicitud.user_name,
+              userEmail: solicitud.user_email,
+              despachoName: solicitud.despacho_nombre,
+              motivoRechazo: motivo || "No se especificó un motivo",
+            });
+            break;
+
+          default:
+            throw new Error(`Template type not recognized: ${tipoTemplate}`);
+        }
+
+        // Enviar email al usuario
+        const emailSent = await EmailService.send({
+          to: solicitud.user_email,
+          subject: emailSubject,
+          html: emailHtml,
+        });
+
+        if (emailSent) {
+          console.log(`✅ Email de ${tipoTemplate.toUpperCase()} enviado exitosamente a ${solicitud.user_email}`);
         } else {
-        console.error("⚠️ El email no se pudo enviar, pero la notificación en app se creó");
+          console.error(`⚠️ El email de ${tipoTemplate} no se pudo enviar, pero la notificación en app se creó`);
+        }
+      } catch (notifError) {
+        console.error("⚠️ Error al notificar al usuario:", notifError);
+        // No fallar la operación si falla la notificación
       }
-    } catch (notifError) {
-      console.error("⚠️ Error al notificar al usuario:", notifError);
-      // No fallar la operación si falla la notificación
     }
 
     return NextResponse.json({

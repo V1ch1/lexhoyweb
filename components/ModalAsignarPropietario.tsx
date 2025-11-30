@@ -51,25 +51,45 @@ const ModalAsignarPropietario = ({
       setUserLoading(true);
       setUserError(null);
 
+      // Validar que despachoId exista
+      if (!despachoId) {
+        console.error("❌ despachoId es null o undefined");
+        setUserError("Error: ID de despacho no válido");
+        setUserResults([]);
+        setUserLoading(false);
+        return;
+      }
+
+      console.log("✅ Buscando usuarios para despacho:", despachoId);
+
       try {
-        // Buscar usuarios
+        // Buscar usuarios - solo aquellos con UUID válido (de auth)
         const { data: users, error: usersError } = await supabase
           .from("users")
           .select("id, email, nombre, apellidos")
           .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
+          // Filtrar solo usuarios con UUID válido (36 caracteres con guiones)
+          .not("id", "is", null)
           .limit(10);
 
         if (usersError) throw usersError;
 
-        // Para cada usuario, verificar si ya administra ESTE despacho
+        // Filtrar usuarios que tengan UUID válido (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        const validUsers = (users || []).filter(user => {
+          // Verificar que el ID sea un UUID válido
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(user.id);
+        });
+
+        // Para cada usuario válido, verificar si ya administra ESTE despacho
         const usersWithDespacho = await Promise.all(
-          (users || []).map(async (user) => {
+          validUsers.map(async (user) => {
             // 1. Verificar asignación manual ACTIVA en user_despachos
             const { data: userDespachos } = await supabase
               .from("user_despachos")
               .select("despacho_id")
               .eq("user_id", user.id)
-              .eq("despacho_id", despachoId)
+              .eq("despacho_id", despachoId) // Usar como UUID string
               .eq("activo", true) // ⚠️ IMPORTANTE: Solo asignaciones activas
               .maybeSingle();
 
@@ -77,7 +97,7 @@ const ModalAsignarPropietario = ({
             const { data: despacho } = await supabase
               .from("despachos")
               .select("owner_email")
-              .eq("id", despachoId)
+              .eq("id", despachoId) // Usar como UUID string
               .eq("owner_email", user.email)
               .maybeSingle();
 
@@ -109,6 +129,16 @@ const ModalAsignarPropietario = ({
       return;
     }
 
+    // Validar que el user_id sea un UUID válido
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(selectedUser.id)) {
+      setUserError("Este usuario tiene un ID inválido. Por favor, contacta con soporte.");
+      console.error("❌ ID de usuario no es UUID válido:", selectedUser.id);
+      return;
+    }
+
+    console.log("✅ Asignando despacho:", despachoId, "a usuario:", selectedUser.id);
+
     setUserLoading(true);
     setUserError(null);
 
@@ -118,7 +148,7 @@ const ModalAsignarPropietario = ({
         .from("user_despachos")
         .select("id, activo")
         .eq("user_id", selectedUser.id)
-        .eq("despacho_id", despachoId)
+        .eq("despacho_id", despachoId) // Usar como UUID string
         .maybeSingle();
 
       if (existingAssignment) {
@@ -140,7 +170,7 @@ const ModalAsignarPropietario = ({
           .from("user_despachos")
           .insert({
             user_id: selectedUser.id,
-            despacho_id: despachoId,
+            despacho_id: despachoId, // Usar como UUID string
             // No incluir rol ni created_at - se asignarán por defecto en la BD
           });
 
@@ -157,7 +187,7 @@ const ModalAsignarPropietario = ({
           owner_email: selectedUser.email,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", despachoId);
+        .eq("id", despachoId); // Usar como UUID string
 
       if (updateError) {
         console.error("❌ Error al actualizar owner_email:", updateError);

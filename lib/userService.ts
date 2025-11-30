@@ -1360,18 +1360,16 @@ export class UserService {
 
     // Enviar email al usuario
     try {
-      await fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: solicitud.user_email,
-          subject: "Actualización sobre tu solicitud - LexHoy",
-          template: "solicitud-rechazada",
-          data: {
-            userName: solicitud.user_name,
-            despachoName: solicitud.despacho_nombre,
-            motivoRechazo: notas,
-          },
+      const { EmailService } = await import("./emailService");
+
+      await EmailService.send({
+        to: solicitud.user_email,
+        subject: "Actualización sobre tu solicitud - LexHoy",
+        html: EmailService.templateSolicitudRechazada({
+          userName: solicitud.user_name,
+          userEmail: solicitud.user_email,
+          despachoName: solicitud.despacho_nombre,
+          motivoRechazo: notas,
         }),
       });
     } catch (error) {

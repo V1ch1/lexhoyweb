@@ -178,26 +178,6 @@ const VerDespachosPage = () => {
     fetchUsers();
   }, [searchUser, showAsignarModal]);
 
-  // Asignar propietario
-  const handleAsignarPropietario = async () => {
-    if (!selectedUser || !asignarDespachoId) return;
-    setUserLoading(true);
-    setUserError(null);
-    const { error } = await supabase
-      .from("despachos")
-      .update({ owner_email: selectedUser.email })
-      .eq("id", asignarDespachoId);
-    if (error) {
-      setUserError("Error al asignar propietario");
-    }
-    setShowAsignarModal(false);
-    setSelectedUser(null);
-    setSearchUser("");
-    fetchDespachos();
-    fetchEstadisticas(); // Recargar estadísticas
-    setUserLoading(false);
-  };
-
   // Solicitar propiedad del despacho (con importación automática si es necesario)
   const handleSolicitarPropiedad = async () => {
     if (!despachoSolicitar || !user?.email || !user?.id || solicitandoPropiedad)

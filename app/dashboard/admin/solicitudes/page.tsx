@@ -41,6 +41,8 @@ interface ConfirmModalData {
   isOpen: boolean;
   title: string;
   message: string;
+  nuevoEstado?: string;
+  solicitudId?: string;
   onConfirm: () => void;
 }
 
@@ -68,9 +70,12 @@ export default function AdminSolicitudesPage() {
     isOpen: false,
     title: "",
     message: "",
+    nuevoEstado: undefined,
+    solicitudId: undefined,
     onConfirm: () => {},
   });
   const [motivo, setMotivo] = useState("");
+  const [motivoConfirm, setMotivoConfirm] = useState("");
   const [processing, setProcessing] = useState(false);
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
@@ -162,26 +167,37 @@ export default function AdminSolicitudesPage() {
   };
 
   const handleEstadoChange = async (solicitudId: string, nuevoEstado: string, nombreDespacho: string) => {
+    setMotivoConfirm("");
     setConfirmModal({
       isOpen: true,
       title: "Confirmar cambio de estado",
       message: `¿Estás seguro de que quieres cambiar el estado de la solicitud para "${nombreDespacho}" a "${nuevoEstado}"?`,
+      nuevoEstado: nuevoEstado,
+      solicitudId: solicitudId,
       onConfirm: async () => {
         setConfirmModal({ ...confirmModal, isOpen: false });
         
         try {
+          const body: { accion: string; nuevoEstado: string; motivo?: string } = {
+            accion: "modificar",
+            nuevoEstado: nuevoEstado,
+          };
+
+          // Agregar motivo si se especificó
+          if (motivoConfirm.trim()) {
+            body.motivo = motivoConfirm.trim();
+          }
+
           const response = await fetch(`/api/admin/solicitudes/${solicitudId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              accion: "modificar",
-              nuevoEstado: nuevoEstado,
-            }),
+            body: JSON.stringify(body),
           });
 
           if (response.ok) {
             await fetchSolicitudes();
             showToast(`Estado cambiado a "${nuevoEstado}" correctamente`, "success");
+            setMotivoConfirm("");
           } else {
             const error = await response.json();
             showToast(error.error || "Error al cambiar el estado", "error");
@@ -536,10 +552,37 @@ export default function AdminSolicitudesPage() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               {confirmModal.title}
             </h3>
-            <p className="text-gray-600 mb-6">{confirmModal.message}</p>
+            <p className="text-gray-600 mb-4">{confirmModal.message}</p>
+            
+            {/* Mostrar campo de motivo para rechazos y cancelaciones */}
+            {(confirmModal.nuevoEstado === "rechazado" || confirmModal.nuevoEstado === "cancelada") && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivo {confirmModal.nuevoEstado === "rechazado" ? "del rechazo" : "de la cancelación"}
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <textarea
+                  value={motivoConfirm}
+                  onChange={(e) => setMotivoConfirm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  placeholder="Explica el motivo del rechazo..."
+                  required
+                />
+                {!motivoConfirm.trim() && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    ⚠️ Se recomienda especificar un motivo para que el usuario sepa por qué fue rechazada su solicitud.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onClick={() => {
+                  setConfirmModal({ ...confirmModal, isOpen: false });
+                  setMotivoConfirm("");
+                }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Cancelar

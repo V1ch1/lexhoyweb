@@ -463,7 +463,7 @@ const DashboardPage = () => {
                 title="Mis Solicitudes"
                 description="Revisa el estado de tus solicitudes"
                 icon={DocumentTextIcon}
-                href="/dashboard/settings?tab=solicitudes"
+                href="/dashboard/settings#solicitudes"
                 color="blue"
               />
               <QuickActionCard
