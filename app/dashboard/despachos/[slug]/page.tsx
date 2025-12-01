@@ -192,7 +192,7 @@ export default function DespachoPage() {
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [cambiandoVerificacion, setCambiandoVerificacion] = useState(false);
   const [deletingSede, setDeletingSede] = useState(false);
-  
+
   // Estado para edición del nombre del despacho
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");
@@ -227,7 +227,10 @@ export default function DespachoPage() {
         });
         const syncResult = await syncResponse.json();
         if (!syncResult.success) {
-          console.warn("⚠️ No se pudo sincronizar con WordPress", syncResult.error);
+          console.warn(
+            "⚠️ No se pudo sincronizar con WordPress",
+            syncResult.error
+          );
         }
       } catch (syncError) {
         console.error("❌ Error en sincronización:", syncError);
@@ -2349,7 +2352,7 @@ export default function DespachoPage() {
                                   ? { ...prev, foto_perfil: optimized.dataUrl }
                                   : null
                               );
-                              } catch (error) {
+                            } catch (error) {
                               console.error(
                                 "Error al procesar la imagen:",
                                 error

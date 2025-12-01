@@ -25,12 +25,12 @@ export default function AdminLeadDetailPage() {
 
   useEffect(() => {
     if (!params.id) return;
-    
+
     if (user?.role !== "super_admin") {
       router.push("/dashboard");
       return;
     }
-    
+
     loadLead();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]); // Solo cargar cuando cambia el ID
@@ -100,13 +100,18 @@ export default function AdminLeadDetailPage() {
 
   const handleDelete = async () => {
     if (!lead) return;
-    
+
     if (lead.estado === "vendido" && lead.comprador_id) {
       toast.error("No se puede eliminar un lead que ya ha sido vendido");
       return;
     }
 
-    if (!confirm("¿Estás seguro de eliminar este lead? Esta acción no se puede deshacer.")) return;
+    if (
+      !confirm(
+        "¿Estás seguro de eliminar este lead? Esta acción no se puede deshacer."
+      )
+    )
+      return;
 
     try {
       setDeleting(true);
@@ -186,9 +191,15 @@ export default function AdminLeadDetailPage() {
             </button>
             <button
               onClick={handleDelete}
-              disabled={deleting || (lead.estado === "vendido" && !!lead.comprador_id)}
+              disabled={
+                deleting || (lead.estado === "vendido" && !!lead.comprador_id)
+              }
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm"
-              title={lead.estado === "vendido" ? "No se puede eliminar un lead vendido" : "Eliminar lead"}
+              title={
+                lead.estado === "vendido"
+                  ? "No se puede eliminar un lead vendido"
+                  : "Eliminar lead"
+              }
             >
               {deleting ? "Eliminando..." : "Eliminar"}
             </button>
@@ -292,12 +303,12 @@ export default function AdminLeadDetailPage() {
                       lead.estado === "vendido"
                         ? "bg-green-100 text-green-800"
                         : lead.estado === "procesado"
-                        ? "bg-blue-100 text-blue-800"
-                        : lead.estado === "en_subasta"
-                        ? "bg-purple-100 text-purple-800"
-                        : lead.estado === "descartado"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
+                          ? "bg-blue-100 text-blue-800"
+                          : lead.estado === "en_subasta"
+                            ? "bg-purple-100 text-purple-800"
+                            : lead.estado === "descartado"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
                     {lead.estado}
@@ -341,8 +352,8 @@ export default function AdminLeadDetailPage() {
                           lead.puntuacion_calidad >= 70
                             ? "bg-green-500"
                             : lead.puntuacion_calidad >= 40
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
                         }`}
                         style={{ width: `${lead.puntuacion_calidad}%` }}
                       ></div>

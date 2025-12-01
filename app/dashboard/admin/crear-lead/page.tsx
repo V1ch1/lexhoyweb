@@ -83,13 +83,13 @@ export default function CreateLeadPage() {
           precio_base: procesarConIA
             ? null
             : formData.precioBase
-            ? parseFloat(formData.precioBase)
-            : null,
+              ? parseFloat(formData.precioBase)
+              : null,
           precio_venta_directa: procesarConIA
             ? null
             : formData.precioVentaDirecta
-            ? parseFloat(formData.precioVentaDirecta)
-            : null,
+              ? parseFloat(formData.precioVentaDirecta)
+              : null,
           procesar_con_ia: procesarConIA,
         }),
       });
@@ -260,7 +260,7 @@ export default function CreateLeadPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               Clasificación Manual
             </h2>
-            
+
             {/* Ubicación */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">

@@ -16,7 +16,9 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
   const [formData, setFormData] = useState({
     estado: lead.estado,
     precio_base: lead.precio_base || 0,
-    fecha_fin_subasta: lead.fecha_fin_subasta ? new Date(lead.fecha_fin_subasta).toISOString().slice(0, 16) : "",
+    fecha_fin_subasta: lead.fecha_fin_subasta
+      ? new Date(lead.fecha_fin_subasta).toISOString().slice(0, 16)
+      : "",
   });
 
   const handleChange = (
@@ -61,17 +63,23 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 bg-white p-6 rounded-lg shadow"
+    >
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {/* Read-only info */}
         <div className="col-span-2">
-          <h3 className="text-lg font-medium text-gray-900">Información del Lead</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Información del Lead
+          </h3>
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-500">
             <div>
               <span className="font-medium">ID:</span> {lead.id}
             </div>
             <div>
-              <span className="font-medium">Fecha:</span> {new Date(lead.created_at).toLocaleString()}
+              <span className="font-medium">Fecha:</span>{" "}
+              {new Date(lead.created_at).toLocaleString()}
             </div>
             <div>
               <span className="font-medium">Nombre:</span> {lead.nombre}
@@ -79,20 +87,30 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
             <div>
               <span className="font-medium">Email:</span> {lead.correo}
             </div>
-             <div>
-              <span className="font-medium">Teléfono:</span> {lead.telefono || "-"}
+            <div>
+              <span className="font-medium">Teléfono:</span>{" "}
+              {lead.telefono || "-"}
             </div>
-             <div>
-              <span className="font-medium">Especialidad:</span> {lead.especialidad}
+            <div>
+              <span className="font-medium">Especialidad:</span>{" "}
+              {lead.especialidad}
             </div>
           </div>
           <div className="mt-4">
-             <span className="font-medium text-sm text-gray-900">Mensaje Original:</span>
-             <p className="mt-1 text-sm text-gray-500 bg-gray-50 p-3 rounded border">{lead.cuerpo_mensaje}</p>
+            <span className="font-medium text-sm text-gray-900">
+              Mensaje Original:
+            </span>
+            <p className="mt-1 text-sm text-gray-500 bg-gray-50 p-3 rounded border">
+              {lead.cuerpo_mensaje}
+            </p>
           </div>
-           <div className="mt-4">
-             <span className="font-medium text-sm text-gray-900">Resumen IA:</span>
-             <p className="mt-1 text-sm text-gray-500 bg-blue-50 p-3 rounded border border-blue-100">{lead.resumen_ia}</p>
+          <div className="mt-4">
+            <span className="font-medium text-sm text-gray-900">
+              Resumen IA:
+            </span>
+            <p className="mt-1 text-sm text-gray-500 bg-blue-50 p-3 rounded border border-blue-100">
+              {lead.resumen_ia}
+            </p>
           </div>
         </div>
 
@@ -100,7 +118,10 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
 
         {/* Editable fields */}
         <div>
-          <label htmlFor="estado" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="estado"
+            className="block text-sm font-medium text-gray-700"
+          >
             Estado
           </label>
           <select
@@ -119,7 +140,10 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
         </div>
 
         <div>
-          <label htmlFor="precio_base" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="precio_base"
+            className="block text-sm font-medium text-gray-700"
+          >
             Precio Base (€)
           </label>
           <div className="mt-1 relative rounded-md shadow-sm">
@@ -138,13 +162,17 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
             />
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            Precio estimado IA: {lead.precio_estimado ? formatCurrency(lead.precio_estimado) : "-"}
+            Precio estimado IA:{" "}
+            {lead.precio_estimado ? formatCurrency(lead.precio_estimado) : "-"}
           </p>
         </div>
 
         {formData.estado === "en_subasta" && (
           <div className="col-span-2">
-            <label htmlFor="fecha_fin_subasta" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="fecha_fin_subasta"
+              className="block text-sm font-medium text-gray-700"
+            >
               Fecha Fin Subasta
             </label>
             <input

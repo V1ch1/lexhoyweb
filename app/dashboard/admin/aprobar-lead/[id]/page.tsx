@@ -139,7 +139,10 @@ export default function ApproveLeadPage() {
 
   // Censurar datos personales
   const nombreCensurado = lead.nombre
-    ? lead.nombre.split(" ").map((n) => n[0] + "***").join(" ")
+    ? lead.nombre
+        .split(" ")
+        .map((n) => n[0] + "***")
+        .join(" ")
     : "***";
   const correoCensurado = lead.correo
     ? lead.correo.replace(/(.{2})(.*)(@.*)/, "$1***$3")
@@ -171,7 +174,9 @@ export default function ApproveLeadPage() {
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm p-6 border border-blue-200">
             <div className="flex items-center mb-4">
               <SparklesIcon className="h-6 w-6 text-blue-600 mr-2" />
-              <h2 className="text-xl font-bold text-gray-900">Análisis de IA</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Análisis de IA
+              </h2>
             </div>
 
             <div className="space-y-4">
@@ -221,8 +226,8 @@ export default function ApproveLeadPage() {
                           (lead.puntuacion_calidad || 0) >= 70
                             ? "bg-green-500"
                             : (lead.puntuacion_calidad || 0) >= 40
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
                         }`}
                         style={{ width: `${lead.puntuacion_calidad || 0}%` }}
                       ></div>
@@ -270,9 +275,7 @@ export default function ApproveLeadPage() {
               </div>
               <div>
                 <label className="font-medium text-gray-500">Mensaje:</label>
-                <p className="text-gray-600 italic">
-                  (Oculto hasta la compra)
-                </p>
+                <p className="text-gray-600 italic">(Oculto hasta la compra)</p>
               </div>
             </div>
           </div>
@@ -309,7 +312,9 @@ export default function ApproveLeadPage() {
                 step="0.01"
                 min="0"
                 value={precioAprobado}
-                onChange={(e) => setPrecioAprobado(parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setPrecioAprobado(parseFloat(e.target.value) || 0)
+                }
                 className="w-full px-4 py-3 text-2xl font-bold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -331,8 +336,9 @@ export default function ApproveLeadPage() {
                     diferenciaPrecio > 0 ? "text-green-700" : "text-red-700"
                   }`}
                 >
-                  {diferenciaPrecio > 0 ? "+" : ""}€{diferenciaPrecio.toFixed(2)}{" "}
-                  ({diferenciaPrecio > 0 ? "+" : ""}
+                  {diferenciaPrecio > 0 ? "+" : ""}€
+                  {diferenciaPrecio.toFixed(2)} (
+                  {diferenciaPrecio > 0 ? "+" : ""}
                   {porcentajeDiferencia}%)
                 </p>
               </div>
@@ -350,7 +356,9 @@ export default function ApproveLeadPage() {
                     name="tipoPublicacion"
                     value="directa"
                     checked={tipoPublicacion === "directa"}
-                    onChange={(e) => setTipoPublicacion(e.target.value as "directa")}
+                    onChange={(e) =>
+                      setTipoPublicacion(e.target.value as "directa")
+                    }
                     className="h-4 w-4 text-primary focus:ring-primary"
                   />
                   <span className="ml-3 text-sm font-medium text-gray-900">
@@ -363,7 +371,9 @@ export default function ApproveLeadPage() {
                     name="tipoPublicacion"
                     value="subasta"
                     checked={tipoPublicacion === "subasta"}
-                    onChange={(e) => setTipoPublicacion(e.target.value as "subasta")}
+                    onChange={(e) =>
+                      setTipoPublicacion(e.target.value as "subasta")
+                    }
                     className="h-4 w-4 text-primary focus:ring-primary"
                   />
                   <span className="ml-3 text-sm font-medium text-gray-900">
@@ -384,7 +394,9 @@ export default function ApproveLeadPage() {
                   min="1"
                   max="168"
                   value={duracionSubasta}
-                  onChange={(e) => setDuracionSubasta(parseInt(e.target.value) || 48)}
+                  onChange={(e) =>
+                    setDuracionSubasta(parseInt(e.target.value) || 48)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <p className="text-xs text-gray-600 mt-1">
@@ -441,4 +453,3 @@ export default function ApproveLeadPage() {
     </div>
   );
 }
-

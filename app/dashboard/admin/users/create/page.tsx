@@ -31,7 +31,9 @@ export default function CreateUserPage() {
     try {
       const result = await userService.createUserWithAuth(newUser);
 
-      toast.success(`Usuario creado exitosamente. Contraseña temporal: ${result.temporaryPassword}`);
+      toast.success(
+        `Usuario creado exitosamente. Contraseña temporal: ${result.temporaryPassword}`
+      );
 
       setNewUser({
         email: "",
@@ -40,7 +42,7 @@ export default function CreateUserPage() {
         telefono: "",
         rol: "usuario",
       });
-      
+
       router.push("/dashboard/admin/users/list");
     } catch (error) {
       console.error("Error creating user:", error);
@@ -92,15 +94,22 @@ export default function CreateUserPage() {
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Se creará automáticamente la cuenta de autenticación</li>
                 <li>• Se generará una contraseña temporal para compartir</li>
-                <li>• El usuario debe cambiarla en su primer inicio de sesión</li>
-                <li>• Los usuarios normales requieren asignación a un despacho</li>
+                <li>
+                  • El usuario debe cambiarla en su primer inicio de sesión
+                </li>
+                <li>
+                  • Los usuarios normales requieren asignación a un despacho
+                </li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleCreateUser} className="bg-white border border-gray-100 rounded-xl p-8 space-y-6 shadow-sm">
+        <form
+          onSubmit={handleCreateUser}
+          className="bg-white border border-gray-100 rounded-xl p-8 space-y-6 shadow-sm"
+        >
           <h3 className="text-2xl font-bold text-gray-900 pb-4 border-b border-gray-200">
             Datos del Nuevo Usuario
           </h3>

@@ -23,7 +23,9 @@ export default function UsersListPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [userDespachos, setUserDespachos] = useState<Record<string, UserDespacho[]>>({});
+  const [userDespachos, setUserDespachos] = useState<
+    Record<string, UserDespacho[]>
+  >({});
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
   const [filterStatus, setFilterStatus] = useState<UserStatus | "all">("all");
@@ -55,11 +57,11 @@ export default function UsersListPage() {
 
   useEffect(() => {
     const role = user?.role as string | undefined;
-    
+
     if (role === "super_admin") {
       loadUsers();
     } else if (!isLoading && role !== "super_admin") {
-       setLoadingUsers(false);
+      setLoadingUsers(false);
     }
   }, [user?.role, loadUsers, isLoading]);
 
@@ -73,7 +75,10 @@ export default function UsersListPage() {
     }
   };
 
-  const handleChangeUserStatus = async (userId: string, newStatus: UserStatus) => {
+  const handleChangeUserStatus = async (
+    userId: string,
+    newStatus: UserStatus
+  ) => {
     try {
       // Usamos updateUser ya que updateUserStatus no existe explícitamente en el servicio pero updateUser lo maneja
       await userService.updateUser(userId, { estado: newStatus });
@@ -111,7 +116,9 @@ export default function UsersListPage() {
     };
 
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[role]}`}>
+      <span
+        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[role]}`}
+      >
         {labels[role]}
       </span>
     );
@@ -176,7 +183,9 @@ export default function UsersListPage() {
               <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <select
                 value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value as UserRole | "all")}
+                onChange={(e) =>
+                  setFilterRole(e.target.value as UserRole | "all")
+                }
                 className="pl-9 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
               >
                 <option value="all">Todos los roles</option>
@@ -187,7 +196,9 @@ export default function UsersListPage() {
             </div>
             <select
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as UserStatus | "all")}
+              onChange={(e) =>
+                setFilterStatus(e.target.value as UserStatus | "all")
+              }
               className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
             >
               <option value="all">Todos los estados</option>
@@ -244,7 +255,9 @@ export default function UsersListPage() {
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <select
                   value={user.rol}
-                  onChange={(e) => handleChangeUserRole(user.id, e.target.value as UserRole)}
+                  onChange={(e) =>
+                    handleChangeUserRole(user.id, e.target.value as UserRole)
+                  }
                   className="text-sm border border-gray-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   title="Cambiar rol"
                 >
@@ -254,9 +267,16 @@ export default function UsersListPage() {
                 </select>
                 <select
                   value={user.estado}
-                  onChange={(e) => handleChangeUserStatus(user.id, e.target.value as UserStatus)}
+                  onChange={(e) =>
+                    handleChangeUserStatus(
+                      user.id,
+                      e.target.value as UserStatus
+                    )
+                  }
                   className={`text-sm border border-gray-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    user.estado === "activo" ? "text-green-700 bg-green-50" : "text-gray-700"
+                    user.estado === "activo"
+                      ? "text-green-700 bg-green-50"
+                      : "text-gray-700"
                   }`}
                   title="Cambiar estado"
                 >

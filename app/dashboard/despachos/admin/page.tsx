@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { SyncService } from "@/lib/syncService";
 import { useRouter } from "next/navigation";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { QuickActionCard } from "@/components/dashboard/shared";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -55,6 +56,10 @@ export default function AdminDespachosPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [showRemoveOwnerConfirm, setShowRemoveOwnerConfirm] = useState(false);
+  const [despachoToRemoveOwner, setDespachoToRemoveOwner] =
+    useState<Despacho | null>(null);
+  const [isRemovingOwner, setIsRemovingOwner] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<
     | "all"
@@ -116,7 +121,7 @@ export default function AdminDespachosPage() {
   useEffect(() => {
     const loadSolicitudes = async () => {
       if (userRole !== "super_admin") return;
-      
+
       try {
         const response = await fetch("/api/admin/solicitudes?estado=pendiente");
         if (response.ok) {
@@ -449,6 +454,51 @@ export default function AdminDespachosPage() {
     loadDespachos();
   };
 
+  // Quitar propietario
+  const handleRemoveOwnerClick = (despacho: Despacho) => {
+    setDespachoToRemoveOwner(despacho);
+    setShowRemoveOwnerConfirm(true);
+  };
+
+  const confirmRemoveOwner = async () => {
+    if (!despachoToRemoveOwner) return;
+
+    setIsRemovingOwner(true);
+
+    try {
+      const res = await fetch(`/api/despachos/${despachoToRemoveOwner.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner_email: null }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || "Error al quitar propietario");
+      }
+
+      // Actualizar UI localmente
+      setDespachos((prev) =>
+        prev.map((d) =>
+          d.id === despachoToRemoveOwner.id
+            ? { ...d, owner_info: null, owner_email: null }
+            : d
+        )
+      );
+
+      toast.success("Propietario eliminado correctamente");
+    } catch (error) {
+      console.error("Error quitando propietario:", error);
+      toast.error(
+        `Error quitando propietario: ${error instanceof Error ? error.message : "Error"}`
+      );
+    } finally {
+      setIsRemovingOwner(false);
+      setShowRemoveOwnerConfirm(false);
+      setDespachoToRemoveOwner(null);
+    }
+  };
+
   // Función para formatear fechas
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -620,7 +670,9 @@ Escribe "ELIMINAR" para confirmar:`;
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Accesos Rápidos</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Accesos Rápidos
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <QuickActionCard
             title="Solicitudes de Despacho"
@@ -955,6 +1007,16 @@ Escribe "ELIMINAR" para confirmar:`;
                             </>
                           )}
 
+                          {despacho.exists_in_supabase &&
+                            (despacho.owner_info || despacho.owner_email) && (
+                              <button
+                                onClick={() => handleRemoveOwnerClick(despacho)}
+                                className="text-gray-700 hover:text-gray-900 text-sm font-medium"
+                              >
+                                🚫 Quitar propietario
+                              </button>
+                            )}
+
                           {despacho.exists_in_supabase && (
                             <button
                               onClick={() => handleDelete(despacho)}
@@ -1012,6 +1074,18 @@ Escribe "ELIMINAR" para confirmar:`;
           onAsignar={handleAsignarSuccess}
         />
       )}
+
+      {/* Confirm dialog para quitar propietario */}
+      <ConfirmDialog
+        isOpen={showRemoveOwnerConfirm}
+        onClose={() => setShowRemoveOwnerConfirm(false)}
+        onConfirm={confirmRemoveOwner}
+        title="Quitar propietario"
+        message={`¿Estás seguro de que quieres quitar el propietario de "${despachoToRemoveOwner?.nombre}"? Esta acción eliminará la relación y dejará el despacho sin propietario.`}
+        confirmText={isRemovingOwner ? "Eliminando" : "Quitar propietario"}
+        cancelText="Cancelar"
+        isProcessing={isRemovingOwner}
+      />
     </div>
   );
 }

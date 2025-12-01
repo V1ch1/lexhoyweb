@@ -1104,7 +1104,7 @@ export default function CrearDespachoPage() {
                                       }
                                     }, 3000);
                                   }
-                                  } catch (error) {
+                                } catch (error) {
                                   console.error(
                                     "Error al subir imagen:",
                                     error

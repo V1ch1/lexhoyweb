@@ -210,7 +210,10 @@ export async function PUT(
     }
 
     // Si se ha eliminado el propietario (owner_email === null), limpiar relaciones en user_despachos
-    if (Object.prototype.hasOwnProperty.call(body, "owner_email") && body.owner_email === null) {
+    if (
+      Object.prototype.hasOwnProperty.call(body, "owner_email") &&
+      body.owner_email === null
+    ) {
       try {
         const previousOwnerEmail = despachoExistente.owner_email;
         if (previousOwnerEmail) {
@@ -228,16 +231,27 @@ export async function PUT(
               .eq("user_id", prevUser.id);
 
             if (delRelError) {
-              console.error("⚠️ Error al eliminar relación user_despachos:", delRelError);
+              console.error(
+                "⚠️ Error al eliminar relación user_despachos:",
+                delRelError
+              );
             } else {
-              console.log(`🔄 Relación user_despachos eliminada para user ${prevUser.id} y despacho ${despachoId}`);
+              console.log(
+                `🔄 Relación user_despachos eliminada para user ${prevUser.id} y despacho ${despachoId}`
+              );
             }
           } else {
-            console.log("ℹ️ No se encontró usuario con email previo:", previousOwnerEmail);
+            console.log(
+              "ℹ️ No se encontró usuario con email previo:",
+              previousOwnerEmail
+            );
           }
         }
       } catch (cleanErr) {
-        console.error("❌ Error limpiando user_despachos tras quitar owner:", cleanErr);
+        console.error(
+          "❌ Error limpiando user_despachos tras quitar owner:",
+          cleanErr
+        );
       }
     }
 
