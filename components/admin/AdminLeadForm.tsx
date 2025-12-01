@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Lead } from "@/lib/services/leadService";
 import { formatCurrency } from "@/lib/utils";
@@ -53,7 +54,7 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
       router.push("/admin/leads");
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al actualizar el lead");
+      toast.error("Error al actualizar el lead");
     } finally {
       setIsLoading(false);
     }

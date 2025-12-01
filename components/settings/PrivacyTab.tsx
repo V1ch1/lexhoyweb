@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ShieldCheckIcon, DocumentTextIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface PrivacyTabProps {
@@ -34,10 +35,10 @@ export default function PrivacyTab({ loading }: PrivacyTabProps) {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      alert('Datos exportados exitosamente');
+      toast.success('Datos exportados exitosamente');
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al exportar datos. Por favor, inténtalo de nuevo.');
+      toast.error('Error al exportar datos. Por favor, inténtalo de nuevo.');
     }
   };
 
@@ -55,11 +56,11 @@ export default function PrivacyTab({ loading }: PrivacyTabProps) {
           throw new Error('Error al solicitar eliminación');
         }
 
-        alert('Solicitud de eliminación enviada. Recibirás un correo de confirmación.');
+        toast.success('Solicitud de eliminación enviada. Recibirás un correo de confirmación.');
         setDeleteConfirmation('');
       } catch (error) {
         console.error('Error:', error);
-        alert('Error al solicitar eliminación. Por favor, inténtalo de nuevo.');
+        toast.error('Error al solicitar eliminación. Por favor, inténtalo de nuevo.');
       }
     }
   };

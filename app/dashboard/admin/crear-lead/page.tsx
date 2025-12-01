@@ -8,6 +8,7 @@ import {
   PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import { LeadService } from "@/lib/services/leadService";
+import { toast } from "sonner";
 
 const ESPECIALIDADES = [
   "Civil",
@@ -100,7 +101,7 @@ export default function CreateLeadPage() {
       router.push("/dashboard/admin/listado-leads");
     } catch (error) {
       console.error("Error creating lead:", error);
-      alert("Error al crear el lead. Por favor, intenta de nuevo.");
+      toast.error("Error al crear el lead. Por favor, intenta de nuevo.");
     } finally {
       setLoading(false);
     }

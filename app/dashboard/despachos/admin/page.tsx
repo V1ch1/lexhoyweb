@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import ModalAsignarPropietario from "@/components/ModalAsignarPropietario";
 import { QuickActionCard } from "@/components/dashboard/shared";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 
 interface WordPressDespacho {
   id?: number;
@@ -517,7 +518,7 @@ Escribe "ELIMINAR" para confirmar:`;
     const confirmation = prompt(confirmMessage);
 
     if (confirmation !== "ELIMINAR") {
-      alert("❌ Eliminación cancelada");
+      toast.error("Eliminación cancelada");
       return;
     }
 
@@ -527,19 +528,17 @@ Escribe "ELIMINAR" para confirmar:`;
       const result = await SyncService.eliminarDespachoCompleto(despacho.id);
 
       if (result.success) {
-        alert(
-          `✅ Despacho "${despacho.nombre}" eliminado correctamente\n\nDetalles:\n${JSON.stringify(result.details, null, 2)}`
-        );
+        toast.success(`Despacho "${despacho.nombre}" eliminado correctamente`);
 
         // Actualizar lista
         setDespachos((prev) => prev.filter((d) => d.id !== despacho.id));
       } else {
-        alert(`❌ Error al eliminar despacho: ${result.error}`);
+        toast.error(`Error al eliminar despacho: ${result.error}`);
       }
     } catch (error) {
       console.error("Error eliminando despacho:", error);
-      alert(
-        `❌ Error inesperado: ${error instanceof Error ? error.message : "Error desconocido"}`
+      toast.error(
+        `Error inesperado: ${error instanceof Error ? error.message : "Error desconocido"}`
       );
     } finally {
       setDeleting(null);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserService } from "@/lib/userService";
+import { toast } from "sonner";
 import { UserRole } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
 import {
@@ -30,9 +31,7 @@ export default function CreateUserPage() {
     try {
       const result = await userService.createUserWithAuth(newUser);
 
-      alert(
-        `✅ Usuario creado exitosamente!\n\n📧 Email: ${newUser.email}\n🔑 Contraseña temporal: ${result.temporaryPassword}\n\n⚠️ IMPORTANTE: Guarda esta contraseña y compártela de forma segura con el usuario. Debe cambiarla en su primer login.`
-      );
+      toast.success(`Usuario creado exitosamente. Contraseña temporal: ${result.temporaryPassword}`);
 
       setNewUser({
         email: "",
@@ -47,7 +46,7 @@ export default function CreateUserPage() {
       console.error("Error creating user:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Error desconocido";
-      alert(`❌ Error al crear usuario: ${errorMessage}`);
+      toast.error(`Error al crear usuario: ${errorMessage}`);
     }
   };
 

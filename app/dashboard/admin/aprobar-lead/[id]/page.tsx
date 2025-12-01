@@ -10,6 +10,7 @@ import {
   XCircleIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 
 export default function ApproveLeadPage() {
   const router = useRouter();
@@ -74,11 +75,11 @@ export default function ApproveLeadPage() {
       if (response.ok) {
         router.push("/dashboard/admin/listado-leads");
       } else {
-        alert("Error al aprobar el lead");
+        toast.error("Error al aprobar el lead");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al aprobar el lead");
+      toast.error("Error al aprobar el lead");
     } finally {
       setApproving(false);
     }
@@ -102,11 +103,11 @@ export default function ApproveLeadPage() {
       if (response.ok) {
         router.push("/dashboard/admin/listado-leads");
       } else {
-        alert("Error al descartar el lead");
+        toast.error("Error al descartar el lead");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al descartar el lead");
+      toast.error("Error al descartar el lead");
     } finally {
       setApproving(false);
     }

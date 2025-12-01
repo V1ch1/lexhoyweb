@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/authContext";
 import { SedeFormData } from "@/types/despachos";
 import { supabase } from "@/lib/supabase";
 import { ImageOptimizer } from "@/lib/imageOptimizer";
+import { toast } from "sonner";
 
 const AREAS_PRACTICA = [
   "Administrativo",
@@ -1067,7 +1068,7 @@ export default function CrearDespachoPage() {
                                   const validation =
                                     ImageOptimizer.validateImage(file);
                                   if (!validation.valid) {
-                                    alert(validation.error);
+                                    toast.error(validation.error);
                                     if (loadingText && originalText) {
                                       loadingText.textContent = originalText;
                                       loadingText.className =
@@ -1103,7 +1104,7 @@ export default function CrearDespachoPage() {
                                       }
                                     }, 3000);
                                   }
-                                } catch (error) {
+                                  } catch (error) {
                                   console.error(
                                     "Error al subir imagen:",
                                     error
@@ -1117,8 +1118,8 @@ export default function CrearDespachoPage() {
                                     loadingText.className =
                                       "text-sm text-red-600 font-medium";
                                   } else {
-                                    alert(
-                                      `❌ Error al subir la imagen: ${error instanceof Error ? error.message : "Error desconocido"}`
+                                    toast.error(
+                                      `Error al subir la imagen: ${error instanceof Error ? error.message : "Error desconocido"}`
                                     );
                                   }
                                 }

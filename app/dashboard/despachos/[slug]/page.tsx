@@ -1194,12 +1194,12 @@ export default function DespachoPage() {
                             if (response.ok) {
                               window.location.reload();
                             } else {
-                              alert("Error al cambiar el estado");
+                              toast.error("Error al cambiar el estado");
                               setCambiandoEstado(false);
                             }
                           } catch (error) {
                             console.error("Error:", error);
-                            alert("Error al cambiar el estado");
+                            toast.error("Error al cambiar el estado");
                             setCambiandoEstado(false);
                           }
                         }}
@@ -1274,12 +1274,12 @@ export default function DespachoPage() {
                             if (response.ok) {
                               window.location.reload();
                             } else {
-                              alert("Error al cambiar la verificación");
+                              toast.error("Error al cambiar la verificación");
                               setCambiandoVerificacion(false);
                             }
                           } catch (error) {
                             console.error("Error:", error);
-                            alert("Error al cambiar la verificación");
+                            toast.error("Error al cambiar la verificación");
                             setCambiandoVerificacion(false);
                           }
                         }}
@@ -2321,7 +2321,7 @@ export default function DespachoPage() {
                               const validation =
                                 ImageOptimizer.validateImage(file);
                               if (!validation.valid) {
-                                alert(validation.error);
+                                toast.error(validation.error);
                                 if (e.target) {
                                   (e.target as HTMLInputElement).value = "";
                                 }
@@ -2349,12 +2349,12 @@ export default function DespachoPage() {
                                   ? { ...prev, foto_perfil: optimized.dataUrl }
                                   : null
                               );
-                            } catch (error) {
+                              } catch (error) {
                               console.error(
                                 "Error al procesar la imagen:",
                                 error
                               );
-                              alert(
+                              toast.error(
                                 "Error al procesar la imagen. Por favor, intenta con otra imagen."
                               );
                               if (e.target) {

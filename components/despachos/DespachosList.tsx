@@ -3,6 +3,7 @@ import { slugify } from "@/lib/slugify";
 import { DespachosListSkeleton } from "./skeletons";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { DespachoSummary } from "@/types/despachos";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -50,6 +51,10 @@ export function DespachosList({
   const [despachoToDelete, setDespachoToDelete] =
     useState<DespachoSummary | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showRemoveOwnerConfirm, setShowRemoveOwnerConfirm] = useState(false);
+  const [despachoToRemoveOwner, setDespachoToRemoveOwner] =
+    useState<DespachoSummary | null>(null);
+  const [isRemovingOwner, setIsRemovingOwner] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const router = useRouter();
   const [localSearch, setLocalSearch] = useState(search);
@@ -91,7 +96,9 @@ export function DespachosList({
         router.push(`/dashboard/despachos/${importedSlug}?edit=true`);
       } catch (error) {
         console.error("Error al importar despacho:", error);
-        alert("Error al importar el despacho. Por favor, intenta de nuevo.");
+        toast.error(
+          "Error al importar el despacho. Por favor, intenta de nuevo."
+        );
       } finally {
         setIsImporting(false);
       }
@@ -156,10 +163,51 @@ export function DespachosList({
         }
       }
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
       setDespachoToDelete(null);
+    }
+  };
+
+  const handleRemoveOwnerClick = (despacho: DespachoSummary) => {
+    setDespachoToRemoveOwner(despacho);
+    setShowRemoveOwnerConfirm(true);
+  };
+
+  const confirmRemoveOwner = async () => {
+    if (!despachoToRemoveOwner) return;
+
+    setIsRemovingOwner(true);
+    try {
+      const response = await fetch(
+        `/api/despachos/${despachoToRemoveOwner.id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ owner_email: null }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error al quitar propietario:", data);
+        throw new Error(data.error || "No se pudo quitar el propietario.");
+      }
+
+      toast.success("Propietario eliminado correctamente");
+      await fetchDespachos();
+      setShowRemoveOwnerConfirm(false);
+    } catch (error) {
+      console.error("Error al quitar propietario:", error);
+      toast.error("No se pudo quitar el propietario. Intenta de nuevo.");
+    } finally {
+      setIsRemovingOwner(false);
+      setDespachoToRemoveOwner(null);
     }
   };
 
@@ -416,6 +464,28 @@ export function DespachosList({
                                   </svg>
                                 </button>
                               )}
+                              {d.origen === "supabase" && (
+                                <button
+                                  onClick={() => handleRemoveOwnerClick(d)}
+                                  className="text-red-600 hover:text-red-800 ml-1"
+                                  title="Quitar propietario"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6"
+                                    />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           ) : d.origen === "supabase" ? (
                             <button
@@ -666,6 +736,27 @@ export function DespachosList({
           textToMatch: "Eliminar",
           placeholder: 'Escribe "Eliminar" para confirmar',
         }}
+      />
+      <ConfirmDialog
+        isOpen={showRemoveOwnerConfirm}
+        onClose={() => setShowRemoveOwnerConfirm(false)}
+        onConfirm={confirmRemoveOwner}
+        title="¿Quitar propietario?"
+        message={
+          <div>
+            <p>
+              ¿Estás seguro de que deseas quitar el propietario de este
+              despacho?
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Esto dejará el despacho sin propietario y desactivará la relación
+              con el usuario.
+            </p>
+          </div>
+        }
+        confirmText={isRemovingOwner ? "Eliminando..." : "Quitar propietario"}
+        cancelText="Cancelar"
+        isProcessing={isRemovingOwner}
       />
     </div>
   );

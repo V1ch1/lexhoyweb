@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { ComputerDesktopIcon, DevicePhoneMobileIcon, GlobeAltIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 interface Session {
@@ -55,10 +56,10 @@ export default function SessionsTab({ loading }: SessionsTabProps) {
 
       // Recargar sesiones
       await loadSessions();
-      alert('Sesión cerrada exitosamente');
+      toast.success('Sesión cerrada exitosamente');
     } catch (error) {
       console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Error al cerrar sesión. Por favor, inténtalo de nuevo.');
+      toast.error(error instanceof Error ? error.message : 'Error al cerrar sesión. Por favor, inténtalo de nuevo.');
     }
   };
 
@@ -84,10 +85,10 @@ export default function SessionsTab({ loading }: SessionsTabProps) {
       
       // Recargar sesiones
       await loadSessions();
-      alert(result.message || 'Todas las demás sesiones han sido cerradas');
+      toast.success(result.message || 'Todas las demás sesiones han sido cerradas');
     } catch (error) {
       console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Error al cerrar sesiones. Por favor, inténtalo de nuevo.');
+      toast.error(error instanceof Error ? error.message : 'Error al cerrar sesiones. Por favor, inténtalo de nuevo.');
     }
   };
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { UserService } from "@/lib/userService";
+import { toast } from "sonner";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
 import {
@@ -68,7 +69,7 @@ export default function UsersListPage() {
       await loadUsers();
     } catch (error) {
       console.error("Error changing user role:", error);
-      alert("Error al cambiar el rol del usuario");
+      toast.error("Error al cambiar el rol del usuario");
     }
   };
 
@@ -79,7 +80,7 @@ export default function UsersListPage() {
       await loadUsers();
     } catch (error) {
       console.error("Error changing user status:", error);
-      alert("Error al cambiar el estado del usuario");
+      toast.error("Error al cambiar el estado del usuario");
     }
   };
 

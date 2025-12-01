@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -79,12 +80,12 @@ export default function LeadDetailPage() {
       if (data.success) {
         // Recargar datos para ver información completa
         await fetchLead(lead.id);
-        alert("¡Lead comprado exitosamente! Ahora puedes ver todos los datos de contacto.");
+        toast.success("¡Lead comprado exitosamente! Ahora puedes ver todos los datos de contacto.");
       } else {
-        alert(data.error || "Error al comprar lead");
+        toast.error(data.error || "Error al comprar lead");
       }
     } catch (err) {
-      alert("Error de conexión");
+      toast.error("Error de conexión");
     } finally {
       setBuying(false);
     }

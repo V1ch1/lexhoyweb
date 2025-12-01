@@ -11,6 +11,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { formatCurrency } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function AdminLeadDetailPage() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function AdminLeadDetailPage() {
       }
     } catch (error) {
       console.error("Error updating price:", error);
-      alert("Error al actualizar el precio");
+      toast.error("Error al actualizar el precio");
     }
   };
 
@@ -93,7 +94,7 @@ export default function AdminLeadDetailPage() {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Error al cambiar el estado");
+      toast.error("Error al cambiar el estado");
     }
   };
 
@@ -101,7 +102,7 @@ export default function AdminLeadDetailPage() {
     if (!lead) return;
     
     if (lead.estado === "vendido" && lead.comprador_id) {
-      alert("No se puede eliminar un lead que ya ha sido vendido");
+      toast.error("No se puede eliminar un lead que ya ha sido vendido");
       return;
     }
 
@@ -116,14 +117,14 @@ export default function AdminLeadDetailPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert("Lead eliminado exitosamente");
+        toast.success("Lead eliminado exitosamente");
         router.push("/dashboard/admin/listado-leads");
       } else {
-        alert(data.error || "Error al eliminar el lead");
+        toast.error(data.error || "Error al eliminar el lead");
       }
     } catch (error) {
       console.error("Error deleting lead:", error);
-      alert("Error al eliminar el lead");
+      toast.error("Error al eliminar el lead");
     } finally {
       setDeleting(false);
     }
