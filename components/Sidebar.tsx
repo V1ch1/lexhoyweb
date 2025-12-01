@@ -72,7 +72,7 @@ const Sidebar = () => {
                 {/* Gestión de Leads */}
                 <li>
                   <button
-                    onClick={() => handleNavigation("/dashboard/admin/leads-list")}
+                    onClick={() => handleNavigation("/dashboard/admin/listado-leads")}
                     className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                       pathname.startsWith("/dashboard/admin/leads")
                         ? "bg-slate-800 text-white shadow-md"

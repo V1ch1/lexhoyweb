@@ -28,7 +28,7 @@ export const Breadcrumbs = () => {
       users: "Usuarios",
       "mis-despachos": "Mis Despachos",
       notificaciones: "Notificaciones",
-      "leads-list": "Gestión de Leads",
+      "listado-leads": "Gestión de Leads",
       solicitudes: "Solicitudes",
       list: "Lista",
       create: "Crear",

@@ -56,7 +56,7 @@ graph TD
 | Funcionalidad | Permiso | Ruta |
 |--------------|---------|------|
 | Dashboard Admin | ✅ Completo | `/dashboard/admin` |
-| Gestión de Leads | ✅ Ver/Editar/Eliminar TODOS | `/dashboard/admin/leads-list` |
+| Gestión de Leads | ✅ Ver/Editar/Eliminar TODOS | `/dashboard/admin/listado-leads` |
 | Gestión de Usuarios | ✅ Crear/Editar/Eliminar | `/dashboard/admin/users` |
 | Aprobar Solicitudes | ✅ Aprobar/Rechazar | `/dashboard/admin/users/solicitudes` |
 | Gestión de Despachos | ✅ Ver/Editar TODOS | `/dashboard/despachos` |

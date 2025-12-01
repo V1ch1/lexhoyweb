@@ -100,7 +100,7 @@ export default function ApproveLeadPage() {
       });
 
       if (response.ok) {
-        router.push("/dashboard/admin/leads-list");
+        router.push("/dashboard/admin/listado-leads");
       } else {
         alert("Error al descartar el lead");
       }
