@@ -1,8 +1,35 @@
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@/lib/auth";
+import { unserialize as phpUnserialize } from "php-serialize";
 
 const WORDPRESS_API_URL = "https://lexhoy.com/wp-json/wp/v2";
+
+/**
+ * Deserializa un string serializado de PHP a objeto JavaScript
+ */
+function unserialize(data: string | unknown): unknown {
+  if (!data) return null;
+  if (Array.isArray(data)) return data;
+  if (typeof data === "object") return data;
+  if (typeof data !== "string") return null;
+
+  try {
+    const result = phpUnserialize(data);
+    if (result && typeof result === "object" && !Array.isArray(result)) {
+      const keys = Object.keys(result);
+      const isNumericArray = keys.every((k, i) => k === String(i));
+      if (isNumericArray) {
+        return Object.values(result);
+      }
+    }
+    return result;
+  } catch (error) {
+    console.error("Error deserializando PHP:", error);
+    return null;
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -81,7 +108,8 @@ export async function GET(request: Request) {
           localidad,
           provincia,
           telefono,
-          email_contacto
+          email_contacto,
+          es_principal
         )
       `);
 
@@ -100,7 +128,11 @@ export async function GET(request: Request) {
           const sedes = despacho.sedes as
             | Array<Record<string, unknown>>
             | undefined;
-          const sede = sedes?.[0] || {};
+          
+          // Buscar la sede principal primero, si no existe usar la primera
+          const sedePrincipal = sedes?.find((s) => s.es_principal === true);
+          const sede = sedePrincipal || sedes?.[0] || {};
+          
           return {
             id: String(despacho.id),
             wordpress_id: despacho.wordpress_id as number | undefined,
@@ -127,7 +159,7 @@ export async function GET(request: Request) {
     try {
       // Paginar directamente en WordPress
       const wpUrl = `${WORDPRESS_API_URL}/despacho?search=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}&_fields=id,title,slug,meta`;
-      const wpResponse = await fetch(wpUrl);
+      const wpResponse = await fetch(wpUrl, { cache: "no-store" });
       if (wpResponse.ok) {
         const wpData = await wpResponse.json();
 
@@ -151,11 +183,38 @@ export async function GET(request: Request) {
           )
           .map((wp: Record<string, unknown>) => {
             const meta = wp.meta as Record<string, unknown> | undefined;
-            const sedes = meta?._despacho_sedes as
-              | Array<Record<string, unknown>>
-              | undefined;
-            const sede = sedes?.[0] || {};
             const title = wp.title as { rendered?: string } | undefined;
+            
+            // Deserializar sedes desde WordPress
+            let sedesData: Array<Record<string, unknown>> = [];
+            const sedesMeta = meta?._despacho_sedes;
+            
+            if (sedesMeta) {
+              // console.log(`[Debug] Procesando sedes para ${title?.rendered} (ID: ${wp.id})`);
+              if (Array.isArray(sedesMeta) && sedesMeta.length > 0) {
+                const sedesRaw = typeof sedesMeta[0] === "string"
+                  ? unserialize(sedesMeta[0])
+                  : sedesMeta[0];
+                
+                if (Array.isArray(sedesRaw)) {
+                  sedesData = sedesRaw as Array<Record<string, unknown>>;
+                } else if (sedesRaw && typeof sedesRaw === "object") {
+                  sedesData = Object.values(sedesRaw) as Array<Record<string, unknown>>;
+                }
+              } else if (typeof sedesMeta === "string") {
+                const sedesRaw = unserialize(sedesMeta);
+                if (Array.isArray(sedesRaw)) {
+                  sedesData = sedesRaw as Array<Record<string, unknown>>;
+                } else if (sedesRaw && typeof sedesRaw === "object") {
+                  sedesData = Object.values(sedesRaw) as Array<Record<string, unknown>>;
+                }
+              }
+              // console.log(`[Debug] Sedes extraídas: ${sedesData.length}`);
+            }
+            
+            // Buscar la sede principal primero
+            const sedePrincipal = sedesData.find((s) => s.es_principal === true);
+            const sede = sedePrincipal || sedesData[0] || {};
 
             return {
               id: String(wp.id),
@@ -183,7 +242,7 @@ export async function GET(request: Request) {
                   (meta?._despacho_email as string[])?.[0] ||
                   "-"
               ),
-              num_sedes: sedes?.length || 0,
+              num_sedes: sedesData?.length || 0,
               origen: "wordpress" as const,
               yaImportado: false,
             };
