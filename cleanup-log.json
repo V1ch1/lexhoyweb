@@ -1,0 +1,31 @@
+{
+  "success": [
+    {
+      "id": "c553d372-ba85-4862-9329-33027123873c",
+      "user_id": "71ad0d70-ec04-4822-acfe-1f804a24e2bc",
+      "user_email": "blancocasal@gmail.com",
+      "user_name": "José Ramón Blanco Casal",
+      "despacho_id": "a6bfc210-2a17-44de-a07f-91f4a884ebca",
+      "fecha_asignacion": "2025-11-27T11:28:02.411029+00:00",
+      "permisos": {
+        "leer": true,
+        "eliminar": false,
+        "escribir": true
+      }
+    },
+    {
+      "id": "6c868f6d-aa99-4827-bd79-5e49e9884428",
+      "user_id": "a883770c-eee6-4233-ab5a-ac970b65dbdc",
+      "user_email": "blancoyenbatea@gmail.com",
+      "user_name": "Blanco Y en Batea",
+      "despacho_id": "fbddfa8b-261b-4b84-885b-c965f087c3c7",
+      "fecha_asignacion": "2025-11-30T19:32:17.893733+00:00",
+      "permisos": {
+        "leer": true,
+        "eliminar": false,
+        "escribir": true
+      }
+    }
+  ],
+  "failed": []
+}

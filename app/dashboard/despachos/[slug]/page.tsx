@@ -14,6 +14,7 @@ import {
   ArrowLeftIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 
 const AREAS_PRACTICA_DISPONIBLES = [
   "Administrativo",

@@ -1,0 +1,72 @@
+{
+  "despachos": [
+    {
+      "id": "02cdf6dc-6087-4a3c-806a-78a4b3899478",
+      "object_id": 73778,
+      "nombre": "MB advocats",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "0d1ce9d8-d148-4acd-bdc2-b0ea83e9ca67",
+      "object_id": 73918,
+      "nombre": "José Carlos Lloret",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "267a8270-7646-4b34-a819-80b06425376c",
+      "object_id": 74086,
+      "nombre": "Brinvest Detectives Privados y Peritos Judicial",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "2af45884-efd3-4ae6-a31e-26b7eaef1f8b",
+      "object_id": 73752,
+      "nombre": "Masdalmau Advocats Montserrat",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "a639c7c8-04b6-446c-895d-25c2eb26654a",
+      "object_id": 74938,
+      "nombre": "D14LEX Abogados",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "a6bfc210-2a17-44de-a07f-91f4a884ebca",
+      "object_id": 74971,
+      "nombre": "Vento Abogados & Asesores",
+      "owner_email": "blancocasal@gmail.com",
+      "num_sedes": 3
+    },
+    {
+      "id": "c73818c7-17c5-4cde-bf8a-14443e89426e",
+      "object_id": 74077,
+      "nombre": "Fernández Antuña Abogados",
+      "owner_email": null,
+      "num_sedes": 1
+    },
+    {
+      "id": "d1a42827-39b0-4e26-9e0a-2bad0e480e2c",
+      "object_id": 74769,
+      "nombre": "María Carmen Heredia Castillo",
+      "owner_email": null,
+      "num_sedes": 1
+    }
+  ],
+  "userDespachos": [],
+  "users": [
+    {
+      "id": "71ad0d70-ec04-4822-acfe-1f804a24e2bc",
+      "email": "blancocasal@gmail.com",
+      "nombre": "José Ramón",
+      "apellidos": "Blanco Casal",
+      "rol": "despacho_admin"
+    }
+  ],
+  "issues": [],
+  "recommendations": []
+}

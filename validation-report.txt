@@ -1,0 +1,38 @@
+﻿­ƒÜÇ Iniciando validaci├│n de base de datos...
+
+­ƒôü Cargando variables desde .env.local
+
+­ƒöì Verificando despachos con m├║ltiples owners...
+
+­ƒöì Verificando despachos sin sedes...
+
+­ƒöì Verificando sedes principales...
+
+­ƒöì Verificando integridad de relaciones...
+
+­ƒôè Obteniendo estad├¡sticas generales...
+
+­ƒôê Estad├¡sticas:
+   Total despachos: 8
+   Total sedes: 10
+   Total relaciones: 2
+   Total owners: 0
+   Promedio sedes/despacho: 1.25
+
+================================================================================
+­ƒôï REPORTE DE VALIDACI├ôN - LEXHOY DATABASE
+================================================================================
+
+2 Errores | 0 Advertencias | 2 OK
+
+ÔØî ERRORES:
+   [Ownership] Error al consultar user_despachos: column user_despachos.relationship does not exist
+   [Relaciones] Error al consultar user_despachos: column user_despachos.relationship does not exist
+
+Ô£à VALIDACIONES CORRECTAS:
+   [Sedes] Todos los despachos tienen al menos una sede
+   [Sedes Principales] Todos los despachos tienen exactamente una sede principal
+
+================================================================================
+
+Ô£¿ Validaci├│n completada
