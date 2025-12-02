@@ -8,6 +8,7 @@ interface User {
   email: string;
   nombre?: string;
   apellidos?: string;
+  rol?: string;
   yaAdministraEsteDespacho?: boolean;
 }
 
@@ -33,6 +34,7 @@ const ModalAsignarPropietario = ({
     email: string;
     nombre?: string;
     apellidos?: string;
+    rol?: string;
     yaAdministraEsteDespacho?: boolean;
   } | null>(null);
 
@@ -66,7 +68,7 @@ const ModalAsignarPropietario = ({
         // Buscar usuarios - solo aquellos con UUID válido (de auth)
         const { data: users, error: usersError } = await supabase
           .from("users")
-          .select("id, email, nombre, apellidos")
+          .select("id, email, nombre, apellidos, rol")
           .or(`email.ilike.%${searchUser}%,nombre.ilike.%${searchUser}%`)
           // Filtrar solo usuarios con UUID válido (36 caracteres con guiones)
           .not("id", "is", null)
@@ -194,6 +196,23 @@ const ModalAsignarPropietario = ({
         throw new Error(
           `Error al actualizar owner_email: ${updateError.message}`
         );
+      }
+
+      // PROMOCIÓN AUTOMÁTICA DE ROL
+      // Si el usuario no es super_admin, promocionarlo a despacho_admin
+      if (selectedUser.rol !== "super_admin" && selectedUser.rol !== "despacho_admin") {
+        console.log("🔄 Promocionando usuario a despacho_admin...");
+        const { error: roleError } = await supabase
+          .from("users")
+          .update({ rol: "despacho_admin" })
+          .eq("id", selectedUser.id);
+
+        if (roleError) {
+          console.error("⚠️ Error al actualizar rol de usuario:", roleError);
+          // No bloqueamos el flujo, pero logueamos el error
+        } else {
+          console.log("✅ Usuario promocionado a despacho_admin");
+        }
       }
 
       // Enviar email de notificación al usuario asignado

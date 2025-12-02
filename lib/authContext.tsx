@@ -6,7 +6,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export interface User {
   id: string;
@@ -32,20 +32,22 @@ export function useAuth() {
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated";
 
-  const user: User | null = session?.user ? {
-    id: session.user.id || "",
-    email: session.user.email || "",
-    name: session.user.name || "",
-    image: session.user.image || "",
-    // @ts-ignore
-    role: session.user.rol || "usuario",
-    // @ts-ignore
-    rol: session.user.rol || "usuario",
-    // @ts-ignore
-    plan: session.user.plan,
-    // @ts-ignore
-    activo: session.user.activo,
-  } : null;
+  const user: User | null = useMemo(() => {
+    return session?.user ? {
+      id: session.user.id || "",
+      email: session.user.email || "",
+      name: session.user.name || "",
+      image: session.user.image || "",
+      // @ts-ignore
+      role: session.user.rol || "usuario",
+      // @ts-ignore
+      rol: session.user.rol || "usuario",
+      // @ts-ignore
+      plan: session.user.plan,
+      // @ts-ignore
+      activo: session.user.activo,
+    } : null;
+  }, [session]);
 
   return {
     user,

@@ -642,6 +642,27 @@ export class UserService {
         console.warn("⚠️ No se pudo eliminar owner_email:", ownerError);
       } else {
       }
+
+      // 4. DEGRADACIÓN AUTOMÁTICA DE ROL
+      // Verificar si el usuario tiene más despachos asignados (activos o propios)
+      const { data: remainingAssigned } = await supabase
+        .from("user_despachos")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("activo", true);
+
+      const { data: remainingOwned } = await supabase
+        .from("despachos")
+        .select("id")
+        .eq("owner_email", userData.email);
+
+      const totalRemaining = (remainingAssigned?.length || 0) + (remainingOwned?.length || 0);
+
+      if (totalRemaining === 0) {
+        console.log("🔄 Usuario no tiene más despachos, degradando rol a 'usuario'...");
+        await this.updateUser(userId, { rol: "usuario" });
+      }
+
     } catch (error) {
       console.error("❌ Error en unassignDespachoFromUser:", error);
       throw error;

@@ -97,6 +97,9 @@ export class NotificationService {
     data: Omit<CreateNotificationData, "userId">
   ): Promise<void> {
     try {
+      // Usar service_role client para bypass RLS
+      const client = getServiceRoleClient();
+
       const notifications = userIds.map((userId) => ({
         user_id: userId,
         tipo: data.tipo,
@@ -107,7 +110,7 @@ export class NotificationService {
         leida: false,
       }));
 
-      const { error } = await supabase
+      const { error } = await client
         .from("notificaciones")
         .insert(notifications);
 

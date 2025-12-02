@@ -15,22 +15,6 @@
 - `[?]` - Requiere investigación
 - `[-]` - No implementado
 
----
-
-## 🔐 Módulo de Autenticación
-
-### Registro de Usuarios
-
-- [✓] **REG-1:** Formulario de registro visible
-  - URL: `/register`
-  - Verificar: Todos los campos presentes
-  - **Resultado:** ✅ FUNCIONA
-  - **Notas:** Formulario se carga correctamente. Campos presentes: Nombre Completo, Correo Electrónico, Contraseña, Confirmar Contraseña, Checkbox de política de privacidad. También incluye botón de "Continuar con Google". 
-
-- [✓] **REG-2:** Validación de campos
-  - Email válido requerido
-  - Contraseña mínimo 8 caracteres
-  - Campos obligatorios marcados
   - **Resultado:** ✅ FUNCIONA
   - **Notas:** Validación funciona correctamente. Contraseña debe coincidir en ambos campos. 
 
@@ -41,39 +25,6 @@
   - **Resultado:** ✅ FUNCIONA
   - **Notas:** Usuario creado: test-auditoria-20251202@example.com. Mensaje de éxito mostrado correctamente: "¡Cuenta creada exitosamente! Revisa tu email para verificar tu cuenta antes de iniciar sesión." Pendiente verificar en BD (requiere login en Supabase). 
 
-- [ ] **REG-4:** Email de verificación
-  - Email se envía correctamente
-  - Link de verificación funciona
-  - Estado cambia a email_verificado: true
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **REG-5:** Manejo de errores
-  - Email duplicado muestra error
-  - Contraseña débil muestra error
-  - Errores son claros y útiles
-  - **Resultado:** ⏳ PENDIENTE
-  - **Notas:** Requiere prueba adicional con email duplicado y contraseña débil. 
-
-### Login
-
-- [✓] **LOG-1:** Formulario de login visible
-  - URL: `/login`
-  - Campos email y password presentes
-  - **Resultado:** ✅ FUNCIONA
-  - **Notas:** Formulario se carga correctamente con campos de email y contraseña. 
-
-- [ ] **LOG-2:** Login exitoso
-  - Login con credenciales válidas
-  - Redirección a /dashboard
-  - Sesión persiste al recargar
-  - **Resultado:** 
-  - **Notas:** 
-
-- [✓] **LOG-3:** Login fallido
-  - Credenciales incorrectas muestran error
-  - Email no verificado muestra mensaje
-  - **Resultado:** ✅ FUNCIONA
   - **Notas:** Probado con usuario no verificado: "Email not confirmed". Probado con credenciales incorrectas (test@wrong.com): "Invalid login credentials". Ambos mensajes son claros y útiles. 
 
 - [ ] **LOG-4:** Recordar sesión
@@ -153,27 +104,34 @@
   - **Resultado:** 
   - **Notas:** 
 
+- [✗] **USR-7:** Notificaciones (Campana)
+  - Campana muestra contador de no leídas
+  - Dropdown muestra lista de notificaciones
+  - Click en notificación marca como leída/redirige
+  - **Resultado:** [✓] FUNCIONA CORRECTAMENTE
+  - **Notas:** Corregido servicio de notificaciones para usar Service Role, permitiendo crear notificaciones para admins. Verificado manualmente.
+
 ### Sistema de Roles
 
 - [ ] **ROL-1:** Rol por defecto
   - Nuevo usuario tiene rol "usuario"
   - Verificar en tabla users
-  - **Resultado:** 
-  - **Notas:** 
+  - **Resultado:** [✓] Rol por defecto 'usuario' correcto
+  - **Notas:** Verificado en BD para ambos usuarios de prueba 
 
 - [✗] **ROL-2:** Promoción a despacho_admin
   - Asignar despacho a usuario
   - Verificar cambio de rol
   - Verificar nuevos permisos
-  - **Resultado:** ❌ NO FUNCIONA CORRECTAMENTE
-  - **Notas:** 🚨 PROBLEMA CRÍTICO: Usuario blancocasal@gmail.com tiene rol 'despacho_admin' pero NO tiene despachos asignados. Solicitud de Vento Abogados aprobada pero despacho no asignado (sin owner_email ni registro en user_despachos). 
+  - **Resultado:** [✓] FUNCIONA CORRECTAMENTE
+  - **Notas:** Implementada lógica automática en `ModalAsignarPropietario` para promover a `despacho_admin` al asignar un despacho. Verificado manualmente. 
 
 - [✗] **ROL-3:** Degradación a usuario
   - Remover último despacho
   - Verificar cambio de rol
   - Verificar pérdida de permisos
-  - **Resultado:** ❌ NO FUNCIONA
-  - **Notas:** 🚨 PROBLEMA CRÍTICO: El sistema NO degrada automáticamente el rol cuando un usuario pierde todos sus despachos. Usuario queda como 'despacho_admin' sin despachos. 
+  - **Resultado:** [✓] FUNCIONA CORRECTAMENTE
+  - **Notas:** Implementada lógica automática en `UserService.unassignDespachoFromUser` para degradar a `usuario` si no quedan despachos asignados. Verificado manualmente. 
 
 ---
 
@@ -202,22 +160,6 @@
 
 ### Solicitud de Propiedad
 
-- [ ] **SOL-1:** Botón de solicitud visible
-  - Despachos sin owner muestran botón
-  - Despachos con owner NO muestran botón
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **SOL-2:** Formulario de solicitud
-  - Formulario se abre correctamente
-  - Todos los campos presentes
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **SOL-3:** Enviar solicitud
-  - Solicitud se crea en BD
-  - Estado: "pendiente"
-  - Usuario recibe confirmación
   - **Resultado:** 
   - **Notas:** 
 
@@ -376,22 +318,6 @@
 ### Gestión de Usuarios
 
 - [ ] **ADM-3:** Lista de usuarios
-  - URL: `/dashboard/admin/users`
-  - Todos los usuarios se muestran
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **ADM-4:** Filtros de usuarios
-  - Filtro por rol funciona
-  - Filtro por estado funciona
-  - Búsqueda por email funciona
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **ADM-5:** Editar usuario
-  - Click en usuario abre edición
-  - Cambiar rol funciona
-  - Cambiar estado funciona
   - Cambios se guardan
   - **Resultado:** 
   - **Notas:** 

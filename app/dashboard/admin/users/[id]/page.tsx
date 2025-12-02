@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { UserService } from "@/lib/userService";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
+import { toast } from "sonner";
 
 const userService = new UserService();
 
@@ -59,7 +60,7 @@ export default function EditUserPage() {
       loadUserData(params.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params?.id, authLoading, currentUser]);
+  }, [params?.id, authLoading, currentUser?.id]);
 
   const loadUserData = async (userId: string) => {
     try {
@@ -137,30 +138,31 @@ export default function EditUserPage() {
     router.push("/dashboard/admin/users");
   };
 
-  const handleDesasignarDespacho = async (despachoId: string) => {
+  const handleDesasignarDespacho = (despachoId: string) => {
     if (!user) return;
 
-    if (
-      !confirm(
-        "¿Estás seguro de que quieres desasignar este despacho del usuario?"
-      )
-    ) {
-      return;
-    }
+    toast("¿Estás seguro de desasignar este despacho?", {
+      action: {
+        label: "Desasignar",
+        onClick: async () => {
+          try {
+            await userService.unassignDespachoFromUser(user.id, despachoId);
 
-    try {
-      await userService.unassignDespachoFromUser(user.id, despachoId);
+            // Recargar datos del usuario (para actualizar rol si cambió) y despachos
+            await loadUserData(user.id);
 
-      // Recargar la lista completa de despachos del usuario
-      const updatedDespachos = await userService.getUserDespachos(user.id);
-      setUserDespachos(updatedDespachos.filter((d) => d.activo));
-
-      setSuccessMessage("Despacho desasignado exitosamente");
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (error) {
-      console.error("Error al desasignar despacho:", error);
-      setError("Error al desasignar el despacho");
-    }
+            toast.success("Despacho desasignado exitosamente");
+          } catch (error) {
+            console.error("Error al desasignar despacho:", error);
+            toast.error("Error al desasignar el despacho");
+          }
+        },
+      },
+      cancel: {
+        label: "Cancelar",
+        onClick: () => {},
+      },
+    });
   };
 
   if (error) {
@@ -415,7 +417,7 @@ export default function EditUserPage() {
                     Rol
                   </label>
                   <select
-                    value={formatRole(formData.rol)}
+                    value={formData.rol}
                     onChange={(e) => handleInputChange("rol", e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
