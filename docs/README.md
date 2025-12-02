@@ -1,161 +1,304 @@
-# 📚 Documentación del Proyecto LexHoy
+# 📚 Documentación LexHoy
 
-Esta carpeta contiene toda la documentación del proyecto organizada por categorías.
+**Versión:** 3.0  
+**Última actualización:** 2025-12-02  
+**Estado:** Activo
 
 ---
 
-## 📂 Estructura de Carpetas
+## ⚡ INICIO RÁPIDO
+
+### 📅 Rutina Diaria
+
+**1. Al empezar el día, abre:**
+```
+docs/06-TAREAS/PLAN-TAREAS.md
+```
+
+**2. Selecciona tu tarea y márcala como `[/]` (en progreso)**
+
+**3. Consulta el módulo relevante:**
+```
+docs/03-MODULOS/[MODULO].md
+```
+
+**4. Al terminar, prueba con:**
+```
+docs/06-TAREAS/AUDITORIA.md
+```
+
+**5. Marca la tarea como `[x]` (completada)**
+
+### 🎯 Documentos Clave
+
+| Documento | Cuándo Usar | Importancia |
+|-----------|-------------|-------------|
+| [QUICK-START.md](00-INICIO/QUICK-START.md) | Primera vez | ⭐⭐⭐ |
+| [PLAN-TAREAS.md](06-TAREAS/PLAN-TAREAS.md) | **Cada día** | ⭐⭐⭐⭐⭐ |
+| [AUDITORIA.md](06-TAREAS/AUDITORIA.md) | Al probar | ⭐⭐⭐⭐ |
+| [Módulos](03-MODULOS/) | Al desarrollar | ⭐⭐⭐⭐ |
+
+---
+
+## 📂 Estructura de Documentación
+
+La documentación está organizada por módulos para facilitar su mantenimiento y consulta:
 
 ```
 docs/
-├── README.md                    # Este archivo
-├── CONTEXTO_PROYECTO.md         # Contexto general del proyecto
-├── DATABASE_SCHEMA.md           # Esquema de base de datos
-├── API.md                       # Documentación de API (22 endpoints)
+├── README.md                           # Este archivo - Índice principal
 │
-├── analisis/                    # Análisis y auditorías
-│   └── ANALISIS_PROYECTO_COMPLETO.md
+├── 00-INICIO/                          # Documentación de inicio
+│   ├── VISION-GENERAL.md              # Visión general del proyecto
+│   ├── QUICK-START.md                 # Guía de inicio rápido
+│   └── GLOSARIO.md                    # Términos y definiciones
 │
-└── implementacion/              # Documentación técnica
-    ├── FLUJO_COMPLETO_DESPACHOS.md
-    ├── PLAN_IMPLANTACION_SUPABASE.md
-    ├── RESUMEN.md
-    └── CHANGELOG_DESPACHOS.md
+├── 01-ARQUITECTURA/                    # Arquitectura del sistema
+│   ├── STACK-TECNOLOGICO.md           # Stack y tecnologías
+│   ├── ESTRUCTURA-PROYECTO.md         # Estructura de carpetas
+│   ├── FLUJO-DATOS.md                 # Flujo de datos
+│   └── INTEGRACIONES.md               # Integraciones externas
+│
+├── 02-BASE-DATOS/                      # Base de datos
+│   ├── ESQUEMA.md                     # Esquema completo
+│   ├── TABLAS.md                      # Descripción de tablas
+│   └── MIGRACIONES.md                 # Guía de migraciones
+│
+├── 03-MODULOS/                         # Documentación por módulo
+│   ├── USUARIOS.md                    # Módulo de usuarios
+│   ├── DESPACHOS.md                   # Módulo de despachos
+│   ├── LEADS.md                       # Módulo de leads
+│   ├── MARKETING.md                   # Módulo de marketing
+│   └── ADMIN.md                       # Panel de administración
+│
+├── 04-API/                             # Documentación de API
+│   ├── ENDPOINTS.md                   # Lista de endpoints
+│   ├── AUTENTICACION.md               # Autenticación y autorización
+│   └── EJEMPLOS.md                    # Ejemplos de uso
+│
+├── 05-DESARROLLO/                      # Guías de desarrollo
+│   ├── SETUP.md                       # Configuración del entorno
+│   ├── TESTING.md                     # Guía de testing
+│   ├── DEPLOYMENT.md                  # Guía de deployment
+│   └── CONTRIBUTING.md                # Guía de contribución
+│
+├── 06-TAREAS/                          # Gestión de tareas
+│   ├── PLAN-TAREAS.md                 # Plan maestro de tareas
+│   ├── AUDITORIA.md                   # Checklist de auditoría
+│   └── ROADMAP.md                     # Roadmap del proyecto
+│
+└── 99-ARCHIVO/                         # Documentación obsoleta
+    └── (documentos antiguos)
 ```
 
 ---
 
-## 📖 Guía de Documentos
+## 🚀 Inicio Rápido
 
-### 🎯 Documentos Principales
+### Para Desarrolladores Nuevos
 
-#### `CONTEXTO_PROYECTO.md`
-Contexto general del proyecto, tecnologías utilizadas, arquitectura y decisiones de diseño.
+1. **Lee primero:**
+   - [Visión General](00-INICIO/VISION-GENERAL.md)
+   - [Quick Start](00-INICIO/QUICK-START.md)
+   - [Setup de Desarrollo](05-DESARROLLO/SETUP.md)
 
-**Cuándo leer:** Al empezar a trabajar en el proyecto o para entender la arquitectura general.
+2. **Familiarízate con:**
+   - [Stack Tecnológico](01-ARQUITECTURA/STACK-TECNOLOGICO.md)
+   - [Estructura del Proyecto](01-ARQUITECTURA/ESTRUCTURA-PROYECTO.md)
+   - [Esquema de Base de Datos](02-BASE-DATOS/ESQUEMA.md)
 
-#### `DATABASE_SCHEMA.md`
-Esquema completo de la base de datos con todas las tablas, relaciones y políticas RLS.
+3. **Comienza a desarrollar:**
+   - [Guía de Contribución](05-DESARROLLO/CONTRIBUTING.md)
+   - [Testing](05-DESARROLLO/TESTING.md)
 
-**Cuándo leer:** Al trabajar con la base de datos o crear nuevas tablas.
+### Para Product Managers
 
----
+1. **Estado del proyecto:**
+   - [Plan de Tareas](06-TAREAS/PLAN-TAREAS.md)
+   - [Roadmap](06-TAREAS/ROADMAP.md)
 
-### 🔍 Análisis (`analisis/`)
+2. **Funcionalidades:**
+   - [Módulo de Usuarios](03-MODULOS/USUARIOS.md)
+   - [Módulo de Despachos](03-MODULOS/DESPACHOS.md)
+   - [Módulo de Leads](03-MODULOS/LEADS.md)
 
-#### `ANALISIS_PROYECTO_COMPLETO.md`
-Análisis exhaustivo del proyecto incluyendo:
-- Archivos no utilizados
-- Problemas de seguridad
-- Revisión de documentación
-- Dependencias obsoletas
-- Plan de acción priorizado
+### Para QA/Testing
 
-**Cuándo leer:** Para entender el estado actual del proyecto y áreas de mejora.
-
----
-
-### ✅ Fases de Mejora (`fases/`)
-
-#### `TAREAS_MEJORA.md`
-Plan maestro con todas las tareas de mejora organizadas en 4 fases.
-
-**Estado actual:** 10/15 tareas completadas (67%)
-
-#### `FASE_1_COMPLETADA.md`
-**Limpieza de Archivos** - 5 tareas completadas
-- Eliminación de archivos no utilizados
-- Limpieza de dependencias
-- Verificaciones realizadas
-
-#### `FASE_2_COMPLETADA.md`
-**Corrección de Configuración** - 3 tareas completadas
-- TypeScript verificación habilitada
-- ESLint verificación habilitada
-- Content Security Policy implementado
-
-#### `FASE_3_COMPLETADA.md`
-**Seguridad Básica** - 2 tareas completadas
-- Validación de variables de entorno
-- Validación de entrada en endpoints
-- Sanitización de datos
-
-**Cuándo leer:** Para ver el progreso de mejoras y entender qué se ha hecho.
+1. **Auditoría:**
+   - [Checklist de Auditoría](06-TAREAS/AUDITORIA.md)
+   - [Guía de Testing](05-DESARROLLO/TESTING.md)
 
 ---
 
-### 🚀 Implementación (`implementacion/`)
+## 📖 Guía de Documentos por Categoría
 
-#### `FLUJO_COMPLETO_DESPACHOS.md`
-Documentación detallada del flujo completo de gestión de despachos:
-- Búsqueda y creación de despachos
-- Sistema de solicitudes
-- Aprobación/rechazo por super admin
-- Sincronización bidireccional con WordPress
+### 00 - Inicio
 
-**Cuándo leer:** Al trabajar con el sistema de despachos.
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| VISION-GENERAL.md | Qué es LexHoy, objetivos, usuarios | Al empezar |
+| QUICK-START.md | Guía rápida de 5 minutos | Primer día |
+| GLOSARIO.md | Términos técnicos y de negocio | Cuando surjan dudas |
 
-#### `PLAN_IMPLANTACION_SUPABASE.md`
-Plan de implementación de la base de datos Supabase.
+### 01 - Arquitectura
 
-**Cuándo leer:** Para entender la migración a Supabase.
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| STACK-TECNOLOGICO.md | Next.js, Supabase, WordPress, etc. | Setup inicial |
+| ESTRUCTURA-PROYECTO.md | Organización de carpetas y archivos | Al navegar el código |
+| FLUJO-DATOS.md | Cómo fluyen los datos en el sistema | Al diseñar features |
+| INTEGRACIONES.md | WordPress, Algolia, OpenAI | Al trabajar con integraciones |
 
-#### `RESUMEN.md`
-Resumen de funcionalidades implementadas y estado del proyecto.
+### 02 - Base de Datos
 
-**Cuándo leer:** Para un overview rápido del estado del proyecto.
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| ESQUEMA.md | Diagrama y relaciones completas | Al trabajar con BD |
+| TABLAS.md | Descripción detallada de cada tabla | Al crear queries |
+| MIGRACIONES.md | Cómo hacer cambios en la BD | Al modificar esquema |
 
-#### `CHANGELOG_DESPACHOS.md`
-Registro de cambios en el sistema de despachos.
+### 03 - Módulos
 
-**Cuándo leer:** Para ver el historial de cambios.
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| USUARIOS.md | Roles, permisos, autenticación | Al trabajar con usuarios |
+| DESPACHOS.md | Ownership, sedes, sincronización | Al trabajar con despachos |
+| LEADS.md | Procesamiento, marketplace, compra | Al trabajar con leads |
+| MARKETING.md | Campañas, emails, analytics | Al trabajar con marketing |
+| ADMIN.md | Panel de administración | Al trabajar en admin |
+
+### 04 - API
+
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| ENDPOINTS.md | Lista completa de endpoints | Al consumir API |
+| AUTENTICACION.md | Cómo autenticar requests | Al crear endpoints |
+| EJEMPLOS.md | Ejemplos de uso de la API | Al integrar |
+
+### 05 - Desarrollo
+
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| SETUP.md | Configurar entorno local | Primer día |
+| TESTING.md | Cómo escribir y ejecutar tests | Al desarrollar |
+| DEPLOYMENT.md | Cómo hacer deploy | Al publicar cambios |
+| CONTRIBUTING.md | Estándares de código y commits | Antes de contribuir |
+
+### 06 - Tareas
+
+| Documento | Descripción | Cuándo leer |
+|-----------|-------------|-------------|
+| PLAN-TAREAS.md | Todas las tareas pendientes | Al planificar sprints |
+| AUDITORIA.md | Checklist de verificación | Al probar |
+| ROADMAP.md | Visión a futuro del proyecto | Al planificar |
 
 ---
 
-## 🔄 Actualización de Documentación
+## 🔄 Mantenimiento de Documentación
 
 ### Cuándo Actualizar
 
-- **Análisis:** Después de auditorías o revisiones importantes
-- **Fases:** Al completar cada fase de mejora
-- **Implementación:** Al añadir nuevas funcionalidades o cambiar flujos
+- ✅ **Al añadir features:** Actualiza el módulo correspondiente
+- ✅ **Al cambiar BD:** Actualiza ESQUEMA.md y TABLAS.md
+- ✅ **Al crear endpoints:** Actualiza ENDPOINTS.md
+- ✅ **Al completar tareas:** Marca en PLAN-TAREAS.md
+- ✅ **Al encontrar bugs:** Documenta en AUDITORIA.md
 
 ### Cómo Actualizar
 
 1. Edita el documento correspondiente
-2. Actualiza la fecha de última modificación
-3. Añade una entrada en el changelog si aplica
-4. Actualiza este README si cambias la estructura
+2. Actualiza la fecha en el header
+3. Si es un cambio importante, actualiza este README
+4. Commit con mensaje descriptivo
 
 ---
 
-## 📊 Estado del Proyecto
+## 📊 Estado Actual del Proyecto
 
-**Última actualización:** 3 de noviembre de 2025
+**Última auditoría:** 2025-12-02
 
-### Fases Completadas
-- ✅ Fase 1: Limpieza de archivos (100%)
-- ✅ Fase 2: Corrección de configuración (100%)
-- ✅ Fase 3: Seguridad básica (100%)
-- ⬜ Fase 4: Documentación (0%)
+### Módulos Implementados
 
-### Próximos Pasos
-- Crear SECURITY.md
-- Crear DEPLOYMENT.md
-- Crear CONTRIBUTING.md
-- Crear API.md
-- Actualizar README principal
+- ✅ **Autenticación:** 100% - Funcional
+- ✅ **Usuarios:** 90% - Funcional con mejoras pendientes
+- ✅ **Despachos:** 95% - Funcional, falta testing
+- ⚠️ **Leads:** 60% - Parcialmente implementado
+- ⚠️ **Marketing:** 20% - Estructura básica
+- ✅ **Admin:** 85% - Funcional
 
----
+### Prioridades Actuales
 
-## 🔗 Enlaces Útiles
-
-- [README Principal](../README.md)
-- [Plan de Tareas](fases/TAREAS_MEJORA.md)
-- [Análisis Completo](analisis/ANALISIS_PROYECTO_COMPLETO.md)
-- [Flujo de Despachos](implementacion/FLUJO_COMPLETO_DESPACHOS.md)
+1. 🔴 Completar integración de leads con LexHoy.com
+2. 🔴 Implementar sistema de compra de leads
+3. 🟡 Crear suite de testing completa
+4. 🟡 Mejorar módulo de marketing
 
 ---
 
-**Mantenido por:** Equipo de Desarrollo LexHoy  
-**Última revisión:** 3 de noviembre de 2025
+## 🔗 Enlaces Rápidos
+
+### Documentación Externa
+
+- [Next.js Docs](https://nextjs.org/docs)
+- [Supabase Docs](https://supabase.com/docs)
+- [WordPress REST API](https://developer.wordpress.org/rest-api/)
+- [Algolia Docs](https://www.algolia.com/doc/)
+
+### Repositorios
+
+- **Frontend/Backend:** [github.com/V1ch1/lexhoyweb](https://github.com/V1ch1/lexhoyweb)
+- **WordPress:** LexHoy.com
+
+### Ambientes
+
+- **Producción:** https://lexhoyweb.vercel.app
+- **WordPress:** https://lexhoy.com
+- **Staging:** (pendiente)
+
+---
+
+## 💡 Consejos
+
+### Para encontrar información rápido:
+
+1. **¿Cómo funciona X?** → Busca en `03-MODULOS/`
+2. **¿Qué endpoint usar?** → Ve a `04-API/ENDPOINTS.md`
+3. **¿Cómo configurar?** → Lee `05-DESARROLLO/SETUP.md`
+4. **¿Qué hacer ahora?** → Revisa `06-TAREAS/PLAN-TAREAS.md`
+5. **¿Estructura de BD?** → Consulta `02-BASE-DATOS/ESQUEMA.md`
+
+### Atajos de búsqueda:
+
+```bash
+# Buscar en toda la documentación
+grep -r "término" docs/
+
+# Buscar solo en módulos
+grep -r "término" docs/03-MODULOS/
+
+# Ver estructura
+tree docs/
+```
+
+---
+
+## 📝 Changelog de Documentación
+
+### 2025-12-02 - v3.0
+- ✨ Reorganización completa en estructura modular
+- 🗑️ Archivado de documentación obsoleta
+- ✅ Creación de documentos por módulo
+- 📚 Nuevo sistema de navegación
+
+### 2025-11-03 - v2.0
+- Documentación de despachos y sedes
+- Plan de tareas inicial
+
+### 2025-10-XX - v1.0
+- Documentación inicial del proyecto
+
+---
+
+**Mantenido por:** José Ramón Blanco Casal  
+**Contribuidores:** Antigravity AI  
+**Licencia:** Privado
