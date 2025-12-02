@@ -343,15 +343,23 @@ export async function PATCH(
 
     // Si se aprueba, asignar el propietario
     if (accion === "aprobar") {
-      // 0. Verificar que el despacho no tenga ya un propietario
+      console.log('🔄 Iniciando proceso de aprobación atómico...');
+      
+      // PASO 0: VALIDACIONES PREVIAS (antes de hacer cambios)
       const { data: despachoActual, error: despachoError } = await supabase
         .from("despachos")
-        .select("owner_email")
+        .select("owner_email, id, nombre")
         .eq("id", solicitud.despacho_id)
         .single();
 
       if (despachoError) {
-        console.error("Error verificando despacho:", despachoError);
+        console.error("❌ Error verificando despacho:", despachoError);
+        // Revertir estado de solicitud
+        await supabase
+          .from("solicitudes_despacho")
+          .update({ estado: "pendiente" })
+          .eq("id", solicitudId);
+        
         return NextResponse.json(
           { error: "Error al verificar el despacho" },
           { status: 500 }
@@ -359,6 +367,13 @@ export async function PATCH(
       }
 
       if (despachoActual?.owner_email) {
+        console.error(`❌ Despacho ya tiene propietario: ${despachoActual.owner_email}`);
+        // Revertir estado de solicitud
+        await supabase
+          .from("solicitudes_despacho")
+          .update({ estado: "pendiente" })
+          .eq("id", solicitudId);
+        
         return NextResponse.json(
           { 
             error: "Este despacho ya tiene un propietario asignado",
@@ -368,58 +383,116 @@ export async function PATCH(
         );
       }
 
-      // 1. Actualizar owner_email en despachos
-      const { error: ownerError } = await supabase
-        .from("despachos")
-        .update({ owner_email: solicitud.user_email })
-        .eq("id", solicitud.despacho_id);
+      // Variables para tracking de operaciones (para rollback)
+      let ownerAsignado = false;
+      let relacionCreada = false;
+      let rolPromovido = false;
 
-      if (ownerError) {
-        console.error("Error asignando propietario:", ownerError);
-        // Revertir el estado de la solicitud
+      try {
+        // PASO 1: Actualizar owner_email en despachos
+        console.log('📝 Paso 1/3: Asignando owner_email...');
+        const { error: ownerError } = await supabase
+          .from("despachos")
+          .update({ 
+            owner_email: solicitud.user_email,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", solicitud.despacho_id);
+
+        if (ownerError) {
+          throw new Error(`Error asignando propietario: ${ownerError.message}`);
+        }
+        
+        ownerAsignado = true;
+        console.log('✅ owner_email asignado correctamente');
+
+        // PASO 2: Crear entrada en user_despachos
+        console.log('📝 Paso 2/3: Creando relación user_despachos...');
+        const { error: userDespachoError } = await supabase
+          .from("user_despachos")
+          .insert({
+            user_id: solicitud.user_id,
+            despacho_id: solicitud.despacho_id,
+            fecha_asignacion: new Date().toISOString()
+          });
+
+        if (userDespachoError) {
+          // Si el error es por duplicado, no es crítico
+          if (userDespachoError.code === '23505') {
+            console.log('ℹ️ Relación user_despachos ya existía');
+            relacionCreada = true; // Marcar como exitoso
+          } else {
+            throw new Error(`Error creando relación user_despachos: ${userDespachoError.message}`);
+          }
+        } else {
+          relacionCreada = true;
+          console.log('✅ Relación user_despachos creada correctamente');
+        }
+
+        // PASO 3: Promover al usuario a despacho_admin
+        console.log('📝 Paso 3/3: Promoviendo usuario a despacho_admin...');
+        const { error: roleError } = await supabase
+          .from("users")
+          .update({ rol: "despacho_admin" })
+          .eq("id", solicitud.user_id);
+
+        if (roleError) {
+          throw new Error(`Error promocionando usuario: ${roleError.message}`);
+        }
+        
+        rolPromovido = true;
+        console.log('✅ Usuario promovido a despacho_admin correctamente');
+        
+        console.log('🎉 Aprobación completada exitosamente - Todas las operaciones ejecutadas');
+
+      } catch (error) {
+        // ROLLBACK MANUAL: Revertir todas las operaciones realizadas
+        console.error('❌ ERROR EN APROBACIÓN - Iniciando rollback...', error);
+        
+        // Revertir rol si fue promovido
+        if (rolPromovido) {
+          console.log('🔄 Rollback: Revirtiendo rol...');
+          await supabase
+            .from("users")
+            .update({ rol: "usuario" })
+            .eq("id", solicitud.user_id);
+        }
+        
+        // Revertir relación si fue creada
+        if (relacionCreada) {
+          console.log('🔄 Rollback: Eliminando relación user_despachos...');
+          await supabase
+            .from("user_despachos")
+            .delete()
+            .eq("user_id", solicitud.user_id)
+            .eq("despacho_id", solicitud.despacho_id);
+        }
+        
+        // Revertir owner_email si fue asignado
+        if (ownerAsignado) {
+          console.log('🔄 Rollback: Limpiando owner_email...');
+          await supabase
+            .from("despachos")
+            .update({ owner_email: null })
+            .eq("id", solicitud.despacho_id);
+        }
+        
+        // Revertir estado de solicitud
+        console.log('🔄 Rollback: Revirtiendo estado de solicitud...');
         await supabase
           .from("solicitudes_despacho")
           .update({ estado: "pendiente" })
           .eq("id", solicitudId);
-
+        
+        console.log('✅ Rollback completado');
+        
         return NextResponse.json(
-          { error: "Error al asignar propietario" },
+          { 
+            error: "Error al aprobar solicitud - Operación revertida",
+            details: error instanceof Error ? error.message : "Error desconocido"
+          },
           { status: 500 }
         );
-      }
-
-      // 2. Crear entrada en user_despachos si no existe
-      const { error: userDespachoError } = await supabase
-        .from("user_despachos")
-        .insert({
-          user_id: solicitud.user_id,
-          despacho_id: solicitud.despacho_id,
-        })
-        .select()
-        .single();
-
-      if (userDespachoError) {
-        // Si el error es por duplicado, no pasa nada
-        if (userDespachoError.code !== '23505') {
-          console.error("Error creando relación user_despachos:", userDespachoError);
-        } else {
-          console.log("✅ Relación user_despachos ya existía");
-        }
-      } else {
-        console.log("✅ Relación user_despachos creada");
-      }
-
-      // 3. Promover al usuario a despacho_admin
-      const { error: roleError } = await supabase
-        .from("users")
-        .update({ rol: "despacho_admin" })
-        .eq("id", solicitud.user_id);
-
-      if (roleError) {
-        console.error("⚠️ Error promocionando usuario a despacho_admin:", roleError);
-        // No revertir la operación, solo logear el error
-      } else {
-        console.log("✅ Usuario promocionado a despacho_admin");
       }
     }
 
