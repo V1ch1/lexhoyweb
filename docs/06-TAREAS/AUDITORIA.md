@@ -161,19 +161,19 @@
   - **Resultado:** 
   - **Notas:** 
 
-- [ ] **ROL-2:** Promoción a despacho_admin
+- [✗] **ROL-2:** Promoción a despacho_admin
   - Asignar despacho a usuario
   - Verificar cambio de rol
   - Verificar nuevos permisos
-  - **Resultado:** 
-  - **Notas:** 
+  - **Resultado:** ❌ NO FUNCIONA CORRECTAMENTE
+  - **Notas:** 🚨 PROBLEMA CRÍTICO: Usuario blancocasal@gmail.com tiene rol 'despacho_admin' pero NO tiene despachos asignados. Solicitud de Vento Abogados aprobada pero despacho no asignado (sin owner_email ni registro en user_despachos). 
 
-- [ ] **ROL-3:** Degradación a usuario
+- [✗] **ROL-3:** Degradación a usuario
   - Remover último despacho
   - Verificar cambio de rol
   - Verificar pérdida de permisos
-  - **Resultado:** 
-  - **Notas:** 
+  - **Resultado:** ❌ NO FUNCIONA
+  - **Notas:** 🚨 PROBLEMA CRÍTICO: El sistema NO degrada automáticamente el rol cuando un usuario pierde todos sus despachos. Usuario queda como 'despacho_admin' sin despachos. 
 
 ---
 
@@ -230,22 +230,6 @@
 ### Gestión de Despacho (como despacho_admin)
 
 - [ ] **GES-1:** Acceso a mi despacho
-  - URL: `/dashboard/despachos/[slug]`
-  - Página de gestión se carga
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **GES-2:** Editar información general
-  - Formulario de edición funciona
-  - Cambios se guardan
-  - Sincronización con WordPress
-  - **Resultado:** 
-  - **Notas:** 
-
-- [ ] **GES-3:** Ver sedes
-  - Lista de sedes se muestra
-  - Sede principal marcada
-  - **Resultado:** 
   - **Notas:** 
 
 - [ ] **GES-4:** Añadir nueva sede
