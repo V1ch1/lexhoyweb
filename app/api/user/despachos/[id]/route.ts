@@ -102,8 +102,34 @@ export async function DELETE(
     if (updateSolicitudError) {
       console.error('⚠️ Error al actualizar solicitudes:', updateSolicitudError);
       // No es crítico, continuar
-    } else {
+    }
+
+    // DEGRADACIÓN AUTOMÁTICA DE ROL
+    // Verificar si el usuario tiene más despachos asignados
+    const { data: remainingDespachos, error: countError } = await supabase
+      .from('user_despachos')
+      .select('id')
+      .eq('user_id', user.id);
+
+    if (countError) {
+      console.error('⚠️ Error al contar despachos restantes:', countError);
+    } else if (!remainingDespachos || remainingDespachos.length === 0) {
+      // El usuario no tiene más despachos, degradar a 'usuario'
+      console.log('🔄 Usuario no tiene más despachos, degradando rol a "usuario"...');
+      
+      const { error: updateRolError } = await supabase
+        .from('users')
+        .update({ rol: 'usuario' })
+        .eq('id', user.id);
+
+      if (updateRolError) {
+        console.error('❌ Error al degradar rol:', updateRolError);
+      } else {
+        console.log('✅ Rol degradado exitosamente a "usuario"');
       }
+    } else {
+      console.log(`ℹ️ Usuario aún tiene ${remainingDespachos.length} despacho(s), manteniendo rol`);
+    }
 
     return NextResponse.json(
       { 
