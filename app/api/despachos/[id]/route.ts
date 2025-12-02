@@ -67,7 +67,7 @@ export async function GET(
 
     const isSuperAdmin = userData?.role === "super_admin";
 
-    // Verificar si es propietario
+    // Verificar si es propietario por user_despachos
     const { data: userDespacho } = await supabase
       .from("user_despachos")
       .select("id")
@@ -75,7 +75,11 @@ export async function GET(
       .eq("despacho_id", despachoId)
       .single();
 
-    if (!isSuperAdmin && !userDespacho) {
+    // Verificar si es propietario por owner_email
+    const isOwnerByEmail = despacho.owner_email === user.email;
+
+    // Permitir acceso si es super_admin, tiene relación en user_despachos, o es owner por email
+    if (!isSuperAdmin && !userDespacho && !isOwnerByEmail) {
       return NextResponse.json(
         { error: "No tienes permisos para ver este despacho" },
         { status: 403 }
@@ -176,6 +180,7 @@ export async function PUT(
 
     const isSuperAdmin = userData?.role === "super_admin";
 
+    // Verificar si es propietario por user_despachos
     const { data: userDespacho } = await supabase
       .from("user_despachos")
       .select("id")
@@ -183,7 +188,11 @@ export async function PUT(
       .eq("despacho_id", despachoId)
       .single();
 
-    if (!isSuperAdmin && !userDespacho) {
+    // Verificar si es propietario por owner_email
+    const isOwnerByEmail = despachoExistente.owner_email === user.email;
+
+    // Permitir acceso si es super_admin, tiene relación en user_despachos, o es owner por email
+    if (!isSuperAdmin && !userDespacho && !isOwnerByEmail) {
       return NextResponse.json(
         { error: "No tienes permisos para editar este despacho" },
         { status: 403 }
