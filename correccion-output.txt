@@ -1,0 +1,25 @@
+﻿[dotenv@17.2.3] injecting env (24) from .env.local -- tip: ­ƒøá´©Å  run anywhere with `dotenvx run -- yourcommand`
+­ƒöº CORRECCI├ôN DE PROBLEMAS CR├ìTICOS
+
+================================================================================
+
+1´©ÅÔâú Obteniendo datos del usuario...
+   Ô£à Usuario encontrado: Jos├® Ram├│n Blanco Casal
+   Rol actual: despacho_admin
+
+2´©ÅÔâú Buscando despacho "Vento Abogados"...
+node.exe : ÔØî Error al buscar despacho: {
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ÔØî Error al 
+    buscar despacho: {:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column despachos.localidad does not exist'
+}
