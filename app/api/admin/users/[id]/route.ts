@@ -40,9 +40,9 @@ export async function DELETE(
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authError) {
-      console.error('Error deleting user from Auth:', authError);
+      console.error('Error deleting user from Auth:', JSON.stringify(authError, null, 2));
       return NextResponse.json(
-        { error: 'Error deleting user from authentication system', details: authError.message },
+        { error: 'Error deleting user from authentication system', details: authError.message, code: authError.status },
         { status: 500 }
       );
     }
