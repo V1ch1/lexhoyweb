@@ -1,7 +1,0 @@
-[
-  {
-    "id": "5bbdac04-8382-4013-be1a-d3e4ae7022ab",
-    "user_email": "blancocasal@gmail.com",
-    "despacho_id": "a6bfc210-2a17-44de-a07f-91f4a884ebca"
-  }
-]

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { EmailService } from "@/lib/emailService";
+import { EmailService } from "@/lib/services/emailService";
 import { NotificationService } from "@/lib/notificationService";
 import { requireSuperAdmin } from "@/lib/api-auth";
 
@@ -549,66 +549,25 @@ export async function PATCH(
           },
         });
 
-        // Seleccionar la plantilla de email correcta según el contexto
-        let emailHtml: string;
-        let emailSubject: string;
-
-        switch (tipoTemplate) {
-          case "bienvenida":
-            emailSubject = "🎉 ¡Bienvenido a LexHoy! Tu despacho ha sido aprobado";
-            emailHtml = EmailService.templateSolicitudBienvenida({
-              userName: solicitud.user_name,
-              userEmail: solicitud.user_email,
-              despachoName: solicitud.despacho_nombre,
-              url: "https://despachos.lexhoy.com/dashboard/despachos",
-            });
-            break;
-
-          case "acceso-restaurado":
-            emailSubject = "✅ Tu acceso al despacho ha sido restaurado - LexHoy";
-            emailHtml = EmailService.templateSolicitudAccesoRestaurado({
-              userName: solicitud.user_name,
-              userEmail: solicitud.user_email,
-              despachoName: solicitud.despacho_nombre,
-              url: "https://despachos.lexhoy.com/dashboard/despachos",
-            });
-            break;
-
-          case "rechazo-inicial":
-            emailSubject = "Actualización sobre tu solicitud - LexHoy";
-            emailHtml = EmailService.templateSolicitudRechazada({
-              userName: solicitud.user_name,
-              userEmail: solicitud.user_email,
-              despachoName: solicitud.despacho_nombre,
-              motivoRechazo: motivo || "No se especificó un motivo",
-            });
-            break;
-
-          case "acceso-revocado":
-            emailSubject = "⚠️ Actualización importante sobre tu despacho - LexHoy";
-            emailHtml = EmailService.templateSolicitudAccesoRevocado({
-              userName: solicitud.user_name,
-              userEmail: solicitud.user_email,
-              despachoName: solicitud.despacho_nombre,
-              motivoRechazo: motivo || "No se especificó un motivo",
-            });
-            break;
-
-          default:
-            throw new Error(`Template type not recognized: ${tipoTemplate}`);
-        }
-
-        // Enviar email al usuario
-        const emailSent = await EmailService.send({
-          to: solicitud.user_email,
-          subject: emailSubject,
-          html: emailHtml,
-        });
-
-        if (emailSent) {
-          console.log(`✅ Email de ${tipoTemplate.toUpperCase()} enviado exitosamente a ${solicitud.user_email}`);
-        } else {
-          console.error(`⚠️ El email de ${tipoTemplate} no se pudo enviar, pero la notificación en app se creó`);
+        // Enviar email usando el nuevo EmailService
+        try {
+          if (esAprobacion) {
+            await EmailService.sendSolicitudApproved(
+              solicitud.user_id,
+              solicitud.despacho_nombre
+            );
+            console.log(`✅ Email de aprobación enviado a ${solicitud.user_email}`);
+          } else {
+            await EmailService.sendSolicitudRejected(
+              solicitud.user_id,
+              solicitud.despacho_nombre,
+              motivo
+            );
+            console.log(`✅ Email de rechazo enviado a ${solicitud.user_email}`);
+          }
+        } catch (emailError) {
+          console.error("⚠️ Error enviando email:", emailError);
+          // No fallar la operación si falla el email
         }
       } catch (notifError) {
         console.error("⚠️ Error al notificar al usuario:", notifError);

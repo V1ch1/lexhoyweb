@@ -158,7 +158,7 @@ export async function POST(request: Request) {
 
     // Enviar email a super admins
     try {
-      const { EmailService } = await import("@/lib/emailService");
+      const { EmailService } = await import("@/lib/services/emailService");
       // Usar siempre URL de producción en emails
       const baseUrl = "https://despachos.lexhoy.com";
 

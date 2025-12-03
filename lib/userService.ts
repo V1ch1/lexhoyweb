@@ -1268,7 +1268,7 @@ export class UserService {
 
     // Enviar email al usuario
     try {
-      const { EmailService } = await import("./emailService");
+      const { EmailService } = await import("@/lib/services/emailService");
 
       await EmailService.send({
         to: solicitud.user_email,
@@ -1381,7 +1381,7 @@ export class UserService {
 
     // Enviar email al usuario
     try {
-      const { EmailService } = await import("./emailService");
+      const { EmailService } = await import("@/lib/services/emailService");
 
       await EmailService.send({
         to: solicitud.user_email,

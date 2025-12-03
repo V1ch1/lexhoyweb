@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { NotificationService } from "@/lib/notificationService";
-import { EmailService } from "@/lib/emailService";
+import { EmailService } from "@/lib/services/emailService";
 import { supabase } from "@/lib/supabase";
 
 export async function POST(request: Request) {

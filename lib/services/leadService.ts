@@ -137,6 +137,83 @@ export class LeadService {
       // 5. Registrar log de procesamiento IA
       await this.logAIProcessing(data.id, analysis);
 
+      // 6. Enviar notificaciones si cumple calidad
+      if (cumpleCalidad && precioBase) {
+        console.log("📧 Enviando notificaciones de nuevo lead...");
+        
+        // Obtener usuarios despacho_admin y super_admin
+        const { data: despachoAdmins } = await supabase
+          .from("users")
+          .select("id")
+          .eq("rol", "despacho_admin")
+          .eq("estado", "activo");
+
+        const { data: superAdmins } = await supabase
+          .from("users")
+          .select("id")
+          .eq("rol", "super_admin")
+          .eq("estado", "activo");
+
+        // Importar servicios
+        const { EmailService } = await import("@/lib/services/emailService");
+        const { NotificationService } = await import("@/lib/notificationService");
+
+        // Notificar a despacho_admin (email + dashboard)
+        if (despachoAdmins && despachoAdmins.length > 0) {
+          await Promise.allSettled(
+            despachoAdmins.map(async (admin) => {
+              // Email (respeta preferencias)
+              await EmailService.sendNewLeadAvailable(admin.id, {
+                id: data.id,
+                especialidad: analysis.especialidad,
+                urgencia: analysis.urgencia,
+                puntuacion_calidad: analysis.puntuacionCalidad,
+                precio: precioBase,
+              });
+              
+              // Notificación dashboard (siempre)
+              await NotificationService.create({
+                userId: admin.id,
+                tipo: "nuevo_lead",
+                titulo: `🎯 Nuevo Lead: ${analysis.especialidad}`,
+                mensaje: `Lead de ${analysis.urgencia} urgencia disponible. Calidad: ${analysis.puntuacionCalidad}/100. Precio: ${precioBase}€`,
+                url: `/dashboard/leads/${data.id}`,
+                metadata: {
+                  leadId: data.id,
+                  especialidad: analysis.especialidad,
+                  urgencia: analysis.urgencia,
+                  precio: precioBase,
+                },
+              });
+            })
+          );
+          
+          console.log(`✅ Notificaciones enviadas a ${despachoAdmins.length} despachos`);
+        }
+
+        // Notificar a super_admin (solo dashboard, para monitoreo)
+        if (superAdmins && superAdmins.length > 0) {
+          await Promise.allSettled(
+            superAdmins.map((admin) =>
+              NotificationService.create({
+                userId: admin.id,
+                tipo: "nuevo_lead_admin",
+                titulo: `📊 Nuevo Lead Procesado`,
+                mensaje: `Lead "${data.nombre}" procesado. Especialidad: ${analysis.especialidad}. Calidad: ${analysis.puntuacionCalidad}/100`,
+                url: `/dashboard/admin/leads/${data.id}`,
+                metadata: {
+                  leadId: data.id,
+                  especialidad: analysis.especialidad,
+                  calidad: analysis.puntuacionCalidad,
+                },
+              })
+            )
+          );
+          
+          console.log(`✅ Notificaciones dashboard enviadas a ${superAdmins.length} super admins`);
+        }
+      }
+
       console.log(`✅ Lead creado: ${data.id}`);
       return data;
     } catch (error) {
@@ -292,6 +369,74 @@ export class LeadService {
         lead_snapshot: lead,
         estado: "completada",
       });
+
+      // 4. Enviar notificaciones de compra
+      try {
+        const { EmailService } = await import("@/lib/services/emailService");
+        const { NotificationService } = await import("@/lib/notificationService");
+        
+        // Email al comprador
+        await EmailService.sendLeadPurchasedEmail(
+          compradorId,
+          lead.nombre || "Cliente",
+          leadId
+        );
+        console.log(`📧 Email de compra enviado a ${compradorId}`);
+        
+        // Notificación dashboard al comprador
+        await NotificationService.create({
+          userId: compradorId,
+          tipo: "lead_comprado",
+          titulo: "✅ Lead Adquirido",
+          mensaje: `Has adquirido el lead "${lead.nombre}". Contacta al cliente lo antes posible para maximizar conversión.`,
+          url: `/dashboard/leads/${leadId}`,
+          metadata: {
+            leadId,
+            precio: precioVenta,
+            clienteNombre: lead.nombre,
+          },
+        });
+        console.log(`✅ Notificación dashboard enviada al comprador`);
+        
+        // Notificar a super_admin sobre la venta
+        const { data: superAdmins } = await supabase
+          .from("users")
+          .select("id, nombre, email")
+          .eq("rol", "super_admin")
+          .eq("estado", "activo");
+
+        if (superAdmins && superAdmins.length > 0) {
+          // Obtener datos del comprador
+          const { data: comprador } = await supabase
+            .from("users")
+            .select("nombre, email")
+            .eq("id", compradorId)
+            .single();
+
+          await Promise.allSettled(
+            superAdmins.map((admin) =>
+              NotificationService.create({
+                userId: admin.id,
+                tipo: "lead_vendido",
+                titulo: "💰 Lead Vendido",
+                mensaje: `Lead "${lead.nombre}" vendido a ${comprador?.nombre || comprador?.email} por ${precioVenta}€`,
+                url: `/dashboard/admin/leads/${leadId}`,
+                metadata: {
+                  leadId,
+                  compradorId,
+                  compradorNombre: comprador?.nombre,
+                  precio: precioVenta,
+                },
+              })
+            )
+          );
+          
+          console.log(`✅ Notificaciones de venta enviadas a ${superAdmins.length} super admins`);
+        }
+      } catch (emailError) {
+        console.error("Error enviando notificaciones de compra:", emailError);
+        // No lanzar error, la compra ya se completó
+      }
 
       console.log(`✅ Lead ${leadId} comprado por ${compradorId}`);
       return updatedLead;

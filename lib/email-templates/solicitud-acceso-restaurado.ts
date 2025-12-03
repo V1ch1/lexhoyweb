@@ -1,4 +1,4 @@
-import { EmailTemplateData } from "../emailService";
+import { EmailTemplateData } from "@/lib/services/emailService";
 
 /**
  * Template: Acceso Restaurado - Re-aprobación

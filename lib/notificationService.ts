@@ -27,7 +27,11 @@ export type NotificationType =
   | "despacho_asignado"
   | "despacho_desasignado"
   | "usuario_nuevo"
-  | "mensaje_sistema";
+  | "mensaje_sistema"
+  | "nuevo_lead"
+  | "nuevo_lead_admin"
+  | "lead_comprado"
+  | "lead_vendido";
 
 export interface Notification {
   id: string;
