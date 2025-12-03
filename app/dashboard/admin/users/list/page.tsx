@@ -89,8 +89,8 @@ export default function UsersListPage() {
     }
   };
 
-  const StatusBadge = ({ status }: { status: UserStatus }) => {
-    const isActive = status === "activo";
+  const StatusBadge = ({ user }: { user: User }) => {
+    const isActive = user.activo;
     return (
       <span
         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -234,7 +234,7 @@ export default function UsersListPage() {
               </div>
               <div className="flex flex-col items-end gap-2">
                 <RoleBadge role={user.rol} />
-                <StatusBadge status={user.estado} />
+                <StatusBadge user={user} />
               </div>
             </div>
 

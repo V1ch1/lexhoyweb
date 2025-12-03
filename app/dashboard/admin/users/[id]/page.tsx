@@ -6,6 +6,7 @@ import { UserService } from "@/lib/userService";
 import { User, UserDespacho, UserRole, UserStatus } from "@/lib/types";
 import { useAuth } from "@/lib/authContext";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const userService = new UserService();
 
@@ -36,6 +37,8 @@ export default function EditUserPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Estados para los campos del formulario
   const [formData, setFormData] = useState({
@@ -163,6 +166,30 @@ export default function EditUserPage() {
         onClick: () => {},
       },
     });
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user) return;
+
+    try {
+      setDeleting(true);
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Error al eliminar usuario');
+      }
+
+      toast.success("Usuario eliminado correctamente");
+      router.push("/dashboard/admin/users");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Error al eliminar el usuario");
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   if (error) {
@@ -743,37 +770,7 @@ export default function EditUserPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => {
-                    toast("¿Estás ABSOLUTAMENTE seguro?", {
-                      description: "Esta acción eliminará permanentemente al usuario y no se puede deshacer.",
-                      action: {
-                        label: "Eliminar Definitivamente",
-                        onClick: async () => {
-                          try {
-                            const response = await fetch(`/api/admin/users/${user.id}`, {
-                              method: 'DELETE',
-                            });
-
-                            if (!response.ok) {
-                              const data = await response.json();
-                              throw new Error(data.error || 'Error al eliminar usuario');
-                            }
-
-                            toast.success("Usuario eliminado correctamente");
-                            router.push("/dashboard/admin/users");
-                          } catch (error) {
-                            console.error("Error deleting user:", error);
-                            toast.error("Error al eliminar el usuario");
-                          }
-                        },
-                      },
-                      cancel: {
-                        label: "Cancelar",
-                        onClick: () => {},
-                      },
-                      duration: 5000,
-                    });
-                  }}
+                  onClick={() => setShowDeleteModal(true)}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   Eliminar Usuario
@@ -783,6 +780,29 @@ export default function EditUserPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Eliminar Usuario Definitivamente"
+        message={
+          <>
+            <p className="text-sm text-gray-500">
+              ¿Estás seguro de que quieres eliminar al usuario <strong>{user.nombre} {user.apellidos}</strong> ({user.email})?
+              <br /><br />
+              Esta acción eliminará permanentemente su cuenta, sus datos de acceso y toda la información asociada. 
+              <span className="block mt-2 font-bold text-red-600">Esta acción no se puede deshacer.</span>
+            </p>
+          </>
+        }
+        confirmText="Eliminar Usuario"
+        onConfirm={handleDeleteUser}
+        isProcessing={deleting}
+        requireConfirmationText={{
+          textToMatch: "eliminar",
+          placeholder: "Escribe 'eliminar' para confirmar"
+        }}
+      />
     </>
   );
 }
