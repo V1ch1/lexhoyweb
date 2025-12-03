@@ -77,15 +77,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
 
-    async jwt({ token, user }) {
-      // Si es login nuevo, buscar el id real en Supabase por email
-      if (user && user.email && supabaseAdmin) {
+    async jwt({ token, user, trigger, session }) {
+      // Si es login nuevo O se solicita actualización explícita
+      if ((user && user.email) || (trigger === "update" && token.email) && supabaseAdmin) {
         try {
+          const email = user?.email || token.email;
           const { data: dbUser } = await supabaseAdmin
             .from("users")
             .select("id, rol, plan, activo")
-            .eq("email", user.email)
+            .eq("email", email)
             .single();
+            
           if (dbUser) {
             token.id = dbUser.id;
             token.rol = dbUser.rol;
@@ -93,8 +95,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.activo = dbUser.activo;
           }
         } catch (e) {
-          // fallback: dejar el sub de Google
-          token.id = token.sub;
+          console.error("Error refreshing user data in JWT:", e);
+          // fallback: si falla, mantener datos antiguos o dejar el sub de Google
+          if (!token.id) token.id = token.sub;
         }
       } else if (user) {
         // @ts-ignore

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/authContext";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify";
@@ -93,63 +94,74 @@ const DashboardPage = () => {
       setStatsLoading(true);
       try {
         if (user.role === "despacho_admin") {
-          // Generar estadísticas aleatorias para demo
-          const totalLeads = Math.floor(Math.random() * 150) + 50; // 50-200
-          const leadsThisMonth = Math.floor(Math.random() * 30) + 10; // 10-40
-          const leadsToday = Math.floor(Math.random() * 5) + 1; // 1-6
+          // 1. Obtener IDs de despachos del usuario
+          const { data: userDespachosData } = await supabase
+            .from('user_despachos')
+            .select('despacho_id')
+            .eq('user_id', user.id);
+          
+          const despachoIds = userDespachosData?.map(d => d.despacho_id) || [];
+
+          if (despachoIds.length === 0) {
+            setDespachoStats({ leadsToday: 0, leadsThisMonth: 0, totalLeads: 0 });
+            setRecentLeads([]);
+            setStatsLoading(false);
+            return;
+          }
+
+          // 2. Consultar leads reales
+          const now = new Date();
+          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+          // Total Leads
+          const { count: totalLeads } = await supabase
+            .from('leads')
+            .select('*', { count: 'exact', head: true })
+            .in('despacho_id', despachoIds);
+
+          // Leads Hoy
+          const { count: leadsToday } = await supabase
+            .from('leads')
+            .select('*', { count: 'exact', head: true })
+            .in('despacho_id', despachoIds)
+            .gte('created_at', startOfDay);
+
+          // Leads Este Mes
+          const { count: leadsThisMonth } = await supabase
+            .from('leads')
+            .select('*', { count: 'exact', head: true })
+            .in('despacho_id', despachoIds)
+            .gte('created_at', startOfMonth);
 
           setDespachoStats({
-            leadsToday,
-            leadsThisMonth,
-            totalLeads,
+            leadsToday: leadsToday || 0,
+            leadsThisMonth: leadsThisMonth || 0,
+            totalLeads: totalLeads || 0,
           });
 
-          // Generar leads recientes de ejemplo
-          const especialidades = [
-            "Derecho Civil",
-            "Derecho Penal",
-            "Derecho Laboral",
-            "Derecho Mercantil",
-            "Derecho Fiscal",
-            "Derecho Familiar",
-            "Derecho Administrativo",
-          ];
+          // 3. Cargar leads recientes
+          const { data: leadsData } = await supabase
+            .from('leads')
+            .select('*')
+            .in('despacho_id', despachoIds)
+            .order('created_at', { ascending: false })
+            .limit(5);
 
-          const nombres = [
-            "María García López",
-            "Juan Martínez Ruiz",
-            "Carmen Rodríguez Sánchez",
-            "Pedro Fernández Torres",
-            "Ana López Martín",
-            "Carlos Sánchez Pérez",
-          ];
-
-          const estados: Array<"nuevo" | "contactado" | "cerrado"> = [
-            "nuevo",
-            "contactado",
-            "cerrado",
-          ];
-
-          const mockLeads: RecentLead[] = Array.from({ length: 3 }, (_, i) => {
-            const now = new Date();
-            const horasAtras = Math.floor(Math.random() * 48) + 1;
-            const fecha = new Date(now.getTime() - horasAtras * 60 * 60 * 1000);
-
-            return {
-              id: `lead-${i + 1}`,
-              nombre: nombres[Math.floor(Math.random() * nombres.length)],
-              email: `cliente${i + 1}@example.com`,
-              telefono: `6${Math.floor(Math.random() * 100000000) + 10000000}`,
-              especialidad:
-                especialidades[
-                  Math.floor(Math.random() * especialidades.length)
-                ],
-              fecha,
-              estado: estados[Math.floor(Math.random() * estados.length)],
-            };
-          });
-
-          setRecentLeads(mockLeads);
+          if (leadsData) {
+            const mappedLeads: RecentLead[] = leadsData.map(lead => ({
+              id: lead.id,
+              nombre: lead.cliente_nombre || 'Cliente Anónimo',
+              email: lead.cliente_email || '',
+              telefono: lead.cliente_telefono || '',
+              especialidad: lead.especialidad || 'General',
+              fecha: new Date(lead.created_at),
+              estado: (lead.estado === 'nuevo' || lead.estado === 'contactado' || lead.estado === 'cerrado') 
+                ? lead.estado 
+                : 'nuevo', // Fallback status
+            }));
+            setRecentLeads(mappedLeads);
+          }
         }
       } catch (error) {
         console.error("Error al cargar estadísticas:", error);
@@ -158,7 +170,7 @@ const DashboardPage = () => {
       }
     };
     loadStats();
-  }, [user?.id]); // SOLO user.id como dependencia
+  }, [user?.id, user?.role]); // Añadido user.role como dependencia
 
   if (isLoading || !user) {
     return (

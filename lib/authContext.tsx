@@ -28,7 +28,7 @@ export interface User {
 }
 
 export function useAuth() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated";
 
@@ -59,6 +59,7 @@ export function useAuth() {
       return true;
     },
     logout: () => signOut({ callbackUrl: "/login" }),
+    update,
   };
 }
 

@@ -22,7 +22,8 @@ interface Despacho {
 
 export default function MisDespachosPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  // @ts-ignore
+  const { user, update } = useAuth();
   const [userDespachos, setUserDespachos] = useState<Despacho[]>([]);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,10 +90,20 @@ export default function MisDespachosPage() {
         text: 'Te has desasignado del despacho correctamente. El despacho sigue existiendo y puede ser asignado a otros usuarios.'
       });
 
-      // Recargar datos después de 2 segundos
+      // Actualizar la sesión para reflejar cambios de rol si los hubo
+      // @ts-ignore
+      if (typeof update === 'function') {
+        // @ts-ignore
+        await update();
+      } else {
+        // Fallback si update no está disponible
+        window.location.reload();
+      }
+
+      // Recargar datos después de 1 segundo
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, 1000);
 
     } catch (error) {
       console.error('Error al desasignar del despacho:', error);
