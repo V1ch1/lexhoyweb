@@ -88,14 +88,16 @@ export async function GET(request: Request) {
 - Accesos rápidos
 - Alertas y notificaciones
 
-**Métricas Mostradas:**
+**Métricas Mostradas (Datos Reales):**
+Las métricas se obtienen directamente de la base de datos Supabase en tiempo real:
+
 ```typescript
 interface AdminDashboardStats {
   usuarios: {
-    total: number;
-    nuevos_mes: number;
-    activos: number;
-    despacho_admins: number;
+    total: number;        // SELECT count(*) FROM users
+    nuevos_mes: number;   // created_at > startOfMonth
+    activos: number;      // estado = 'activo'
+    despacho_admins: number; // rol = 'despacho_admin'
   };
   despachos: {
     total: number;
@@ -107,7 +109,7 @@ interface AdminDashboardStats {
     total: number;
     nuevos_mes: number;
     asignados: number;
-    conversion_rate: number;
+    conversion_rate: number; // Calculado
   };
   solicitudes: {
     pendientes: number;
@@ -230,6 +232,29 @@ Modal con información completa:
 - Leads comprados
 - Historial de actividad
 - Solicitudes realizadas
+
+**5. Eliminar Usuario (Zona de Peligro)**
+
+Se ha implementado un sistema robusto de eliminación:
+- **Modal de Confirmación**: Requiere escribir "ELIMINAR" para confirmar.
+- **Manejo de "Ghost Users"**: Si el usuario no existe en Auth pero sí en DB (error 404), el sistema permite eliminar el registro de la DB limpiamente.
+- **Validaciones**: Impide eliminar al propio usuario logueado.
+
+```typescript
+// app/api/admin/users/[id]/route.ts
+export async function DELETE(req: Request, { params }) {
+  // 1. Eliminar de Supabase Auth
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+  
+  // 2. Si es 404 (User not found), ignorar y proceder
+  if (authError && authError.status !== 404) {
+    throw authError;
+  }
+  
+  // 3. Eliminar de tabla users (Cascade eliminará relaciones)
+  await supabaseAdmin.from("users").delete().eq("id", id);
+}
+```
 
 ---
 

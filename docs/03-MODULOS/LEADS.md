@@ -218,7 +218,7 @@ async function processLeadWithAI(consulta: string) {
 
 #### Para Usuarios Normales
 
-- ✅ Ver leads disponibles (solo visualización)
+- ✅ Ver leads disponibles (Datos reales de DB)
 - ❌ No pueden comprar (necesitan ser despacho_admin)
 
 #### Para Despacho Admins

@@ -126,7 +126,8 @@ async function isOwner(userId: string, despachoId: string): boolean {
 2. Sistema asigna `owner_email` en `despachos`
 3. Sistema promociona usuario a `despacho_admin`
 4. Owner anterior (si existe) pierde acceso
-5. Notificaciones enviadas
+4. Owner anterior (si existe) pierde acceso
+5. Notificaciones enviadas (con enlace corregido a `/dashboard/admin/solicitudes`)
 
 **Código:**
 ```typescript

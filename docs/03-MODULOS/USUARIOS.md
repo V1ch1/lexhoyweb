@@ -107,6 +107,42 @@ El módulo de usuarios gestiona todo lo relacionado con:
 - Soporte técnico
 - Gestión de contenido
 
+- Gestión de contenido
+
+---
+
+## 🔔 Sistema de Notificaciones
+
+### Arquitectura
+
+El sistema de notificaciones utiliza una arquitectura híbrida para garantizar seguridad y rendimiento:
+
+1.  **Base de Datos**: Tabla `notificaciones` con RLS.
+2.  **Backend Proxy**: Endpoint `/api/notifications` que actúa como puente seguro.
+3.  **Polling Optimizado**: El cliente consulta cada 60s o al recibir foco/interacción.
+
+### Componentes
+
+#### `NotificationBell.tsx`
+Componente de UI que gestiona:
+- Polling inteligente (60s + visibility change).
+- Contador de no leídas.
+- Marcado como leída (individual/todas).
+- Navegación a la URL de la notificación.
+
+#### API Routes
+- `GET /api/notifications`: Obtiene notificaciones (Service Role).
+- `POST /api/notifications/[id]/read`: Marca una como leída.
+- `POST /api/notifications/mark-all-read`: Marca todas como leídas.
+
+### Tipos de Notificación
+
+- `solicitud_recibida`: Nueva solicitud de despacho.
+- `solicitud_aprobada`: Solicitud aceptada.
+- `solicitud_rechazada`: Solicitud denegada.
+- `despacho_asignado`: Asignación manual.
+- `mensaje_sistema`: Avisos generales.
+
 ---
 
 ## 🔄 Flujos de Usuario
@@ -604,6 +640,7 @@ interface RoleBadgeProps {
 - [x] Panel de usuario
 - [x] Gestión de usuarios (admin)
 - [x] Políticas RLS
+- [x] Sistema de Notificaciones (Polling optimizado)
 
 ### Funcionando Correctamente
 
