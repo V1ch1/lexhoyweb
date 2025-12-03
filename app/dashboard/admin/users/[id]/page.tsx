@@ -672,7 +672,7 @@ export default function EditUserPage() {
             </div>
           </div>
 
-          {/* Estadísticas del Usuario */}
+      {/* Estadísticas del Usuario */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -705,6 +705,79 @@ export default function EditUserPage() {
                     ? new Date(user.ultimoAcceso).toLocaleDateString("es-ES")
                     : "-"}
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ZONA DE PELIGRO */}
+          <div className="bg-red-50 rounded-lg border border-red-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-red-200">
+              <h2 className="text-lg font-semibold text-red-800 flex items-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                Zona de Peligro
+              </h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-red-700 mb-4">
+                Estas acciones son destructivas y no se pueden deshacer. Ten mucho cuidado.
+              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-red-900">
+                    Eliminar Usuario
+                  </h3>
+                  <p className="text-xs text-red-600 mt-1">
+                    Elimina permanentemente al usuario y todos sus datos asociados.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    toast("¿Estás ABSOLUTAMENTE seguro?", {
+                      description: "Esta acción eliminará permanentemente al usuario y no se puede deshacer.",
+                      action: {
+                        label: "Eliminar Definitivamente",
+                        onClick: async () => {
+                          try {
+                            const response = await fetch(`/api/admin/users/${user.id}`, {
+                              method: 'DELETE',
+                            });
+
+                            if (!response.ok) {
+                              const data = await response.json();
+                              throw new Error(data.error || 'Error al eliminar usuario');
+                            }
+
+                            toast.success("Usuario eliminado correctamente");
+                            router.push("/dashboard/admin/users");
+                          } catch (error) {
+                            console.error("Error deleting user:", error);
+                            toast.error("Error al eliminar el usuario");
+                          }
+                        },
+                      },
+                      cancel: {
+                        label: "Cancelar",
+                        onClick: () => {},
+                      },
+                      duration: 5000,
+                    });
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Eliminar Usuario
+                </button>
               </div>
             </div>
           </div>
