@@ -1,68 +1,57 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { auth } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   try {
-    // Leer el JWT del header Authorization
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const session = await auth();
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Crear cliente Supabase con el token del usuario
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
 
-    // Obtener parámetros de la URL
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const limit = parseInt(searchParams.get("limit") || "5");
     const onlyUnread = searchParams.get("onlyUnread") === "true";
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId es requerido" },
-        { status: 400 }
-      );
-    }
-
-    // Construir query
-    let query = supabase
+    let query = supabaseAdmin
       .from("notificaciones")
-      .select("*", { count: "exact" })
-      .eq("user_id", userId)
+      .select("*")
+      .eq("user_id", session.user.id)
       .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(limit);
 
     if (onlyUnread) {
       query = query.eq("leida", false);
     }
 
-    const { data, error, count } = await query;
+    const { data: notifications, error } = await query;
 
     if (error) {
-      console.error("Error obteniendo notificaciones:", error);
-      return NextResponse.json(
-        { error: "Error obteniendo notificaciones", details: error },
-        { status: 500 }
-      );
+      console.error("Error fetching notifications:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Get unread count
+    const { count, error: countError } = await supabaseAdmin
+      .from("notificaciones")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", session.user.id)
+      .eq("leida", false);
+
+    if (countError) {
+      console.error("Error counting unread notifications:", countError);
     }
 
     return NextResponse.json({
-      notifications: data || [],
-      total: count || 0,
+      notifications: notifications || [],
+      unreadCount: count || 0
     });
   } catch (error) {
-    console.error("Error en /api/notifications:", error);
-    return NextResponse.json(
-      { error: "Error interno", details: String(error) },
-      { status: 500 }
-    );
+    console.error("Internal error in notifications API:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

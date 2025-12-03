@@ -21,14 +21,14 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const data = await NotificationService.getUserNotifications(userId, {
-        limit: 5,
-        onlyUnread: false,
-      });
-      setNotifications(data);
-
-      const count = await NotificationService.getUnreadCount(userId);
-      setUnreadCount(count);
+      const response = await fetch("/api/notifications?limit=5");
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications);
+        setUnreadCount(data.unreadCount);
+      } else {
+        console.error("Failed to fetch notifications");
+      }
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
@@ -36,13 +36,44 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
     }
   };
 
-  // Cargar al montar y cada 30 segundos
+  // Efecto para polling optimizado
   useEffect(() => {
+    if (!userId) return;
+
+    // 1. Carga inicial
     loadNotifications();
-    const interval = setInterval(loadNotifications, 30000); // 30 segundos
-    return () => clearInterval(interval);
+
+    // 2. Polling cada 60 segundos (menos agresivo)
+    const intervalId = setInterval(() => {
+      // Solo recargar si la ventana está visible
+      if (document.visibilityState === 'visible') {
+        loadNotifications();
+      }
+    }, 60000);
+
+    // 3. Recargar al volver a enfocar la ventana
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadNotifications();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  // Recargar al abrir el dropdown
+  useEffect(() => {
+    if (open && userId) {
+      loadNotifications();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -66,14 +97,22 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
 
   // Marcar como leída
   const handleMarkAsRead = async (notificationId: string) => {
-    await NotificationService.markAsRead(notificationId);
-    loadNotifications();
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, { method: "POST" });
+      loadNotifications();
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
   };
 
   // Marcar todas como leídas
   const handleMarkAllAsRead = async () => {
-    await NotificationService.markAllAsRead(userId);
-    loadNotifications();
+    try {
+      await fetch("/api/notifications/mark-all-read", { method: "POST" });
+      loadNotifications();
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
   };
 
   // Obtener icono según tipo
