@@ -40,11 +40,16 @@ export async function DELETE(
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authError) {
-      console.error('Error deleting user from Auth:', JSON.stringify(authError, null, 2));
-      return NextResponse.json(
-        { error: 'Error deleting user from authentication system', details: authError.message, code: authError.status },
-        { status: 500 }
-      );
+      // If user is not found in Auth, we should still proceed to delete from DB to clean up
+      if (authError.status === 404 || authError.code === 'user_not_found') {
+        console.warn(`[DELETE USER] User ${userId} not found in Auth, proceeding to delete from DB.`);
+      } else {
+        console.error('Error deleting user from Auth:', JSON.stringify(authError, null, 2));
+        return NextResponse.json(
+          { error: 'Error deleting user from authentication system', details: authError.message, code: authError.status },
+          { status: 500 }
+        );
+      }
     }
 
     // 3. Delete from public.users (Explicitly, just in case cascade isn't set up or fails)
