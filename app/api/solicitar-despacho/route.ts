@@ -144,7 +144,7 @@ export async function POST(request: Request) {
         tipo: "solicitud_recibida",
         titulo: "📨 Nueva solicitud de despacho",
         mensaje: `${userName} ha solicitado acceso al despacho "${despachoNombre}"`,
-        url: "/dashboard/admin/users?tab=solicitudes",
+        url: "/dashboard/admin/solicitudes",
         metadata: {
           userId,
           despachoId: objectId,
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
           despachoName: despachoNombre,
           userEmail,
           fecha: new Date().toLocaleString("es-ES"),
-          url: `${baseUrl}/admin/users?tab=solicitudes`,
+          url: `${baseUrl}/dashboard/admin/solicitudes`,
         }),
       });
       } catch (error) {

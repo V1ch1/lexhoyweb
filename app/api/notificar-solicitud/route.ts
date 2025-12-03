@@ -69,7 +69,7 @@ export async function POST(request: Request) {
             month: "long",
             day: "numeric",
           }),
-          url: "https://despachos.lexhoy.com/admin/users?tab=solicitudes",
+          url: "https://despachos.lexhoy.com/dashboard/admin/solicitudes",
         }),
       })
     );
