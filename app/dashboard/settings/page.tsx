@@ -10,7 +10,6 @@ import {
   ArrowRightIcon,
   ClipboardDocumentListIcon,
 } from "@heroicons/react/24/outline";
-import NotificationsTab from "@/components/settings/NotificationsTab";
 import PrivacyTab from "@/components/settings/PrivacyTab";
 import SolicitudesTab from "@/components/settings/SolicitudesTab";
 
@@ -395,21 +394,7 @@ export default function SettingsPage() {
 
       case "solicitudes":
         return <SolicitudesTab />;
-      case "notifications":
-        return (
-          <NotificationsTab
-            loading={false}
-            notifications={{
-              email_nuevos_leads: false,
-              email_actualizaciones: false,
-              email_sistema: false,
-              push_leads: false,
-              push_mensajes: false,
-            }}
-            onUpdate={() => {}}
-            onSubmit={() => {}}
-          />
-        );
+      // case "notifications": handled by separate page
       case "privacy":
         return <PrivacyTab loading={false} />;
       default:
@@ -547,11 +532,15 @@ export default function SettingsPage() {
                   <SettingsCardComponent
                     key={card.id}
                     card={card}
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/settings#${sectionToHash[card.id]}`
-                      )
-                    }
+                    onClick={() => {
+                      if (card.id === "notifications") {
+                        router.push("/dashboard/settings/notifications");
+                      } else {
+                        router.push(
+                          `/dashboard/settings#${sectionToHash[card.id]}`
+                        );
+                      }
+                    }}
                   />
                 );
               })}
