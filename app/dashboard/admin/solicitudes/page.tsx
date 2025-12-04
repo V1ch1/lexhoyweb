@@ -77,6 +77,7 @@ export default function AdminSolicitudesPage() {
   const [motivo, setMotivo] = useState("");
   const [motivoConfirm, setMotivoConfirm] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [processingEstadoId, setProcessingEstadoId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
   // Verificar autenticación y rol
@@ -176,6 +177,7 @@ export default function AdminSolicitudesPage() {
       solicitudId: solicitudId,
       onConfirm: async () => {
         setConfirmModal({ ...confirmModal, isOpen: false });
+        setProcessingEstadoId(solicitudId); // Marcar como procesando
         
         try {
           const body: { accion: string; nuevoEstado: string; motivo?: string } = {
@@ -205,6 +207,8 @@ export default function AdminSolicitudesPage() {
         } catch (error) {
           console.error("Error cambiando estado:", error);
           showToast("Error al cambiar el estado de la solicitud", "error");
+        } finally {
+          setProcessingEstadoId(null); // Limpiar estado de procesamiento
         }
       },
     });
@@ -460,22 +464,31 @@ export default function AdminSolicitudesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <select
-                        value={solicitud.estado}
-                        onChange={(e) =>
-                          handleEstadoChange(
-                            solicitud.id,
-                            e.target.value,
-                            solicitud.despacho_nombre
-                          )
-                        }
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                      >
-                        <option value="pendiente">Pendiente</option>
-                        <option value="aprobado">Aprobado</option>
-                        <option value="rechazado">Rechazado</option>
-                        <option value="cancelada">Cancelada</option>
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={solicitud.estado}
+                          onChange={(e) =>
+                            handleEstadoChange(
+                              solicitud.id,
+                              e.target.value,
+                              solicitud.despacho_nombre
+                            )
+                          }
+                          disabled={processingEstadoId === solicitud.id}
+                          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="pendiente">Pendiente</option>
+                          <option value="aprobado">Aprobado</option>
+                          <option value="rechazado">Rechazado</option>
+                          <option value="cancelada">Cancelada</option>
+                        </select>
+                        {processingEstadoId === solicitud.id && (
+                          <div className="flex items-center gap-1 text-blue-600">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-xs">Procesando...</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
