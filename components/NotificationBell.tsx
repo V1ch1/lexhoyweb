@@ -222,34 +222,41 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                   const hasUrl = notif.url && notif.url !== "#";
                   
                   const handleClick = async (e: React.MouseEvent) => {
-                    console.log("🖱️ [NotificationBell] Click en notificación:", { 
-                      id: notif.id,
-                      titulo: notif.titulo,
-                      url: notif.url,
-                      hasUrl,
-                      leida: notif.leida
-                    });
+                  console.log("🖱️ [NotificationBell] Click en notificación:", { 
+                    id: notif.id,
+                    titulo: notif.titulo,
+                    url: notif.url,
+                    hasUrl,
+                    leida: notif.leida
+                  });
+                  
+                  // Actualizar UI localmente PRIMERO (optimistic update)
+                  if (!notif.leida) {
+                    console.log("📝 [NotificationBell] Actualizando UI localmente...");
+                    // Actualizar la notificación en el estado local
+                    setNotifications(prev => 
+                      prev.map(n => n.id === notif.id ? { ...n, leida: true } : n)
+                    );
+                    // Decrementar el contador
+                    setUnreadCount(prev => Math.max(0, prev - 1));
                     
-                    // Navegar PRIMERO usando window.location (más agresivo que router.push)
-                    if (hasUrl) {
-                      console.log("🔗 [NotificationBell] Navegando a:", notif.url);
-                      // Usar window.location.href en lugar de router.push()
+                    // Marcar como leída en el servidor en background
+                    handleMarkAsRead(notif.id);
+                  }
+                  
+                  // Navegar usando window.location (más agresivo que router.push)
+                  if (hasUrl) {
+                    console.log("🔗 [NotificationBell] Navegando a:", notif.url);
+                    // Pequeño delay para que se vea el cambio visual
+                    setTimeout(() => {
                       window.location.href = notif.url;
-                      return; // Salir inmediatamente, la navegación recargará la página
-                    } else {
-                      console.warn("⚠️ [NotificationBell] No hay URL válida para navegar");
-                    }
-                    
-                    // Marcar como leída en background (solo si no hay URL)
-                    if (!notif.leida) {
-                      console.log("📝 [NotificationBell] Marcando como leída en background...");
-                      handleMarkAsRead(notif.id);
-                    }
-                    
-                    // Cerrar dropdown
-                    console.log("🔒 [NotificationBell] Cerrando dropdown");
+                    }, 100);
+                  } else {
+                    console.warn("⚠️ [NotificationBell] No hay URL válida para navegar");
+                    // Cerrar dropdown si no hay URL
                     setOpen(false);
-                  };
+                  }
+                };
 
                   const NotificationContent = () => (
                     <div className="flex items-start gap-3">
