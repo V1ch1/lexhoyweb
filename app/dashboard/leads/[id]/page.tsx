@@ -245,13 +245,13 @@ export default function LeadDetailPage() {
                 <div className="bg-gray-50 p-3 rounded text-center">
                   <div className="text-xs text-gray-500 uppercase">Detalle</div>
                   <div className="font-bold text-gray-900 capitalize">
-                    {lead.nivel_detalle}
+                    {lead.nivel_detalle || "Medio"}
                   </div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded text-center">
-                  <div className="text-xs text-gray-500 uppercase">Ciudad</div>
+                  <div className="text-xs text-gray-500 uppercase">Ubicación</div>
                   <div className="font-bold text-gray-900">
-                    {lead.ciudad || "-"}
+                    {lead.ciudad ? `${lead.ciudad}${lead.provincia ? `, ${lead.provincia}` : ''}` : (lead.provincia || "-")}
                   </div>
                 </div>
               </div>
