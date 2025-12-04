@@ -633,5 +633,106 @@
 
 ---
 
-**Última actualización:** 2025-12-02  
-**Próxima revisión:** 2025-12-09
+## Fase 5: Mejoras de Responsive Design
+
+### 5.1 Responsive - Páginas Públicas
+
+**Prioridad:** 🔴 ALTA  
+**Estimación:** 🟡 Mediana (6-8h)  
+**Dependencias:** Ninguna
+
+#### Tareas:
+
+- [x] **5.1.1** Planificación de mejoras responsive 🟢
+  - [x] Analizar estructura actual de navegación
+  - [x] Identificar páginas públicas a mejorar
+  - [x] Crear plan de tareas detallado
+  - **Criterio de aceptación:** Plan documentado y aprobado
+
+- [x] **5.1.2** Componente de menú hamburguesa 🟡
+  - [x] Diseñar icono hamburguesa animado
+  - [x] Implementar menú lateral deslizante (slide-in)
+  - [x] Añadir overlay de fondo oscuro
+  - [x] Animaciones de apertura/cierre
+  - **Criterio de aceptación:** Menú hamburguesa funcional y animado ✅
+
+- [x] **5.1.3** Actualizar Navbar.tsx responsive 🟡
+  - [x] Ocultar navegación central en móvil (md:flex)
+  - [x] Mostrar hamburguesa en móvil
+  - [x] Incluir enlaces a páginas en menú móvil
+  - [x] Incluir botones Login/Register en menú móvil
+  - [x] Mantener logo visible en todas las resoluciones
+  - [x] Gestionar estado de usuario autenticado en móvil
+  - **Criterio de aceptación:** Navbar totalmente responsive ✅
+
+- [x] **5.1.4** Verificar responsive en páginas públicas 🟢
+  - [x] Página principal (`/`)
+  - [x] Sobre Nosotros (`/sobre-nosotros`)
+  - [x] Servicios (`/servicios`)
+  - [x] Contacto (`/contacto`)
+  - [x] Login (`/login`)
+  - [x] Register (`/register`)
+  - [x] Forgot Password (`/forgot-password`)
+  - [x] Reset Password (`/reset-password`)
+  - **Criterio de aceptación:** Todas las páginas se ven bien en móvil ✅
+
+### 5.2 Responsive - Dashboard
+
+**Prioridad:** 🔴 ALTA  
+**Estimación:** 🔴 Grande (12-16h)  
+**Dependencias:** 5.1
+
+#### Tareas:
+
+- [ ] **5.2.1** Analizar estructura del dashboard 🟢
+  - [ ] Revisar `Sidebar.tsx`
+  - [ ] Revisar `NavbarDashboard.tsx`
+  - [ ] Identificar componentes que necesitan ajustes
+  - [ ] Listar todas las páginas del dashboard
+  - **Criterio de aceptación:** Análisis completo documentado
+
+- [ ] **5.2.2** Implementar sidebar responsive 🔴
+  - [ ] Sidebar colapsable en móvil
+  - [ ] Hamburguesa para abrir/cerrar sidebar
+  - [ ] Overlay cuando sidebar está abierto en móvil
+  - [ ] Transiciones suaves
+  - [ ] Persistir estado de sidebar (localStorage)
+  - [ ] Ajustar ancho del contenido principal
+  - **Criterio de aceptación:** Sidebar funciona perfectamente en móvil
+
+- [ ] **5.2.3** Ajustar NavbarDashboard responsive 🟡
+  - [ ] Adaptar para móvil
+  - [ ] Botón hamburguesa integrado
+  - [ ] Notificaciones responsive
+  - [ ] Menú de usuario responsive
+  - **Criterio de aceptación:** NavbarDashboard responsive
+
+- [ ] **5.2.4** Ajustar tablas y componentes 🔴
+  - [ ] Hacer tablas scrollables horizontalmente en móvil
+  - [ ] Ajustar cards y grids para móvil
+  - [ ] Revisar formularios en móvil
+  - [ ] Ajustar modales para móvil
+  - [ ] Breadcrumbs responsive
+  - **Criterio de aceptación:** Todos los componentes responsive
+
+- [ ] **5.2.5** Verificar páginas del dashboard 🔴
+  - [ ] Dashboard principal
+  - [ ] Gestión de despachos
+  - [ ] Gestión de leads
+  - [ ] Aprobar leads (admin)
+  - [ ] Configuración de perfil
+  - [ ] Configuración de despacho
+  - [ ] Páginas de admin
+  - **Criterio de aceptación:** Todas las páginas responsive
+
+- [ ] **5.2.6** Testing responsive completo 🟡
+  - [ ] Probar en diferentes resoluciones
+  - [ ] Probar en dispositivos reales
+  - [ ] Probar orientación portrait/landscape
+  - [ ] Verificar touch interactions
+  - **Criterio de aceptación:** Funciona en todos los dispositivos
+
+---
+
+**Última actualización:** 2025-12-04  
+**Próxima revisión:** 2025-12-11

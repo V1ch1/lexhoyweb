@@ -5,10 +5,17 @@
 
 import OpenAI from "openai";
 
-// Inicializar cliente de OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Cliente de OpenAI (lazy initialization)
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 export interface LeadData {
   nombre: string;
@@ -39,7 +46,7 @@ export class AILeadService {
     try {
       const prompt = this.buildPrompt(leadData);
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4o-mini", // Más económico y rápido
         messages: [
           {
@@ -182,7 +189,7 @@ Responde SOLO con el JSON, sin texto adicional.`;
    */
   static async generateQuickSummary(mensaje: string): Promise<string> {
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {

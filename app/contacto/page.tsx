@@ -11,13 +11,13 @@ export default function Contacto() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-white py-16">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="bg-white py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-gray-900 font-bigShouldersText mb-6">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 font-bigShouldersText mb-4 md:mb-6">
               Contacta con Nosotros
             </h1>
-            <p className="text-xl text-gray-600 font-workSans max-w-3xl mx-auto">
+            <p className="text-base md:text-lg lg:text-xl text-gray-600 font-workSans max-w-3xl mx-auto px-4 md:px-0">
               ¿Tienes dudas sobre nuestros servicios? ¿Necesitas ayuda con tu
               registro? Nuestro equipo está aquí para ayudarte.
             </p>
@@ -169,7 +169,7 @@ export default function Contacto() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 font-workSans mb-2">
@@ -187,10 +187,9 @@ export default function Contacto() {
                   ¿Cuánto cuesta el servicio?
                 </h3>
                 <p className="text-gray-600 font-workSans text-sm">
-                  Ofrecemos un plan gratuito básico y planes premium desde
-                  49€/mes. Consulta nuestra página de servicios para más
-                  detalles.
+                  No tiene coste.
                 </p>
+                
               </div>
 
               <div>

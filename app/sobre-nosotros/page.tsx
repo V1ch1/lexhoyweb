@@ -11,13 +11,13 @@ export default function SobreNosotros() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-white py-16">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="bg-white py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-gray-900 font-bigShouldersText mb-6">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 font-bigShouldersText mb-4 md:mb-6">
               Sobre Lexhoy.com
             </h1>
-            <p className="text-xl text-gray-600 font-workSans max-w-3xl mx-auto">
+            <p className="text-base md:text-lg lg:text-xl text-gray-600 font-workSans max-w-3xl mx-auto px-4 md:px-0">
               Somos el principal portal de información jurídica y directorio de
               despachos de abogados en España, conectando profesionales del
               derecho con clientes que necesitan sus servicios.
@@ -58,18 +58,18 @@ export default function SobreNosotros() {
       />
 
       {/* Nuestros Números */}
-      <section className="bg-white py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
+      <section className="bg-white py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 font-bigShouldersText mb-4 md:mb-6">
               Lexhoy en Números
             </h2>
-            <p className="text-xl text-gray-600 font-workSans">
+            <p className="text-base md:text-lg lg:text-xl text-gray-600 font-workSans px-4 md:px-0">
               Datos que respaldan nuestro liderazgo en el sector jurídico
               digital
             </p>
           </div>
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div className="text-center">
               <div className="text-4xl font-bold text-primary font-bigShouldersText mb-2">
                 +10.000
@@ -103,14 +103,14 @@ export default function SobreNosotros() {
       </section>
 
       {/* Nuestros Valores */}
-      <section className="py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 font-bigShouldersText mb-6">
+      <section className="py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 font-bigShouldersText mb-4 md:mb-6">
               Nuestros Valores
             </h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             <div className="text-center">
               <div className="bg-primary/10 p-6 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <span className="text-2xl">📰</span>

@@ -3,8 +3,8 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-4 gap-8">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {/* Logo y descripción */}
           <div className="md:col-span-1">
             <h3 className="text-2xl font-bold font-bigShouldersText mb-4">
@@ -122,12 +122,12 @@ export default function Footer() {
         </div>
 
         {/* Línea divisoria */}
-        <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-400 text-sm font-workSans">
+        <div className="border-t border-gray-800 mt-6 md:mt-8 pt-6 md:pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-gray-400 text-xs md:text-sm font-workSans text-center md:text-left">
               © 2025 Lexhoy.com - Todos los derechos reservados
             </div>
-            <div className="flex space-x-6 mt-4 md:mt-0">
+            <div className="flex flex-wrap justify-center md:justify-end gap-4 md:gap-6">
               <a
                 href="https://www.facebook.com/lexhoynoticias/"
                 target="_blank"
