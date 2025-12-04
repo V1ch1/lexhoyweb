@@ -1,8 +1,8 @@
 "use client";
 
 import { BellIcon } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { NotificationService, Notification } from "@/lib/notificationService";
 
 interface NotificationBellProps {
@@ -11,6 +11,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ userId, userRole }: NotificationBellProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -220,7 +221,7 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                 {notifications.map((notif) => {
                   const hasUrl = notif.url && notif.url !== "#";
                   
-                  const handleClick = async () => {
+                  const handleClick = async (e: React.MouseEvent) => {
                     console.log("🖱️ [NotificationBell] Click en notificación:", { 
                       id: notif.id,
                       titulo: notif.titulo,
@@ -229,19 +230,25 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                       leida: notif.leida
                     });
                     
-                    if (!notif.leida) {
-                      console.log("📝 [NotificationBell] Marcando como leída...");
-                      await handleMarkAsRead(notif.id);
-                    }
-                    
-                    console.log("🔒 [NotificationBell] Cerrando dropdown");
-                    setOpen(false);
-                    
+                    // Navegar PRIMERO
                     if (hasUrl) {
-                      console.log("🔗 [NotificationBell] URL válida detectada, Next.js Link manejará la navegación");
+                      console.log("🔗 [NotificationBell] Navegando a:", notif.url);
+                      router.push(notif.url);
                     } else {
                       console.warn("⚠️ [NotificationBell] No hay URL válida para navegar");
                     }
+                    
+                    // Marcar como leída en background
+                    if (!notif.leida) {
+                      console.log("📝 [NotificationBell] Marcando como leída en background...");
+                      handleMarkAsRead(notif.id);
+                    }
+                    
+                    // Cerrar dropdown DESPUÉS con un pequeño delay
+                    setTimeout(() => {
+                      console.log("🔒 [NotificationBell] Cerrando dropdown");
+                      setOpen(false);
+                    }, 100);
                   };
 
                   const NotificationContent = () => (
@@ -271,16 +278,15 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                   );
 
                   return hasUrl ? (
-                    <Link
+                    <div
                       key={notif.id}
-                      href={notif.url}
                       onClick={handleClick}
-                      className={`block p-4 hover:bg-gray-50 transition-colors ${
+                      className={`block p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                         !notif.leida ? "bg-blue-50" : ""
                       }`}
                     >
                       <NotificationContent />
-                    </Link>
+                    </div>
                   ) : (
                     <div
                       key={notif.id}
@@ -297,13 +303,15 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="px-4 py-3 border-t border-gray-200 text-center">
-              <Link
-                href="/dashboard/notificaciones"
-                onClick={() => setOpen(false)}
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/dashboard/notificaciones");
+                }}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
                 Ver todas las notificaciones →
-              </Link>
+              </button>
             </div>
           )}
         </div>
