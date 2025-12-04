@@ -230,25 +230,25 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                       leida: notif.leida
                     });
                     
-                    // Navegar PRIMERO
+                    // Navegar PRIMERO usando window.location (más agresivo que router.push)
                     if (hasUrl) {
                       console.log("🔗 [NotificationBell] Navegando a:", notif.url);
-                      router.push(notif.url);
+                      // Usar window.location.href en lugar de router.push()
+                      window.location.href = notif.url;
+                      return; // Salir inmediatamente, la navegación recargará la página
                     } else {
                       console.warn("⚠️ [NotificationBell] No hay URL válida para navegar");
                     }
                     
-                    // Marcar como leída en background
+                    // Marcar como leída en background (solo si no hay URL)
                     if (!notif.leida) {
                       console.log("📝 [NotificationBell] Marcando como leída en background...");
                       handleMarkAsRead(notif.id);
                     }
                     
-                    // Cerrar dropdown DESPUÉS con un pequeño delay
-                    setTimeout(() => {
-                      console.log("🔒 [NotificationBell] Cerrando dropdown");
-                      setOpen(false);
-                    }, 100);
+                    // Cerrar dropdown
+                    console.log("🔒 [NotificationBell] Cerrando dropdown");
+                    setOpen(false);
                   };
 
                   const NotificationContent = () => (

@@ -228,10 +228,10 @@ export default function NotificacionesPage() {
                     await handleMarkAsRead(notif.id);
                   }
                   
-                  // Navegar a la URL si existe
+                  // Navegar a la URL si existe usando window.location
                   if (notif.url) {
                     console.log("🔗 [Notificaciones] Navegando a:", notif.url);
-                    router.push(notif.url);
+                    window.location.href = notif.url;
                   } else {
                     console.warn("⚠️ [Notificaciones] No hay URL para navegar");
                   }
