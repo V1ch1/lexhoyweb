@@ -221,10 +221,27 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                   const hasUrl = notif.url && notif.url !== "#";
                   
                   const handleClick = async () => {
+                    console.log("🖱️ [NotificationBell] Click en notificación:", { 
+                      id: notif.id,
+                      titulo: notif.titulo,
+                      url: notif.url,
+                      hasUrl,
+                      leida: notif.leida
+                    });
+                    
                     if (!notif.leida) {
+                      console.log("📝 [NotificationBell] Marcando como leída...");
                       await handleMarkAsRead(notif.id);
                     }
+                    
+                    console.log("🔒 [NotificationBell] Cerrando dropdown");
                     setOpen(false);
+                    
+                    if (hasUrl) {
+                      console.log("🔗 [NotificationBell] URL válida detectada, Next.js Link manejará la navegación");
+                    } else {
+                      console.warn("⚠️ [NotificationBell] No hay URL válida para navegar");
+                    }
                   };
 
                   const NotificationContent = () => (

@@ -15,23 +15,31 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
   const loadNotifications = async () => {
-    if (!user) return;
+    console.log("🔍 [Notificaciones] Cargando notificaciones...", { user: user?.id, filter });
+    if (!user) {
+      console.warn("⚠️ [Notificaciones] No hay usuario autenticado");
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log("📡 [Notificaciones] Llamando a NotificationService.getUserNotifications");
       const data = await NotificationService.getUserNotifications(user.id, {
         limit: 50,
         onlyUnread: filter === "unread",
       });
+      
+      console.log("✅ [Notificaciones] Datos recibidos:", { count: data.length, data });
       
       let filtered = data;
       if (filter === "read") {
         filtered = data.filter((n) => n.leida);
       }
       
+      console.log("📊 [Notificaciones] Notificaciones filtradas:", { count: filtered.length });
       setNotifications(filtered);
     } catch (error) {
-      console.error("Error loading notifications:", error);
+      console.error("❌ [Notificaciones] Error loading notifications:", error);
     } finally {
       setLoading(false);
     }
@@ -202,14 +210,25 @@ export default function NotificacionesPage() {
             <div className="divide-y divide-gray-200">
               {notifications.map((notif) => {
                 const handleNotificationClick = async () => {
+                  console.log("🖱️ [Notificaciones] Click en notificación:", { 
+                    id: notif.id, 
+                    titulo: notif.titulo,
+                    url: notif.url,
+                    leida: notif.leida 
+                  });
+                  
                   // Marcar como leída si no lo está
                   if (!notif.leida) {
+                    console.log("📝 [Notificaciones] Marcando como leída...");
                     await handleMarkAsRead(notif.id);
                   }
                   
                   // Navegar a la URL si existe
                   if (notif.url) {
+                    console.log("🔗 [Notificaciones] Navegando a:", notif.url);
                     router.push(notif.url);
+                  } else {
+                    console.warn("⚠️ [Notificaciones] No hay URL para navegar");
                   }
                 };
 
