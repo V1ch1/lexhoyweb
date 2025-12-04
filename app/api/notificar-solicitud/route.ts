@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       mensaje: `${userName} ha solicitado la propiedad del despacho "${despachoNombre}"${
         ubicacion ? ` en ${ubicacion}` : ""
       }`,
-      url: "/dashboard/admin/users?tab=solicitudes",
+      url: "/dashboard/admin/solicitudes",
       metadata: {
         solicitudId,
         userName,

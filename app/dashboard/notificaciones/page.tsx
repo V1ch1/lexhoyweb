@@ -23,17 +23,22 @@ export default function NotificacionesPage() {
     
     try {
       setLoading(true);
-      console.log("📡 [Notificaciones] Llamando a NotificationService.getUserNotifications");
-      const data = await NotificationService.getUserNotifications(user.id, {
-        limit: 50,
-        onlyUnread: filter === "unread",
-      });
+      console.log("📡 [Notificaciones] Llamando a API /api/notifications");
+      
+      // Usar la misma API que el dropdown
+      const response = await fetch(`/api/notifications?limit=50&onlyUnread=${filter === "unread"}`);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const { notifications: data } = await response.json();
       
       console.log("✅ [Notificaciones] Datos recibidos:", { count: data.length, data });
       
       let filtered = data;
       if (filter === "read") {
-        filtered = data.filter((n) => n.leida);
+        filtered = data.filter((n: Notification) => n.leida);
       }
       
       console.log("📊 [Notificaciones] Notificaciones filtradas:", { count: filtered.length });
@@ -263,11 +268,6 @@ export default function NotificacionesPage() {
                               <p className="text-xs text-gray-400">
                                 {getTimeAgo(notif.created_at)}
                               </p>
-                              {notif.url && (
-                                <span className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                  Ver detalles →
-                                </span>
-                              )}
                             </div>
                           </div>
                           {!notif.leida && (
