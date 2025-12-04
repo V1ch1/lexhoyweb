@@ -217,20 +217,17 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {notifications.map((notif) => (
-                  <Link
-                    key={notif.id}
-                    href={notif.url || "#"}
-                    onClick={() => {
-                      if (!notif.leida) {
-                        handleMarkAsRead(notif.id);
-                      }
-                      setOpen(false);
-                    }}
-                    className={`block p-4 hover:bg-gray-50 transition-colors ${
-                      !notif.leida ? "bg-blue-50" : ""
-                    }`}
-                  >
+                {notifications.map((notif) => {
+                  const hasUrl = notif.url && notif.url !== "#";
+                  
+                  const handleClick = async () => {
+                    if (!notif.leida) {
+                      await handleMarkAsRead(notif.id);
+                    }
+                    setOpen(false);
+                  };
+
+                  const NotificationContent = () => (
                     <div className="flex items-start gap-3">
                       <span className="text-2xl flex-shrink-0">
                         {getIcon(notif.tipo)}
@@ -254,8 +251,28 @@ export function NotificationBell({ userId, userRole }: NotificationBellProps) {
                         <span className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1"></span>
                       )}
                     </div>
-                  </Link>
-                ))}
+                  );
+
+                  return hasUrl ? (
+                    <Link
+                      key={notif.id}
+                      href={notif.url}
+                      onClick={handleClick}
+                      className={`block p-4 hover:bg-gray-50 transition-colors ${
+                        !notif.leida ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <NotificationContent />
+                    </Link>
+                  ) : (
+                    <div
+                      key={notif.id}
+                      className={`p-4 ${!notif.leida ? "bg-blue-50" : ""}`}
+                    >
+                      <NotificationContent />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

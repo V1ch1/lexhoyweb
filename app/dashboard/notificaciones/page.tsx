@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/authContext";
 import { NotificationService, Notification } from "@/lib/notificationService";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BellIcon, CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export default function NotificacionesPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
@@ -198,70 +200,90 @@ export default function NotificacionesPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`p-6 hover:bg-gray-50 transition-colors ${
-                    !notif.leida ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <span className="text-3xl flex-shrink-0">
-                      {getIcon(notif.tipo)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3
-                            className={`text-base font-medium text-gray-900 ${
-                              !notif.leida ? "font-semibold" : ""
-                            }`}
-                          >
-                            {notif.titulo}
-                          </h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notif.mensaje}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <p className="text-xs text-gray-400">
-                              {getTimeAgo(notif.created_at)}
+              {notifications.map((notif) => {
+                const handleNotificationClick = async () => {
+                  // Marcar como leída si no lo está
+                  if (!notif.leida) {
+                    await handleMarkAsRead(notif.id);
+                  }
+                  
+                  // Navegar a la URL si existe
+                  if (notif.url) {
+                    router.push(notif.url);
+                  }
+                };
+
+                return (
+                  <div
+                    key={notif.id}
+                    className={`p-6 transition-colors ${
+                      !notif.leida ? "bg-blue-50" : ""
+                    } ${notif.url ? "hover:bg-gray-50 cursor-pointer" : ""}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className="text-3xl flex-shrink-0">
+                        {getIcon(notif.tipo)}
+                      </span>
+                      <div 
+                        className="flex-1 min-w-0"
+                        onClick={notif.url ? handleNotificationClick : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h3
+                              className={`text-base font-medium text-gray-900 ${
+                                !notif.leida ? "font-semibold" : ""
+                              }`}
+                            >
+                              {notif.titulo}
+                            </h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {notif.mensaje}
                             </p>
-                            {notif.url && (
-                              <Link
-                                href={notif.url}
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                Ver detalles →
-                              </Link>
-                            )}
+                            <div className="flex items-center gap-4 mt-2">
+                              <p className="text-xs text-gray-400">
+                                {getTimeAgo(notif.created_at)}
+                              </p>
+                              {notif.url && (
+                                <span className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                  Ver detalles →
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          {!notif.leida && (
+                            <span className="w-3 h-3 bg-blue-600 rounded-full flex-shrink-0 mt-1"></span>
+                          )}
                         </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
                         {!notif.leida && (
-                          <span className="w-3 h-3 bg-blue-600 rounded-full flex-shrink-0 mt-1"></span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(notif.id);
+                            }}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            title="Marcar como leída"
+                          >
+                            <CheckIcon className="h-5 w-5" />
+                          </button>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(notif.id);
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Eliminar"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      {!notif.leida && (
-                        <button
-                          onClick={() => handleMarkAsRead(notif.id)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                          title="Marcar como leída"
-                        >
-                          <CheckIcon className="h-5 w-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(notif.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        title="Eliminar"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
