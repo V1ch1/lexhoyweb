@@ -67,31 +67,27 @@ export default function LeadDetailPage() {
 
   const handleBuy = async () => {
     if (!lead) return;
-    if (
-      !confirm(`¿Estás seguro de comprar este lead por ${lead.precio_base}€?`)
-    )
-      return;
 
     try {
       setBuying(true);
-      const res = await fetch(`/api/leads/${lead.id}/comprar`, {
+      
+      // Crear sesión de checkout de Stripe
+      const res = await fetch(`/api/leads/${lead.id}/create-checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
+      
       const data = await res.json();
 
-      if (data.success) {
-        // Recargar datos para ver información completa
-        await fetchLead(lead.id);
-        toast.success(
-          "¡Lead comprado exitosamente! Ahora puedes ver todos los datos de contacto."
-        );
+      if (data.url) {
+        // Redirigir a Stripe Checkout
+        window.location.href = data.url;
       } else {
-        toast.error(data.error || "Error al comprar lead");
+        toast.error(data.error || "Error al iniciar el pago");
+        setBuying(false);
       }
     } catch (err) {
       toast.error("Error de conexión");
-    } finally {
       setBuying(false);
     }
   };
