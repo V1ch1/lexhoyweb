@@ -8,9 +8,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     // Verificar autenticación
     const {
       data: { user },
@@ -37,7 +38,7 @@ export async function POST(
     }
 
     // Verificar que el lead esté disponible
-    if (lead.estado !== "pendiente" && lead.estado !== "en_subasta") {
+    if (lead.estado !== "pendiente") {
       return NextResponse.json(
         { error: "Este lead ya no está disponible" },
         { status: 400 }
@@ -55,7 +56,7 @@ export async function POST(
               name: `Lead Legal - ${lead.especialidad || "General"}`,
               description: lead.resumen_ia || "Consulta legal",
             },
-            unit_amount: Math.round((lead.precio_actual || lead.precio_base) * 100), // Convertir a centavos
+            unit_amount: Math.round(lead.precio_base * 100), // Convertir a centavos
           },
           quantity: 1,
         },
