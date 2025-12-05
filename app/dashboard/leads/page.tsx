@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LeadCard } from "@/components/leads/LeadCard";
 import { FunnelIcon, ArrowsUpDownIcon } from "@heroicons/react/24/outline";
+import { capitalize } from "@/lib/utils";
 
 interface Lead {
   id: string;
@@ -26,7 +27,7 @@ export default function LeadsMarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("disponibles");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   
   const [filters, setFilters] = useState({
     especialidad: "",

@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { ClockIcon, FireIcon } from "@heroicons/react/24/outline";
+import { capitalize } from "@/lib/utils";
 
 interface LeadCardProps {
   lead: {
@@ -54,7 +55,7 @@ export function LeadCard({ lead }: LeadCardProps) {
       <div className="flex justify-between items-start mb-4">
         <div className="flex gap-2 flex-wrap">
           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-            {lead.especialidad || "General"}
+            {capitalize(lead.especialidad) || "General"}
           </span>
           {lead.provincia && (
             <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">

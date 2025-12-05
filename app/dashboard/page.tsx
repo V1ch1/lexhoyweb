@@ -94,44 +94,29 @@ const DashboardPage = () => {
       setStatsLoading(true);
       try {
         if (user.role === "despacho_admin") {
-          // 1. Obtener IDs de despachos del usuario
-          const { data: userDespachosData } = await supabase
-            .from('user_despachos')
-            .select('despacho_id')
-            .eq('user_id', user.id);
-          
-          const despachoIds = userDespachosData?.map(d => d.despacho_id) || [];
-
-          if (despachoIds.length === 0) {
-            setDespachoStats({ leadsToday: 0, leadsThisMonth: 0, totalLeads: 0 });
-            setRecentLeads([]);
-            setStatsLoading(false);
-            return;
-          }
-
-          // 2. Consultar leads reales
+          // Consultar leads del marketplace
           const now = new Date();
           const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-          // Total Leads
+          // Total Leads disponibles en el marketplace
           const { count: totalLeads } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('despacho_id', despachoIds);
+            .in('estado', ['pendiente', 'en_subasta', 'vendido']);
 
-          // Leads Hoy
+          // Leads disponibles hoy
           const { count: leadsToday } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('despacho_id', despachoIds)
+            .in('estado', ['pendiente', 'en_subasta'])
             .gte('created_at', startOfDay);
 
-          // Leads Este Mes
+          // Leads disponibles este mes
           const { count: leadsThisMonth } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('despacho_id', despachoIds)
+            .in('estado', ['pendiente', 'en_subasta'])
             .gte('created_at', startOfMonth);
 
           setDespachoStats({
@@ -140,25 +125,23 @@ const DashboardPage = () => {
             totalLeads: totalLeads || 0,
           });
 
-          // 3. Cargar leads recientes
+          // Cargar leads recientes (disponibles + comprados por el usuario)
           const { data: leadsData } = await supabase
             .from('leads')
             .select('*')
-            .in('despacho_id', despachoIds)
+            .or(`estado.in.(pendiente,en_subasta),and(estado.eq.vendido,comprador_id.eq.${user.id})`)
             .order('created_at', { ascending: false })
             .limit(5);
 
           if (leadsData) {
             const mappedLeads: RecentLead[] = leadsData.map(lead => ({
               id: lead.id,
-              nombre: lead.cliente_nombre || 'Cliente Anónimo',
-              email: lead.cliente_email || '',
-              telefono: lead.cliente_telefono || '',
+              nombre: lead.nombre || 'Cliente Anónimo',
+              email: lead.correo || '',
+              telefono: lead.telefono || '',
               especialidad: lead.especialidad || 'General',
               fecha: new Date(lead.created_at),
-              estado: (lead.estado === 'nuevo' || lead.estado === 'contactado' || lead.estado === 'cerrado') 
-                ? lead.estado 
-                : 'nuevo', // Fallback status
+              estado: lead.estado === 'vendido' && lead.comprador_id === user.id ? 'cerrado' : 'nuevo',
             }));
             setRecentLeads(mappedLeads);
           }
@@ -170,7 +153,7 @@ const DashboardPage = () => {
       }
     };
     loadStats();
-  }, [user?.id, user?.role]); // Añadido user.role como dependencia
+  }, [user?.id, user?.role]);
 
   if (isLoading || !user) {
     return (
