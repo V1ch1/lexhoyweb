@@ -8,7 +8,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { capitalize } from "@/lib/utils";
 
-import BidForm from "@/components/leads/BidForm";
+
 
 interface LeadDetail {
   id: string;
@@ -22,8 +22,6 @@ interface LeadDetail {
   ciudad: string;
   urgencia: string;
   precio_base: number;
-  precio_actual?: number;
-  fecha_fin_subasta?: string;
   puntuacion_calidad: number;
   nivel_detalle: string;
   estado: string;
@@ -116,7 +114,6 @@ export default function LeadDetailPage() {
   }
 
   const isPurchased = lead.estado === "vendido" && lead.comprador_id;
-  const isAuction = lead.estado === "en_subasta";
 
   return (
     <div className="p-6 w-full">

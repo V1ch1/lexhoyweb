@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { ClockIcon, FireIcon } from "@heroicons/react/24/outline";
 import { capitalize } from "@/lib/utils";
 
 interface LeadCardProps {
@@ -41,13 +40,7 @@ export function LeadCard({ lead }: LeadCardProps) {
     return "bg-gray-500";
   };
 
-  const isAuction = lead.estado === "en_subasta";
-  const timeRemaining = lead.fecha_fin_subasta
-    ? formatDistanceToNow(new Date(lead.fecha_fin_subasta), {
-        addSuffix: false,
-        locale: es,
-      })
-    : null;
+  // Sistema de subastas eliminado - solo compra directa
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all p-5 flex flex-col h-full hover:border-primary/30">
@@ -62,12 +55,7 @@ export function LeadCard({ lead }: LeadCardProps) {
               {lead.provincia}
             </span>
           )}
-          {isAuction && (
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200 uppercase flex items-center gap-1">
-              <FireIcon className="h-3 w-3" />
-              Subasta
-            </span>
-          )}
+
         </div>
         <span
           className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getUrgenciaColor(
@@ -105,29 +93,21 @@ export function LeadCard({ lead }: LeadCardProps) {
 
       {/* Footer */}
       <div className="border-t border-gray-100 pt-4 mt-auto">
-        {/* Auction timer */}
-        {isAuction && timeRemaining && (
-          <div className="flex items-center gap-1 text-xs text-purple-600 mb-3 bg-purple-50 px-2 py-1 rounded">
-            <ClockIcon className="h-4 w-4" />
-            <span className="font-medium">Finaliza en {timeRemaining}</span>
-          </div>
-        )}
+
 
         {/* Price and action */}
         <div className="flex justify-between items-center gap-3">
           <div className="flex flex-col">
-            <span className="text-xs text-gray-500">
-              {isAuction ? "Puja actual" : "Precio"}
-            </span>
+            <span className="text-xs text-gray-500">Precio</span>
             <span className="text-xl font-bold text-gray-900">
-              {lead.precio_actual || lead.precio_base}€
+              {lead.precio_base}€
             </span>
           </div>
           <Link
             href={`/dashboard/leads/${lead.id}`}
             className="bg-[#E04040] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#c83838] transition-colors whitespace-nowrap"
           >
-            {isAuction ? "Pujar" : "Ver Detalle"}
+            Ver Detalle
           </Link>
         </div>
 
