@@ -49,6 +49,18 @@ export default function ApproveLeadPage() {
     }
   };
 
+  const handleApprove = async () => {
+    if (!lead) return;
+
+    setApproving(true);
+    try {
+      const updateData: any = {
+        estado: tipoPublicacion === "subasta" ? "en_subasta" : "procesado",
+        precio_base: precioAprobado,
+      };
+
+      // Si es subasta, calcular fecha de fin
+      if (tipoPublicacion === "subasta") {
         const fechaFin = new Date();
         fechaFin.setHours(fechaFin.getHours() + duracionSubasta);
         updateData.fecha_fin_subasta = fechaFin.toISOString();
@@ -70,6 +82,24 @@ export default function ApproveLeadPage() {
       toast.error("Error al aprobar el lead");
     } finally {
       setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!lead) return;
+
+    if (!confirm("¿Estás seguro de descartar este lead?")) return;
+
+    setApproving(true);
+    try {
+      const response = await fetch(`/api/admin/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estado: "descartado",
+        }),
+      });
+
       if (response.ok) {
         router.push("/dashboard/admin/listado-leads");
       } else {
