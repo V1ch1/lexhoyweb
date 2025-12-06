@@ -129,7 +129,7 @@ const DashboardPage = () => {
           const { data: leadsData } = await supabase
             .from('leads')
             .select('*')
-            .or(`estado.in.(pendiente,en_subasta),and(estado.eq.vendido,comprador_id.eq.${user.id})`)
+            .or(`estado.in.(pendiente,procesado),and(estado.eq.vendido,comprador_id.eq.${user.id})`)
             .order('created_at', { ascending: false })
             .limit(5);
 
