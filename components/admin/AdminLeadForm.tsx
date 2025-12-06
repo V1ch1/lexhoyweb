@@ -16,9 +16,6 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
   const [formData, setFormData] = useState({
     estado: lead.estado,
     precio_base: lead.precio_base || 0,
-    fecha_fin_subasta: lead.fecha_fin_subasta
-      ? new Date(lead.fecha_fin_subasta).toISOString().slice(0, 16)
-      : "",
   });
 
   const handleChange = (
@@ -44,7 +41,6 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
         body: JSON.stringify({
           estado: formData.estado,
           precio_base: Number(formData.precio_base),
-          fecha_fin_subasta: formData.fecha_fin_subasta || null,
         }),
       });
 
@@ -167,25 +163,7 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
           </p>
         </div>
 
-        {formData.estado === "procesado" && (
-          <div className="col-span-2">
-            <label
-              htmlFor="fecha_fin_subasta"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Fecha Fin Subasta
-            </label>
-            <input
-              type="datetime-local"
-              name="fecha_fin_subasta"
-              id="fecha_fin_subasta"
-              value={formData.fecha_fin_subasta}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-              required={false}
-            />
-          </div>
-        )}
+
       </div>
 
       <div className="flex justify-end space-x-3">
