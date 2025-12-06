@@ -295,28 +295,6 @@ export default function AdminLeadDetailPage() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">
-                  Estado
-                </label>
-                <p>
-                  <span
-                    className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${
-                      lead.estado === "vendido"
-                        ? "bg-green-100 text-green-800"
-                        : lead.estado === "procesado"
-                          ? "bg-blue-100 text-blue-800"
-                          : lead.estado === "en_subasta"
-                            ? "bg-purple-100 text-purple-800"
-                            : lead.estado === "descartado"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {lead.estado}
-                  </span>
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
                   Especialidad
                 </label>
                 <p className="text-gray-900">
