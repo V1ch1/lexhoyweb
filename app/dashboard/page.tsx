@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/lib/authContext";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { slugify } from "@/lib/slugify";
@@ -28,10 +27,12 @@ interface DespachoStats {
 
 interface RecentLead {
   id: string;
-  nombre: string;
-  email: string;
-  telefono: string;
+  resumen_ia: string;
   especialidad: string;
+  provincia: string;
+  ciudad: string;
+  urgencia: string;
+  precio_base: number;
   fecha: Date;
   estado: "nuevo" | "contactado" | "cerrado";
 }
@@ -94,52 +95,42 @@ const DashboardPage = () => {
       setStatsLoading(true);
       try {
         if (user.role === "despacho_admin") {
-          // Consultar leads del marketplace
-          const now = new Date();
-          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+          // Usar el API endpoint en lugar de consulta directa
+          const response = await fetch('/api/leads');
+          const result = await response.json();
+          
+          if (result.success) {
+            const leads = result.data;
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            // Calcular estadísticas del lado del cliente
+            const totalLeads = leads.length;
+            const leadsToday = leads.filter((lead: any) => 
+              new Date(lead.created_at) >= startOfDay
+            ).length;
+            const leadsThisMonth = leads.filter((lead: any) => 
+              new Date(lead.created_at) >= startOfMonth
+            ).length;
+            
+            console.log('📊 Stats calculadas:', { totalLeads, leadsToday, leadsThisMonth });
 
-          // Total Leads disponibles en el marketplace
-          const { count: totalLeads } = await supabase
-            .from('leads')
-            .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'procesado', 'vendido']);
+            setDespachoStats({
+              leadsToday,
+              leadsThisMonth,
+              totalLeads,
+            });
 
-          // Leads disponibles hoy
-          const { count: leadsToday } = await supabase
-            .from('leads')
-            .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'procesado'])
-            .gte('created_at', startOfDay);
-
-          // Leads disponibles este mes
-          const { count: leadsThisMonth } = await supabase
-            .from('leads')
-            .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'procesado'])
-            .gte('created_at', startOfMonth);
-
-          setDespachoStats({
-            leadsToday: leadsToday || 0,
-            leadsThisMonth: leadsThisMonth || 0,
-            totalLeads: totalLeads || 0,
-          });
-
-          // Cargar leads recientes (disponibles + comprados por el usuario)
-          const { data: leadsData } = await supabase
-            .from('leads')
-            .select('*')
-            .or(`estado.in.(pendiente,procesado),and(estado.eq.vendido,comprador_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-          if (leadsData) {
-            const mappedLeads: RecentLead[] = leadsData.map(lead => ({
+            // Mapear leads recientes (primeros 5)
+            const mappedLeads: RecentLead[] = leads.slice(0, 5).map((lead: any) => ({
               id: lead.id,
-              nombre: lead.nombre || 'Cliente Anónimo',
-              email: lead.correo || '',
-              telefono: lead.telefono || '',
+              resumen_ia: lead.resumen_ia || 'Sin resumen disponible',
               especialidad: lead.especialidad || 'General',
+              provincia: lead.provincia || '',
+              ciudad: lead.ciudad || '',
+              urgencia: lead.urgencia || 'media',
+              precio_base: lead.precio_base || lead.precio_estimado || 0,
               fecha: new Date(lead.created_at),
               estado: lead.estado === 'vendido' && lead.comprador_id === user.id ? 'cerrado' : 'nuevo',
             }));
@@ -531,25 +522,21 @@ const DashboardPage = () => {
                 <div
                   key={lead.id}
                   className="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200"
-                  onClick={() => router.push("/dashboard/leads")}
+                  onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                 >
                   <div className="flex-shrink-0 mr-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                      {lead.nombre
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .substring(0, 2)}
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {lead.especialidad.substring(0, 2).toUpperCase()}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <h3 className="text-base font-semibold text-gray-900">
-                          {lead.nombre}
-                        </h3>
-                        <p className="text-sm text-gray-600">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">
                           {lead.especialidad}
+                        </h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {lead.resumen_ia}
                         </p>
                       </div>
                       <span
@@ -561,7 +548,7 @@ const DashboardPage = () => {
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <span className="flex items-center">
                         <svg
-                          className="w-4 h-4 mr-1"
+                          className="w-4 h-4 mr-1 text-gray-400"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -570,26 +557,26 @@ const DashboardPage = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                           />
                         </svg>
-                        {lead.email}
+                        {lead.ciudad ? `${lead.ciudad}, ` : ''}{lead.provincia || 'Sin ubicación'}
                       </span>
-                      <span className="flex items-center">
-                        <svg
-                          className="w-4 h-4 mr-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                          />
-                        </svg>
-                        {lead.telefono}
+                      <span className="flex items-center font-semibold text-blue-600">
+                        €{lead.precio_base.toFixed(2)}
+                      </span>
+                      <span className={`flex items-center ${
+                        lead.urgencia === 'alta' ? 'text-red-600' : 
+                        lead.urgencia === 'media' ? 'text-yellow-600' : 
+                        'text-green-600'
+                      }`}>
+                        {lead.urgencia === 'alta' ? '🔴' : lead.urgencia === 'media' ? '🟡' : '🟢'} {lead.urgencia}
                       </span>
                       <span className="flex items-center text-gray-400">
                         <ClockIcon className="w-4 h-4 mr-1" />
