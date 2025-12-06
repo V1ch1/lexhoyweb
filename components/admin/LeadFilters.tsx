@@ -21,7 +21,7 @@ const ESTADOS = [
   { value: "", label: "Todos" },
   { value: "pendiente", label: "Pendiente" },
   { value: "procesado", label: "Procesado" },
-  { value: "en_subasta", label: "En Subasta" },
+  { value: "procesado", label: "Procesado" },
   { value: "vendido", label: "Vendido" },
   { value: "descartado", label: "Descartado" },
 ];

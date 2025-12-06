@@ -516,7 +516,7 @@ export class LeadService {
     const { count: disponibles } = await supabase
       .from("leads")
       .select("*", { count: "exact", head: true })
-      .in("estado", ["procesado", "en_subasta"]);
+      .in("estado", ["procesado", "pendiente"]);
 
     const { count: vendidos } = await supabase
       .from("leads")

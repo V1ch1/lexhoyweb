@@ -216,8 +216,6 @@ export default function AdminLeadsListPage() {
                             ? "bg-green-100 text-green-800"
                             : lead.estado === "procesado"
                             ? "bg-blue-100 text-blue-800"
-                            : lead.estado === "en_subasta"
-                            ? "bg-purple-100 text-purple-800"
                             : lead.estado === "descartado"
                             ? "bg-red-100 text-red-800"
                             : "bg-yellow-100 text-yellow-800"
