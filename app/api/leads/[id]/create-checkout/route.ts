@@ -47,7 +47,7 @@ export async function POST(
     }
 
     // Crear sesión de Checkout de Stripe
-    const session = await stripe.checkout.sessions.create({
+    const stripeSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
@@ -71,7 +71,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ sessionId: session.id, url: session.url });
+    return NextResponse.json({ sessionId: stripeSession.id, url: stripeSession.url });
   } catch (error) {
     console.error("Error creando sesión de Stripe:", error);
     return NextResponse.json(
