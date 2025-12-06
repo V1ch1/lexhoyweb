@@ -256,6 +256,28 @@ export default function AdminLeadsListPage() {
                           >
                             {lead.puntuacion_calidad}
                           </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <Link
+                          href={`/dashboard/admin/leads/${lead.id}`}
+                          className="text-gray-400 hover:text-primary transition-colors"
+                          title="Ver detalles"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Paginación */}
         {totalPages > 1 && (
