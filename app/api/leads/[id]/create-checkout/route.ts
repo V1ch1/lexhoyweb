@@ -25,7 +25,7 @@ export async function POST(
     const leadId = params.id;
 
     // Obtener información del lead
-    const { data: lead, error: leadError } = await supabase
+    const { data: lead, error: leadError } = await supabaseAdmin
       .from("leads")
       .select("*")
       .eq("id", leadId)

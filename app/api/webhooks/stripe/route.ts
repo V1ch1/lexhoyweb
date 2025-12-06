@@ -85,6 +85,41 @@ export async function POST(request: NextRequest) {
         leido: false,
       });
 
+      // Enviar email de confirmación
+      try {
+        // Obtener datos del comprador
+        const { data: comprador } = await supabaseAdmin
+          .from("users")
+          .select("nombre, email")
+          .eq("id", userId)
+          .single();
+
+        // Obtener datos completos del lead
+        const { data: leadCompleto } = await supabaseAdmin
+          .from("leads")
+          .select("*")
+          .eq("id", leadId)
+          .single();
+
+        if (comprador && leadCompleto) {
+          // Llamar al backend para enviar el email
+          await fetch(`${process.env.BACKEND_URL || 'https://api.lexhoy.com'}/api/send-purchase-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: comprador.email,
+              leadData: leadCompleto,
+              compradorNombre: comprador.nombre || comprador.email
+            })
+          }).catch(err => {
+            console.error("⚠️ Error enviando email de confirmación:", err.message);
+          });
+        }
+      } catch (emailError) {
+        console.error("⚠️ Error preparando email de confirmación:", emailError);
+        // No fallar el webhook si falla el email
+      }
+
       console.log(`Lead ${leadId} vendido a usuario ${userId}`);
     }
 
