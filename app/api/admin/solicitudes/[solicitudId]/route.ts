@@ -541,11 +541,12 @@ export async function PATCH(
           mensaje: esAprobacion
             ? `Tu solicitud para el despacho "${solicitud.despacho_nombre}" ha sido aprobada. Ya puedes gestionar tu despacho.`
             : `Tu solicitud para el despacho "${solicitud.despacho_nombre}" ha sido rechazada.${motivo ? ` Motivo: ${motivo}` : ""}`,
-          url: esAprobacion ? "/dashboard/settings?tab=mis-despachos" : "/dashboard",
+          url: "/dashboard/notificaciones",
           metadata: {
             solicitudId,
             despachoId: solicitud.despacho_id,
             despachoNombre: solicitud.despacho_nombre,
+            motivo: motivo || null,
           },
         });
 
