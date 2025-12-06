@@ -133,7 +133,7 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
           >
             <option value="pendiente">Pendiente</option>
             <option value="procesado">Procesado (Disponible)</option>
-            <option value="en_subasta">En Subasta</option>
+
             <option value="vendido">Vendido</option>
             <option value="descartado">Descartado</option>
           </select>
@@ -167,7 +167,7 @@ export default function AdminLeadForm({ lead }: AdminLeadFormProps) {
           </p>
         </div>
 
-        {formData.estado === "en_subasta" && (
+        {formData.estado === "procesado" && (
           <div className="col-span-2">
             <label
               htmlFor="fecha_fin_subasta"

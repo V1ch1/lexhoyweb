@@ -47,7 +47,7 @@ export async function GET() {
     const { count: enSubasta } = await supabaseAdmin
       .from("leads")
       .select("*", { count: "exact", head: true })
-      .eq("estado", "en_subasta");
+      .eq("estado", "procesado");
 
     // Leads vendidos (total)
     const { count: vendidosTotal } = await supabaseAdmin
