@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, supabaseAdmin } from "@/lib/supabase";
 import Stripe from "stripe";
+import { auth } from "@/lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-11-17.clover",
@@ -12,12 +13,12 @@ export async function POST(
 ) {
   try {
     const params = await context.params;
+    
     // Verificar autenticación
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const session = await auth();
+    const user = session?.user;
 
-    if (!user) {
+    if (!user?.id) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
 
