@@ -27,17 +27,12 @@ export interface Lead {
   estado:
     | "pendiente"
     | "procesado"
-    | "en_subasta"
     | "vendido"
-    | "expirado"
     | "descartado";
   comprador_id?: string;
   precio_venta?: number;
   fecha_venta?: string;
-  precio_base?: number; // Precio APROBADO por admin para subasta
-  precio_actual?: number;
-  fecha_inicio_subasta?: string;
-  fecha_fin_subasta?: string;
+  precio_base?: number; // Precio del lead
   puntuacion_calidad?: number;
   nivel_detalle?: "bajo" | "medio" | "alto";
   acepta_terminos?: boolean;
@@ -265,17 +260,14 @@ export class LeadService {
         resumen_ia,
         precio_estimado,
         precio_base,
-        precio_actual,
         palabras_clave,
         estado,
-        fecha_inicio_subasta,
-        fecha_fin_subasta,
         puntuacion_calidad,
         nivel_detalle,
         created_at
       `
       )
-      .in("estado", ["procesado", "en_subasta"])
+      .in("estado", ["pendiente", "procesado"])
       .order("created_at", { ascending: false });
 
     // Aplicar filtros
