@@ -89,6 +89,15 @@ export async function PATCH(
     };
 
     // Si se está actualizando el precio_base, registrar aprobación
+    if (precio_base !== undefined) {
+      updateData.precio_base = precio_base;
+      updateData.aprobado_por = userId;
+      updateData.fecha_aprobacion = new Date().toISOString();
+    }
+
+    const { data: lead, error } = await supabaseAdmin
+      .from("leads")
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
