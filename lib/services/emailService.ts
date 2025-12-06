@@ -112,9 +112,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Plantilla HTML base
-   */
   private static getEmailTemplate(options: {
     title: string;
     message: string;
@@ -131,41 +128,73 @@ export class EmailService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 0;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);">
+          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">LexHoy</h1>
-              <p style="margin: 8px 0 0 0; color: #e0e7ff; font-size: 14px;">Tu plataforma legal de confianza</p>
+            <td style="background-color: #E04040; padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">LexHoy</h1>
+              <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 15px; opacity: 0.95; font-weight: 500;">Tu plataforma legal de confianza</p>
             </td>
           </tr>
+          
+          <!-- Content -->
           <tr>
             <td style="padding: 40px 30px;">
-              ${highlight ? `<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 16px; border-radius: 8px; margin-bottom: 24px; text-align: center;">
-                <h2 style="margin: 0; color: #92400e; font-size: 24px;">${title}</h2>
-              </div>` : `<h2 style="margin: 0 0 16px 0; color: #1f2937; font-size: 24px;">${title}</h2>`}
-              <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">${message}</p>
-              <div style="color: #6b7280; font-size: 15px; line-height: 1.6;">${details}</div>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px;">
+              ${highlight ? `<div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 10px; margin-bottom: 28px; text-align: center; border: 2px solid #FCD34D;">
+                <h2 style="margin: 0; color: #92400E; font-size: 26px; font-weight: 700;">${title}</h2>
+              </div>` : `<h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 26px; font-weight: 700;">${title}</h2>`}
+              
+              <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.7; font-weight: 400;">${message}</p>
+              
+              <div style="color: #6b7280; font-size: 15px; line-height: 1.7;">${details}</div>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 36px;">
                 <tr>
                   <td align="center">
-                    <a href="${ctaUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                    <a href="${ctaUrl}" style="display: inline-block; background-color: #E04040; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(224, 64, 64, 0.25); transition: all 0.3s;">
                       ${ctaText}
                     </a>
                   </td>
                 </tr>
               </table>
+              
+              <!-- Secondary link -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0; color: #9ca3af; font-size: 13px;">
+                      O copia este enlace: <a href="${ctaUrl}" style="color: #E04040; text-decoration: none; word-break: break-all;">${ctaUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+          
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px;">© ${new Date().getFullYear()} LexHoy. Todos los derechos reservados.</p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/notifications" style="color: #667eea; text-decoration: none;">Gestionar preferencias</a>
+            <td style="background-color: #f9fafb; padding: 32px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px; font-weight: 500;">
+                © ${new Date().getFullYear()} LexHoy. Todos los derechos reservados.
+              </p>
+              <p style="margin: 0 0 16px 0; color: #9ca3af; font-size: 13px;">
+                Conectando abogados con clientes que necesitan sus servicios
+              </p>
+              <p style="margin: 0; font-size: 13px;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/notifications" style="color: #E04040; text-decoration: none; font-weight: 500; margin: 0 10px;">Preferencias</a>
+                <span style="color: #d1d5db;">|</span>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/contacto" style="color: #E04040; text-decoration: none; font-weight: 500; margin: 0 10px;">Soporte</a>
+                <span style="color: #d1d5db;">|</span>
+                <a href="https://lexhoy.com" style="color: #E04040; text-decoration: none; font-weight: 500; margin: 0 10px;">Web</a>
               </p>
             </td>
           </tr>
