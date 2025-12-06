@@ -8,10 +8,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Verificar errores de ESLint durante la compilación
-  eslint: {
-    ignoreDuringBuilds: true, // Temporalmente true para permitir deploy con Clerk
-  },
   images: {
     remotePatterns: [
       {
