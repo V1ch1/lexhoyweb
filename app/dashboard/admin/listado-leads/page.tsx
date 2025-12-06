@@ -5,7 +5,6 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import {
   EyeIcon,
-  CheckCircleIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import LeadStatsCards from "@/components/admin/LeadStatsCards";
@@ -262,19 +261,7 @@ export default function AdminLeadsListPage() {
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        {(lead.estado === "pendiente" ||
-                          (lead.estado === "procesado" &&
-                            !lead.aprobado_por)) && (
-                          <Link
-                            href={`/dashboard/admin/aprobar-lead/${lead.id}`}
-                            className="text-gray-400 hover:text-green-600 transition-colors"
-                            title="Aprobar precio"
-                          >
-                            <CheckCircleIcon className="h-5 w-5" />
-                          </Link>
-                        )}
+                    <div className="flex justify-end space-x-2">
                         <Link
                           href={`/dashboard/admin/leads/${lead.id}`}
                           className="text-gray-400 hover:text-primary transition-colors"
