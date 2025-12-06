@@ -205,8 +205,6 @@ export default function AdminLeadsListPage() {
                       </div>
                       {lead.ciudad && (
                         <div className="text-xs text-gray-500">
-                          {lead.ciudad}
-                        ? formatCurrency(lead.precio_base)
                         : lead.precio_estimado
                         ? `~${formatCurrency(lead.precio_estimado)}`
                         : "-"}
