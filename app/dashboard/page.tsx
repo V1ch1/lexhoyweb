@@ -103,20 +103,20 @@ const DashboardPage = () => {
           const { count: totalLeads } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'en_subasta', 'vendido']);
+            .in('estado', ['pendiente', 'procesado', 'vendido']);
 
           // Leads disponibles hoy
           const { count: leadsToday } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'en_subasta'])
+            .in('estado', ['pendiente', 'procesado'])
             .gte('created_at', startOfDay);
 
           // Leads disponibles este mes
           const { count: leadsThisMonth } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .in('estado', ['pendiente', 'en_subasta'])
+            .in('estado', ['pendiente', 'procesado'])
             .gte('created_at', startOfMonth);
 
           setDespachoStats({
