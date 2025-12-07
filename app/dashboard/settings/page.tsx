@@ -12,13 +12,13 @@ import {
 } from "@heroicons/react/24/outline";
 import PrivacyTab from "@/components/settings/PrivacyTab";
 import SolicitudesTab from "@/components/settings/SolicitudesTab";
+import ChangePasswordModal from "@/components/settings/ChangePasswordModal";
 
 // Types
 type SettingsSection =
   | "overview"
   | "account"
   | "notifications"
-  | "privacy"
   | "solicitudes";
 
 interface SettingsCard {
@@ -43,6 +43,7 @@ export default function SettingsPage() {
   const [provincia, setProvincia] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // Cargar datos del usuario desde la API para asegurar datos frescos
   useEffect(() => {
@@ -150,8 +151,6 @@ export default function SettingsPage() {
       solicitudes: "solicitudes",
       notificaciones: "notifications",
       notifications: "notifications",
-      privacidad: "privacy",
-      privacy: "privacy",
     };
 
     const updateSection = () => {
@@ -248,14 +247,7 @@ export default function SettingsPage() {
       color: "yellow",
       visible: true,
     },
-    {
-      id: "privacy",
-      name: "Privacidad",
-      description: "Controla tu privacidad y datos",
-      icon: ShieldCheckIcon,
-      color: "red",
-      visible: true,
-    },
+
   ];
 
   // Render section content
@@ -263,12 +255,13 @@ export default function SettingsPage() {
     switch (activeSection) {
       case "account":
         return (
-          <div className="w-full">
+          <div className="w-full space-y-6">
+            {/* 1. Información de la Cuenta */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-xl font-semibold mb-4">Información de la Cuenta</h3>
-              <div className="grid grid-cols-1 gap-6 max-w-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre
                   </label>
                   <input
@@ -276,12 +269,12 @@ export default function SettingsPage() {
                     id="nombre"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="Ej: José"
                   />
                 </div>
                 <div>
-                  <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="apellidos" className="block text-sm font-medium text-gray-700 mb-1">
                     Apellidos
                   </label>
                   <input
@@ -289,114 +282,147 @@ export default function SettingsPage() {
                     id="apellidos"
                     value={apellidos}
                     onChange={(e) => setApellidos(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="Ej: García López"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                  <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-900">
                     {user?.email}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">El email no se puede editar</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Rol del Usuario</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-900 capitalize">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol del Usuario</label>
+                  <div className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-gray-900 capitalize">
                     {user?.role?.replace('_', ' ') || "Usuario"}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">El rol no se puede editar</p>
                 </div>
-                
-                {/* Campos editables */}
-                <div className="border-t pt-6 mt-2">
-                  <h4 className="text-lg font-semibold mb-4 text-gray-900">Información de Contacto</h4>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
-                        Teléfono
-                      </label>
-                      <input
-                        type="tel"
-                        id="telefono"
-                        value={telefono}
-                        onChange={(e) => setTelefono(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
-                        placeholder="Ej: +34 600 000 000"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="localidad" className="block text-sm font-medium text-gray-700">
-                        Localidad
-                      </label>
-                      <input
-                        type="text"
-                        id="localidad"
-                        value={localidad}
-                        onChange={(e) => setLocalidad(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
-                        placeholder="Ej: Madrid"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="provincia" className="block text-sm font-medium text-gray-700">
-                        Provincia
-                      </label>
-                      <input
-                        type="text"
-                        id="provincia"
-                        value={provincia}
-                        onChange={(e) => setProvincia(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"
-                        placeholder="Ej: Madrid"
-                      />
-                    </div>
+              </div>
+            </div>
+
+            {/* 2. Información de Contacto */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4">Información de Contacto</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    id="telefono"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Ej: +34 600 000 000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="localidad" className="block text-sm font-medium text-gray-700 mb-1">
+                    Localidad
+                  </label>
+                  <input
+                    type="text"
+                    id="localidad"
+                    value={localidad}
+                    onChange={(e) => setLocalidad(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Ej: Madrid"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="provincia" className="block text-sm font-medium text-gray-700 mb-1">
+                    Provincia
+                  </label>
+                  <input
+                    type="text"
+                    id="provincia"
+                    value={provincia}
+                    onChange={(e) => setProvincia(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Ej: Madrid"
+                  />
+                </div>
+              </div>
+              
+              {/* Botón de guardar */}
+              <div className="mt-6">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={!hasChanges() || isSaving}
+                  className={`w-full sm:w-auto px-6 py-3 rounded-lg font-semibold transition-colors ${
+                    !hasChanges() || isSaving
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+              
+              {/* Mensaje de éxito/error */}
+              {saveMessage && (
+                <div
+                  className={`mt-4 p-4 rounded-md ${
+                    saveMessage.type === 'success'
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}
+                >
+                  <p
+                    className={`text-sm ${
+                      saveMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
+                    }`}
+                  >
+                    {saveMessage.text}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Seguridad */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4">Seguridad</h3>
+              
+              {/* Cambiar Contraseña */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h5 className="font-medium text-gray-900">Contraseña</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Mantén tu cuenta segura con una contraseña fuerte
+                    </p>
                   </div>
-                  
-                  {/* Botón de guardar */}
-                  <div className="mt-6">
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={!hasChanges() || isSaving}
-                      className={`w-full sm:w-auto px-6 py-3 rounded-lg font-semibold transition-colors ${
-                        !hasChanges() || isSaving
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {isSaving ? 'Guardando...' : 'Guardar cambios'}
-                    </button>
-                  </div>
-                  
-                  {/* Mensaje de éxito/error */}
-                  {saveMessage && (
-                    <div
-                      className={`mt-4 p-4 rounded-md ${
-                        saveMessage.type === 'success'
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
-                      }`}
-                    >
-                      <p
-                        className={`text-sm ${
-                          saveMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
-                        }`}
-                      >
-                        {saveMessage.text}
-                      </p>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setShowChangePassword(true)}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    Cambiar contraseña
+                  </button>
                 </div>
               </div>
             </div>
+
+            {/* 4. Privacidad y Datos */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4">Privacidad y Datos</h3>
+              <PrivacyTab loading={false} />
+            </div>
+
+            {/* Modal de Cambio de Contraseña */}
+            <ChangePasswordModal
+              show={showChangePassword}
+              onClose={() => setShowChangePassword(false)}
+            />
           </div>
         );
 
       case "solicitudes":
         return <SolicitudesTab />;
       // case "notifications": handled by separate page
-      case "privacy":
-        return <PrivacyTab loading={false} />;
       default:
         return null;
     }
@@ -525,7 +551,6 @@ export default function SettingsPage() {
                   account: "cuenta",
                   solicitudes: "solicitudes",
                   notifications: "notificaciones",
-                  privacy: "privacidad",
                 };
 
                 return (
