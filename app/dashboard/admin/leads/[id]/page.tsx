@@ -13,6 +13,8 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import LeadHistoryTimeline from "@/components/admin/LeadHistoryTimeline";
+import LeadViewStats from "@/components/admin/LeadViewStats";
 
 export default function AdminLeadDetailPage() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function AdminLeadDetailPage() {
     especialidad: "",
     provincia: "",
     ciudad: "",
-    urgencia: "media" as "baja" | "media" | "alta",
+    urgencia: "media" as "baja" | "media" | "alta" | "urgente",
     precio_base: 0,
     estado: "pendiente" as "pendiente" | "procesado" | "vendido" | "descartado",
     palabras_clave: [] as string[],
@@ -46,8 +48,21 @@ export default function AdminLeadDetailPage() {
     }
 
     loadLead();
+    trackView();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
+
+  const trackView = async () => {
+    try {
+      // Registrar visualización de forma asíncrona sin bloquear la UI
+      await fetch(`/api/admin/leads/${params.id}/track-view`, {
+        method: "POST",
+      });
+    } catch (error) {
+      // Silenciar errores de tracking para no afectar la experiencia del usuario
+      console.error("Error tracking view:", error);
+    }
+  };
 
   const loadLead = async () => {
     try {
@@ -163,7 +178,7 @@ export default function AdminLeadDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-full">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -483,17 +498,19 @@ export default function AdminLeadDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
               Información del Sistema
             </h2>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
               <div>
                 <span className="font-medium text-gray-500">Creado:</span>
                 <p className="text-gray-900">
                   {new Date(lead.created_at).toLocaleString()}
                 </p>
               </div>
-              {lead.aprobado_por && (
+              {lead.updated_at && (
                 <div>
-                  <span className="font-medium text-gray-500">Aprobado por:</span>
-                  <p className="text-gray-900">{lead.aprobado_por}</p>
+                  <span className="font-medium text-gray-500">Última actualización:</span>
+                  <p className="text-gray-900">
+                    {new Date(lead.updated_at).toLocaleString()}
+                  </p>
                 </div>
               )}
               {lead.comprador_id && (
@@ -505,6 +522,16 @@ export default function AdminLeadDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Estadísticas de Visualización - Ancho Completo */}
+      <div className="mt-6">
+        <LeadViewStats leadId={lead.id} />
+      </div>
+
+      {/* Historial de Cambios - Ancho Completo */}
+      <div className="mt-6">
+        <LeadHistoryTimeline leadId={lead.id} />
       </div>
 
       {/* Delete Modal */}

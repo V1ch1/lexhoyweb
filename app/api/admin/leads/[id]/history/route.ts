@@ -30,16 +30,10 @@ export async function GET(
 
     const { id } = await params;
 
-    // Obtener historial con información del usuario que editó
+    // Obtener historial
     const { data: history, error } = await supabaseAdmin
       .from("lead_history")
-      .select(`
-        *,
-        users:edited_by (
-          nombre,
-          email
-        )
-      `)
+      .select("*")
       .eq("lead_id", id)
       .order("edited_at", { ascending: false });
 
@@ -48,7 +42,24 @@ export async function GET(
       return new NextResponse("Error fetching history", { status: 500 });
     }
 
-    return NextResponse.json(history || []);
+    // Enriquecer con información de usuarios
+    const enrichedHistory = await Promise.all(
+      (history || []).map(async (entry: any) => {
+        const { data: userData } = await supabaseAdmin
+          .from("users")
+          .select("nombre, email")
+          .eq("id", entry.edited_by)
+          .single();
+
+        return {
+          ...entry,
+          editor_name: userData?.nombre || null,
+          editor_email: userData?.email || null,
+        };
+      })
+    );
+
+    return NextResponse.json(enrichedHistory);
   } catch (error) {
     console.error("[ADMIN_LEAD_HISTORY_GET]", error);
     return new NextResponse("Internal Error", { status: 500 });

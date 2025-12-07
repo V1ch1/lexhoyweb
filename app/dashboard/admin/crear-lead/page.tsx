@@ -41,6 +41,18 @@ export default function CreateLeadPage() {
     cuerpoMensaje: "",
     urlPagina: "",
     tituloPost: "",
+    fuente: "manual",
+    especialidad: "",
+    provincia: "",
+    ciudad: "",
+    urgencia: "media" as "baja" | "media" | "alta" | "urgente",
+    precioBase: "",
+    precioVentaDirecta: "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
@@ -72,6 +84,11 @@ export default function CreateLeadPage() {
             ? null
             : formData.precioBase
               ? parseFloat(formData.precioBase)
+              : null,
+          precio_venta_directa: procesarConIA
+            ? null
+            : formData.precioVentaDirecta
+              ? parseFloat(formData.precioVentaDirecta)
               : null,
           procesar_con_ia: procesarConIA,
         }),
@@ -325,6 +342,57 @@ export default function CreateLeadPage() {
                   </select>
                 </div>
               </div>
+            </div>
+
+            {/* Precios */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                Configuración de Precios
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Precio Base / Subasta (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="precioBase"
+                    value={formData.precioBase}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Precio inicial de subasta"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Precio mínimo para subastas
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Precio Venta Directa (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="precioVentaDirecta"
+                    value={formData.precioVentaDirecta}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Precio de compra directa"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Precio fijo para compra inmediata
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Botones de acción */}
         <div className="flex justify-end space-x-4">
           <button
             type="button"

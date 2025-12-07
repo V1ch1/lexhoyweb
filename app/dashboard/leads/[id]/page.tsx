@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { capitalize } from "@/lib/utils";
+import ConsultModal from "@/components/ConsultModal";
 
 
 
@@ -38,12 +39,26 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConsultModal, setShowConsultModal] = useState(false);
 
   useEffect(() => {
     if (params.id) {
       fetchLead(params.id as string);
+      trackView(params.id as string);
     }
   }, [params.id]);
+
+  const trackView = async (id: string) => {
+    try {
+      // Registrar visualización de forma asíncrona sin bloquear la UI
+      await fetch(`/api/admin/leads/${id}/track-view`, {
+        method: "POST",
+      });
+    } catch (error) {
+      // Silenciar errores de tracking para no afectar la experiencia del usuario
+      console.error("Error tracking view:", error);
+    }
+  };
 
   const fetchLead = async (id: string) => {
     try {
@@ -216,6 +231,23 @@ export default function LeadDetailPage() {
             </div>
           ) : (
             <div className="mb-8">
+              {/* Aviso informativo */}
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Información limitada
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Este es un resumen breve del caso. Al comprar el lead, tendrás acceso completo a toda la información facilitada por el cliente, incluyendo datos de contacto y mensaje detallado.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
                 Resumen del Caso (IA)
               </h3>
@@ -257,7 +289,16 @@ export default function LeadDetailPage() {
           )}
 
           {!isPurchased && (
-            <div className="flex justify-end pt-6 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+              <button
+                onClick={() => setShowConsultModal(true)}
+                className="border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ¿Tienes dudas?
+              </button>
               <button
                 onClick={handleBuy}
                 disabled={buying}
@@ -293,6 +334,14 @@ export default function LeadDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Consulta */}
+      <ConsultModal
+        show={showConsultModal}
+        onClose={() => setShowConsultModal(false)}
+        leadId={lead.id}
+        leadTitle={`Consulta Legal #${lead.id.slice(0, 8)}`}
+      />
     </div>
   );
 }
