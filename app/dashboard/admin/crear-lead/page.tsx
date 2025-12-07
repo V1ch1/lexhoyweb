@@ -7,7 +7,6 @@ import {
   SparklesIcon,
   PlusCircleIcon,
 } from "@heroicons/react/24/outline";
-import { LeadService } from "@/lib/services/leadService";
 import { toast } from "sonner";
 
 const ESPECIALIDADES = [
@@ -30,6 +29,12 @@ const URGENCIAS = [
   { value: "urgente", label: "Urgente" },
 ];
 
+const NIVELES_DETALLE = [
+  { value: "bajo", label: "Bajo" },
+  { value: "medio", label: "Medio" },
+  { value: "alto", label: "Alto" },
+];
+
 export default function CreateLeadPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -38,16 +43,19 @@ export default function CreateLeadPage() {
     nombre: "",
     correo: "",
     telefono: "",
-    cuerpoMensaje: "",
-    urlPagina: "",
-    tituloPost: "",
+    cuerpo_mensaje: "",
+    url_pagina: "",
+    titulo_post: "",
     fuente: "manual",
     especialidad: "",
     provincia: "",
     ciudad: "",
     urgencia: "media" as "baja" | "media" | "alta" | "urgente",
-    precioBase: "",
-    precioVentaDirecta: "",
+    precio_base: "",
+    resumen_ia: "",
+    palabras_clave: "",
+    puntuacion_calidad: 50,
+    nivel_detalle: "medio" as "bajo" | "medio" | "alto",
   });
 
   const handleChange = (
@@ -64,7 +72,12 @@ export default function CreateLeadPage() {
     setLoading(true);
 
     try {
-      // Siempre usar la API, nunca llamar a LeadService desde el cliente
+      // Procesar palabras clave
+      const palabras_clave = formData.palabras_clave
+        .split(",")
+        .map((k) => k.trim())
+        .filter((k) => k.length > 0);
+
       const response = await fetch("/api/admin/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,9 +85,9 @@ export default function CreateLeadPage() {
           nombre: formData.nombre,
           correo: formData.correo,
           telefono: formData.telefono,
-          cuerpo_mensaje: formData.cuerpoMensaje,
-          url_pagina: formData.urlPagina || "https://lexhoy.com/manual",
-          titulo_post: formData.tituloPost || "Lead creado manualmente",
+          cuerpo_mensaje: formData.cuerpo_mensaje,
+          url_pagina: formData.url_pagina || "https://lexhoy.com/manual",
+          titulo_post: formData.titulo_post || "Lead creado manualmente",
           fuente: "manual",
           especialidad: procesarConIA ? null : formData.especialidad || null,
           provincia: procesarConIA ? null : formData.provincia || null,
@@ -82,14 +95,13 @@ export default function CreateLeadPage() {
           urgencia: procesarConIA ? null : formData.urgencia,
           precio_base: procesarConIA
             ? null
-            : formData.precioBase
-              ? parseFloat(formData.precioBase)
+            : formData.precio_base
+              ? parseFloat(formData.precio_base)
               : null,
-          precio_venta_directa: procesarConIA
-            ? null
-            : formData.precioVentaDirecta
-              ? parseFloat(formData.precioVentaDirecta)
-              : null,
+          resumen_ia: procesarConIA ? null : formData.resumen_ia || null,
+          palabras_clave: procesarConIA ? null : palabras_clave,
+          puntuacion_calidad: procesarConIA ? null : formData.puntuacion_calidad,
+          nivel_detalle: procesarConIA ? null : formData.nivel_detalle,
           procesar_con_ia: procesarConIA,
         }),
       });
@@ -98,6 +110,7 @@ export default function CreateLeadPage() {
         throw new Error("Error al crear lead");
       }
 
+      toast.success("Lead creado exitosamente");
       router.push("/dashboard/admin/listado-leads");
     } catch (error) {
       console.error("Error creating lead:", error);
@@ -108,7 +121,7 @@ export default function CreateLeadPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6">
+    <div className="w-full p-6">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -146,251 +159,307 @@ export default function CreateLeadPage() {
               </div>
               <p className="text-sm text-blue-700 mt-1">
                 La IA analizará el mensaje, generará un resumen anónimo,
-                detectará la especialidad, provincia y calculará el precio base
-                automáticamente.
+                detectará la especialidad, provincia, palabras clave y calculará
+                el precio base automáticamente.
               </p>
             </label>
           </div>
         </div>
 
-        {/* Datos básicos */}
-        <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Datos del Cliente
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ej: Juan Pérez"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="correo"
-                value={formData.correo}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ej: juan@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono
-              </label>
-              <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ej: +34 600 000 000"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mensaje / Consulta <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              name="cuerpoMensaje"
-              value={formData.cuerpoMensaje}
-              onChange={handleChange}
-              required
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Describe la consulta legal del cliente..."
-            />
-          </div>
-        </div>
-
-        {/* Metadatos */}
-        <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Metadatos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL de Página
-              </label>
-              <input
-                type="url"
-                name="urlPagina"
-                value={formData.urlPagina}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="https://lexhoy.com/..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Título del Post
-              </label>
-              <input
-                type="text"
-                name="tituloPost"
-                value={formData.tituloPost}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Ej: Abogado de familia en Madrid"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Clasificación manual (solo si no se procesa con IA) */}
-        {!procesarConIA && (
-          <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Clasificación Manual
-            </h2>
-
-            {/* Ubicación */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Ubicación
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Grid de 2 columnas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Columna Izquierda */}
+          <div className="space-y-6">
+            {/* Datos básicos */}
+            <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                Datos del Cliente
+              </h2>
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Provincia <span className="text-red-500">*</span>
+                    Nombre <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    name="provincia"
-                    value={formData.provincia}
+                    name="nombre"
+                    value={formData.nombre}
                     onChange={handleChange}
-                    required={!procesarConIA}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Ej: Madrid"
+                    placeholder="Ej: Juan Pérez"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ciudad
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="ciudad"
-                    value={formData.ciudad}
+                    type="email"
+                    name="correo"
+                    value={formData.correo}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Ej: juan@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Ej: Madrid"
+                    placeholder="Ej: +34 600 000 000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mensaje / Consulta <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="cuerpo_mensaje"
+                    value={formData.cuerpo_mensaje}
+                    onChange={handleChange}
+                    required
+                    rows={6}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Describe la consulta legal del cliente..."
                   />
                 </div>
               </div>
             </div>
 
-            {/* Clasificación */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Clasificación
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Metadatos */}
+            <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                Metadatos
+              </h2>
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Especialidad <span className="text-red-500">*</span>
+                    URL de Página
                   </label>
-                  <select
-                    name="especialidad"
-                    value={formData.especialidad}
+                  <input
+                    type="url"
+                    name="url_pagina"
+                    value={formData.url_pagina}
                     onChange={handleChange}
-                    required={!procesarConIA}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {ESPECIALIDADES.map((esp) => (
-                      <option key={esp} value={esp}>
-                        {esp}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="https://lexhoy.com/..."
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Urgencia
+                    Título del Post
                   </label>
-                  <select
-                    name="urgencia"
-                    value={formData.urgencia}
+                  <input
+                    type="text"
+                    name="titulo_post"
+                    value={formData.titulo_post}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    {URGENCIAS.map((urg) => (
-                      <option key={urg.value} value={urg.value}>
-                        {urg.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Ej: Abogado de familia en Madrid"
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Precios */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Configuración de Precios
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Columna Derecha - Clasificación manual */}
+          {!procesarConIA && (
+            <div className="space-y-6">
+              {/* Resumen y Análisis */}
+              <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  Resumen y Análisis
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Resumen del Caso <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      name="resumen_ia"
+                      value={formData.resumen_ia}
+                      onChange={handleChange}
+                      required={!procesarConIA}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Resumen breve y anónimo del caso legal..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Palabras Clave
+                    </label>
+                    <input
+                      type="text"
+                      name="palabras_clave"
+                      value={formData.palabras_clave}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="divorcio, custodia, pensión (separadas por comas)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Puntuación de Calidad: {formData.puntuacion_calidad}/100
+                    </label>
+                    <input
+                      type="range"
+                      name="puntuacion_calidad"
+                      min="0"
+                      max="100"
+                      value={formData.puntuacion_calidad}
+                      onChange={handleChange}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Baja</span>
+                      <span>Media</span>
+                      <span>Alta</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nivel de Detalle
+                    </label>
+                    <select
+                      name="nivel_detalle"
+                      value={formData.nivel_detalle}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {NIVELES_DETALLE.map((nivel) => (
+                        <option key={nivel.value} value={nivel.value}>
+                          {nivel.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ubicación */}
+              <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  Ubicación
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Provincia <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="provincia"
+                      value={formData.provincia}
+                      onChange={handleChange}
+                      required={!procesarConIA}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Ej: Madrid"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ciudad
+                    </label>
+                    <input
+                      type="text"
+                      name="ciudad"
+                      value={formData.ciudad}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="Ej: Madrid"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Clasificación */}
+              <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  Clasificación
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Especialidad <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="especialidad"
+                      value={formData.especialidad}
+                      onChange={handleChange}
+                      required={!procesarConIA}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {ESPECIALIDADES.map((esp) => (
+                        <option key={esp} value={esp}>
+                          {esp}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Urgencia
+                    </label>
+                    <select
+                      name="urgencia"
+                      value={formData.urgencia}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      {URGENCIAS.map((urg) => (
+                        <option key={urg.value} value={urg.value}>
+                          {urg.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Precio */}
+              <div className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Precio</h2>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Precio Base / Subasta (€)
+                    Precio del Lead (€)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    name="precioBase"
-                    value={formData.precioBase}
+                    name="precio_base"
+                    value={formData.precio_base}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Precio inicial de subasta"
+                    placeholder="Ej: 150.00"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Precio mínimo para subastas
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Precio Venta Directa (€)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="precioVentaDirecta"
-                    value={formData.precioVentaDirecta}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Precio de compra directa"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Precio fijo para compra inmediata
+                    Precio que pagarán los despachos por este lead
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Botones de acción */}
         <div className="flex justify-end space-x-4">
