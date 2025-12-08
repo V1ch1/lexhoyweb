@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import { StatCard, QuickActionCard } from "@/components/dashboard/shared";
+import KPICard from "@/components/admin/analytics/KPICard";
+import LineChartCard from "@/components/admin/analytics/LineChartCard";
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -12,6 +14,8 @@ import {
   ExclamationTriangleIcon,
   CogIcon,
   ChartBarIcon,
+  CurrencyEuroIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 
 // Interfaces
@@ -27,10 +31,35 @@ interface SystemStats {
   };
 }
 
+interface OverviewStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalDespachos: number;
+  totalLeads: number;
+  leadsVendidos: number;
+  conversionRate: number;
+  totalRevenue: number;
+  trends: {
+    users: number;
+    despachos: number;
+    leads: number;
+    revenue: number;
+  };
+}
+
+interface ChartData {
+  dailyUsers: Array<{ date: string; count: number }>;
+  dailyLeads: Array<{ date: string; count: number }>;
+  dailySales: Array<{ date: string; count: number }>;
+  dailyRevenue: Array<{ date: string; amount: number }>;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
+  const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
 
@@ -41,10 +70,25 @@ export default function AdminDashboard() {
     const loadStats = async () => {
       setStatsLoading(true);
       try {
+        // Cargar stats básicas
         const response = await fetch("/api/admin/stats");
         if (response.ok) {
           const stats = await response.json();
           setSystemStats(stats);
+        }
+
+        // Cargar overview analytics
+        const overviewRes = await fetch("/api/admin/analytics/overview");
+        if (overviewRes.ok) {
+          const overview = await overviewRes.json();
+          setOverviewStats(overview);
+        }
+
+        // Cargar charts (últimos 30 días)
+        const chartsRes = await fetch("/api/admin/analytics/charts?days=30");
+        if (chartsRes.ok) {
+          const charts = await chartsRes.json();
+          setChartData(charts);
         }
       } catch (error) {
         console.error("Error al cargar estadísticas:", error);
@@ -133,101 +177,154 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Estadísticas principales */}
+      {/* KPIs Principales */}
       {statsLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse"
+              className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 animate-pulse"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-10 w-10 bg-gray-200 rounded-lg"></div>
-              </div>
-              <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-20 mb-3"></div>
+              <div className="h-6 bg-gray-200 rounded w-12"></div>
             </div>
           ))}
         </div>
       )}
 
-      {!statsLoading && systemStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
+      {!statsLoading && overviewStats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+          <KPICard
             title="Total Usuarios"
-            value={systemStats.totalUsers}
+            value={overviewStats.totalUsers}
             icon={UserGroupIcon}
             color="blue"
+            trend={overviewStats.trends.users}
           />
-          <StatCard
-            title="Despachos en Supabase"
-            value={systemStats.supabaseDespachos}
-            icon={BuildingOfficeIcon}
+          <KPICard
+            title="Usuarios Activos"
+            value={overviewStats.activeUsers}
+            icon={UserIcon}
             color="green"
           />
-          <StatCard
-            title="Leads Totales"
-            value={systemStats.totalLeads}
-            icon={ClipboardDocumentListIcon}
+          <KPICard
+            title="Total Despachos"
+            value={overviewStats.totalDespachos}
+            icon={BuildingOfficeIcon}
             color="purple"
+            trend={overviewStats.trends.despachos}
           />
-          <StatCard
-            title="Admins Despacho"
-            value={systemStats.usersByRole.despacho_admin}
-            icon={UserGroupIcon}
+          <KPICard
+            title="Total Leads"
+            value={overviewStats.totalLeads}
+            icon={ClipboardDocumentListIcon}
             color="orange"
+            trend={overviewStats.trends.leads}
+          />
+          <KPICard
+            title="Tasa Conversión"
+            value={overviewStats.conversionRate}
+            icon={ChartBarIcon}
+            color="red"
+            format="percentage"
+          />
+          <KPICard
+            title="Ingresos Totales"
+            value={overviewStats.totalRevenue}
+            icon={CurrencyEuroIcon}
+            color="green"
+            trend={overviewStats.trends.revenue}
+            format="currency"
           />
         </div>
       )}
 
-      {/* Acciones rápidas */}
+      {/* Gráficos de Tendencias */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Tendencias (Últimos 30 días)
+        </h2>
+
+        {statsLoading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse"
+              >
+                <div className="h-5 bg-gray-200 rounded w-32 mb-4"></div>
+                <div className="h-48 bg-gray-100 rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!statsLoading && chartData && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <LineChartCard
+              title="Nuevos Usuarios por Día"
+              data={chartData.dailyUsers}
+              dataKey="count"
+              color="#3b82f6"
+            />
+            <LineChartCard
+              title="Leads Creados por Día"
+              data={chartData.dailyLeads}
+              dataKey="count"
+              color="#8b5cf6"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Accesos Rápidos */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Accesos Rápidos
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <QuickActionCard
-            title="📊 Estadísticas Completas"
-            description="Análisis detallado con gráficos y métricas avanzadas"
-            icon={ChartBarIcon}
-            href="/dashboard/admin/estadisticas"
-            color="blue"
-          />
-          <QuickActionCard
-            title="Gestión de Leads"
-            description="Administra leads, precios, campos y configuración"
+            title="Leads"
+            description="Gestión de leads"
             icon={ClipboardDocumentListIcon}
             href="/dashboard/admin/listado-leads"
             color="purple"
           />
           <QuickActionCard
-            title="Gestión de Usuarios"
-            description="Administra usuarios, roles y permisos"
+            title="Usuarios"
+            description="Gestión de usuarios"
             icon={UserGroupIcon}
             href="/dashboard/admin/users"
             color="green"
           />
           <QuickActionCard
-            title="Ver Solicitudes"
-            description="Revisa solicitudes de despachos pendientes"
+            title="Solicitudes"
+            description="Revisar solicitudes"
             icon={DocumentTextIcon}
             href="/dashboard/admin/solicitudes"
             color="yellow"
             badge={solicitudesPendientes}
           />
           <QuickActionCard
-            title="Gestionar Despachos"
-            description="Administra todos los despachos del sistema"
+            title="Despachos"
+            description="Gestión de despachos"
             icon={BuildingOfficeIcon}
             href="/dashboard/despachos"
             color="orange"
           />
           <QuickActionCard
-            title="Gestión de Marketing"
-            description="Administra campañas y contenido de marketing"
+            title="Marketing"
+            description="Campañas y contenido"
             icon={ChartBarIcon}
             href="/dashboard/admin/marketing"
-            color="pink"
+            color="red"
+          />
+          <QuickActionCard
+            title="Estadísticas"
+            description="Ver todas"
+            icon={ChartBarIcon}
+            href="/dashboard/admin/estadisticas"
+            color="blue"
           />
         </div>
       </div>
