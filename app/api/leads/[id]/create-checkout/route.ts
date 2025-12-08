@@ -38,10 +38,18 @@ export async function POST(
       );
     }
 
-    // Verificar que el lead esté disponible
-    if (lead.estado !== "pendiente") {
+    // Verificar que el lead esté disponible para compra
+    if (lead.estado !== "procesado" && lead.estado !== "pendiente") {
       return NextResponse.json(
-        { error: "Este lead ya no está disponible" },
+        { error: "Este lead ya no está disponible para compra" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que el lead no haya sido vendido
+    if (lead.vendido) {
+      return NextResponse.json(
+        { error: "Este lead ya ha sido vendido" },
         { status: 400 }
       );
     }
