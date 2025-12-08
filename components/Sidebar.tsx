@@ -8,6 +8,7 @@ import {
   UserGroupIcon,
   BuildingOfficeIcon,
   MegaphoneIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/authContext";
 
@@ -126,6 +127,21 @@ const Sidebar = () => {
                   >
                     <MegaphoneIcon className="h-5 w-5" />
                     <span className="font-playfair text-sm">Gestión de Marketing</span>
+                  </button>
+                </li>
+
+                {/* Estadísticas */}
+                <li>
+                  <button
+                    onClick={() => handleNavigation("/dashboard/admin/estadisticas")}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      pathname.startsWith("/dashboard/admin/estadisticas")
+                        ? "bg-slate-800 text-white shadow-md"
+                        : "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+                    }`}
+                  >
+                    <ChartBarIcon className="h-5 w-5" />
+                    <span className="font-playfair text-sm">📊 Estadísticas</span>
                   </button>
                 </li>
 
