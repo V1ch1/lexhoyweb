@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation"; // Importamos el hook de Next.js 
 import { SessionProvider } from "next-auth/react";
 import Navbar from "@/components/Navbar"; // Navbar genérico
 import Footer from "@/components/Footer"; // Footer
+import CookieBanner from "@/components/CookieBanner";
+import CookieButton from "@/components/CookieButton";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { Inter, Work_Sans, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -49,6 +52,9 @@ export default function RootLayout({
           suppressHydrationWarning={true}
           className={`${inter.className} font-sans bg-gray-50`}
         >
+          {/* Google Analytics */}
+          <GoogleAnalytics />
+
           {/* Solo mostramos el Navbar genérico si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Navbar />}
 
@@ -56,9 +62,15 @@ export default function RootLayout({
 
           {/* Solo mostramos el Footer si no estamos en dashboard o admin */}
           {!isAdminOrDashboard && <Footer />}
+          
           <Toaster position="top-right" richColors closeButton />
+          
+          {/* Sistema de Cookies */}
+          <CookieBanner />
+          <CookieButton />
         </body>
       </html>
     </SessionProvider>
   );
 }
+
