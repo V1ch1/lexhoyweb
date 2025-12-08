@@ -134,7 +134,6 @@ export class CookieService {
       window.gtag('consent', 'update', {
         analytics_storage: 'granted',
       });
-      console.log('✅ Google Analytics enabled');
     }
   }
 
@@ -149,7 +148,6 @@ export class CookieService {
       window.gtag('consent', 'update', {
         analytics_storage: 'denied',
       });
-      console.log('❌ Google Analytics disabled');
     }
 
     // Limpiar cookies de GA
