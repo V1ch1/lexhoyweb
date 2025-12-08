@@ -161,6 +161,58 @@ export async function POST(req: Request) {
       return new NextResponse("Error al crear lead", { status: 500 });
     }
 
+    // Enviar notificaciones si el lead está en estado "procesado"
+    if (lead.estado === "procesado" && lead.precio_base) {
+      try {
+        // Obtener usuarios despacho_admin activos
+        const { data: despachoAdmins } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("rol", "despacho_admin")
+          .eq("estado", "activo");
+
+        if (despachoAdmins && despachoAdmins.length > 0) {
+          // Importar servicios
+          const { EmailService } = await import("@/lib/services/emailService");
+          const { NotificationService } = await import("@/lib/notificationService");
+
+          // Enviar notificaciones a cada despacho_admin
+          await Promise.allSettled(
+            despachoAdmins.map(async (admin) => {
+              // Email (respeta preferencias)
+              await EmailService.sendNewLeadAvailable(admin.id, {
+                id: lead.id,
+                especialidad: lead.especialidad || "General",
+                urgencia: lead.urgencia || "media",
+                puntuacion_calidad: lead.puntuacion_calidad || 50,
+                precio: lead.precio_base,
+              });
+
+              // Notificación dashboard (siempre)
+              await NotificationService.create({
+                userId: admin.id,
+                tipo: "nuevo_lead",
+                titulo: `🎯 Nuevo Lead: ${lead.especialidad || "General"}`,
+                mensaje: `Lead de ${lead.urgencia || "media"} urgencia disponible. Precio: ${lead.precio_base}€`,
+                url: `/dashboard/leads/${lead.id}`,
+                metadata: {
+                  leadId: lead.id,
+                  especialidad: lead.especialidad,
+                  urgencia: lead.urgencia,
+                  precio: lead.precio_base,
+                },
+              });
+            })
+          );
+
+          console.log(`✅ Notificaciones enviadas a ${despachoAdmins.length} despachos`);
+        }
+      } catch (notifError) {
+        console.error("Error enviando notificaciones:", notifError);
+        // No fallar la creación del lead si las notificaciones fallan
+      }
+    }
+
     return NextResponse.json(lead);
   } catch (error) {
     console.error("[ADMIN_LEAD_POST]", error);
