@@ -187,18 +187,25 @@ export default function AdminDashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <QuickActionCard
+            title="📊 Estadísticas Completas"
+            description="Análisis detallado con gráficos y métricas avanzadas"
+            icon={ChartBarIcon}
+            href="/dashboard/admin/estadisticas"
+            color="blue"
+          />
+          <QuickActionCard
             title="Gestión de Leads"
             description="Administra leads, precios, campos y configuración"
             icon={ClipboardDocumentListIcon}
             href="/dashboard/admin/listado-leads"
-            color="blue"
+            color="purple"
           />
           <QuickActionCard
             title="Gestión de Usuarios"
             description="Administra usuarios, roles y permisos"
             icon={UserGroupIcon}
             href="/dashboard/admin/users"
-            color="purple"
+            color="green"
           />
           <QuickActionCard
             title="Ver Solicitudes"
@@ -213,21 +220,14 @@ export default function AdminDashboard() {
             description="Administra todos los despachos del sistema"
             icon={BuildingOfficeIcon}
             href="/dashboard/despachos"
-            color="green"
+            color="orange"
           />
           <QuickActionCard
             title="Gestión de Marketing"
             description="Administra campañas y contenido de marketing"
             icon={ChartBarIcon}
             href="/dashboard/admin/marketing"
-            color="orange"
-          />
-          <QuickActionCard
-            title="Configuración"
-            description="Ajusta tu perfil y preferencias"
-            icon={CogIcon}
-            href="/dashboard/settings"
-            color="blue"
+            color="pink"
           />
         </div>
       </div>
