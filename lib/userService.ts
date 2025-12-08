@@ -598,6 +598,32 @@ export class UserService {
       .single();
 
     if (error) throw error;
+    
+    // Crear notificación para el usuario
+    try {
+      const { NotificationService } = await import("./notificationService");
+      const { data: despacho } = await supabase
+        .from("despachos")
+        .select("nombre")
+        .eq("id", despachoId)
+        .single();
+      
+      await NotificationService.create({
+        userId,
+        tipo: "despacho_asignado",
+        titulo: "👑 Despacho Asignado",
+        mensaje: `Has sido asignado al despacho "${despacho?.nombre || 'Despacho'}"`,
+        url: "/dashboard/settings?tab=mis-despachos",
+        metadata: {
+          despachoId,
+          despachoNombre: despacho?.nombre,
+          asignadoPor: assignedBy,
+        },
+      });
+    } catch (notifError) {
+      console.error("⚠️ Error creando notificación:", notifError);
+    }
+
     return data;
   }
 
