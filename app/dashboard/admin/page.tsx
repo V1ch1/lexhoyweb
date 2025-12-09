@@ -241,9 +241,31 @@ export default function AdminDashboard() {
 
       {/* Gráficos de Tendencias */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Tendencias (Últimos 30 días)
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Tendencias (Últimos 30 días)
+          </h2>
+          <button
+            onClick={() => router.push("/dashboard/admin/estadisticas")}
+            className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1 transition-colors"
+          >
+            Ver más estadísticas
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+              />
+            </svg>
+          </button>
+        </div>
 
         {statsLoading && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

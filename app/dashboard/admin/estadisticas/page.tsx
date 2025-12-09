@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import KPICard from "@/components/admin/analytics/KPICard";
@@ -88,6 +88,7 @@ export default function EstadisticasPage() {
   const [customDateRange, setCustomDateRange] = useState<{start: string; end: string} | null>(null);
   const [tempStartDate, setTempStartDate] = useState('');
   const [tempEndDate, setTempEndDate] = useState('');
+  const endDateInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar estadísticas
   useEffect(() => {
@@ -232,15 +233,26 @@ export default function EstadisticasPage() {
                 <input
                   type="date"
                   value={tempStartDate}
-                  onChange={(e) => setTempStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setTempStartDate(e.target.value);
+                    // Auto-open end date picker after start date is selected
+                    if (e.target.value) {
+                      setTimeout(() => {
+                        endDateInputRef.current?.focus();
+                        endDateInputRef.current?.showPicker?.();
+                      }, 100);
+                    }
+                  }}
                   max={new Date().toISOString().split('T')[0]}
                   className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-gray-500 text-xs">→</span>
                 <input
+                  ref={endDateInputRef}
                   type="date"
                   value={tempEndDate}
                   onChange={(e) => setTempEndDate(e.target.value)}
+                  min={tempStartDate}
                   max={new Date().toISOString().split('T')[0]}
                   className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -300,6 +312,20 @@ export default function EstadisticasPage() {
         {activeTab === "general" && (
           <div className="space-y-6">
             {/* KPIs */}
+            {statsLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                      <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                    </div>
+                    <div className="h-8 bg-gray-200 rounded w-16 mt-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-12 mt-2"></div>
+                  </div>
+                ))}
+              </div>
+            )}
             {!statsLoading && overviewStats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <KPICard
@@ -348,6 +374,16 @@ export default function EstadisticasPage() {
             )}
 
             {/* Resumen rápido */}
+            {statsLoading && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="h-64 bg-gray-100 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {!statsLoading && chartData && (
                 <>
@@ -375,6 +411,16 @@ export default function EstadisticasPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               Evolución Temporal
             </h2>
+            {statsLoading && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="h-64 bg-gray-100 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            )}
             {!statsLoading && chartData && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <LineChartCard
@@ -413,6 +459,36 @@ export default function EstadisticasPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               Análisis Detallado de Leads
             </h2>
+            {statsLoading && (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="h-80 bg-gray-100 rounded"></div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-32 mb-4"></div>
+                    <div className="h-80 bg-gray-100 rounded"></div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                  <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <div className="h-4 bg-gray-200 rounded w-40"></div>
+                        <div className="flex gap-4">
+                          <div className="h-4 bg-gray-200 rounded w-12"></div>
+                          <div className="h-4 bg-gray-200 rounded w-12"></div>
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                          <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
             {!statsLoading && leadsAnalytics && (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -496,6 +572,36 @@ export default function EstadisticasPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               Análisis de Despachos
             </h2>
+            {statsLoading && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Top Despachos Skeleton */}
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                  <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                          <div>
+                            <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="h-5 bg-gray-200 rounded w-16 mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-12"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Chart Skeleton */}
+                <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                  <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                  <div className="h-96 bg-gray-100 rounded"></div>
+                </div>
+              </div>
+            )}
             {!statsLoading && despachosAnalytics && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Top Despachos */}
@@ -548,8 +654,74 @@ export default function EstadisticasPage() {
             </h2>
             
             {marketingLoading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="space-y-6">
+                {/* KPIs Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                      </div>
+                      <div className="h-8 bg-gray-200 rounded w-16 mt-2"></div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Metrics Cards Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                      <div className="h-5 bg-gray-200 rounded w-32 mb-4"></div>
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((j) => (
+                          <div key={j} className="flex justify-between items-center">
+                            <div className="h-4 bg-gray-200 rounded w-24"></div>
+                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Traffic and Content Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Traffic Sources Skeleton */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i}>
+                          <div className="flex justify-between mb-1">
+                            <div className="h-4 bg-gray-200 rounded w-32"></div>
+                            <div className="h-4 bg-gray-200 rounded w-20"></div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2"></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Popular Pages Skeleton */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 animate-pulse">
+                    <div className="h-5 bg-gray-200 rounded w-48 mb-4"></div>
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="h-4 bg-gray-200 rounded w-12 mb-1"></div>
+                            <div className="h-3 bg-gray-200 rounded w-10"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -577,7 +749,12 @@ export default function EstadisticasPage() {
                   />
                   <KPICard
                     title="Duración Promedio"
-                    value={Math.round(marketingAnalytics.avgSessionDuration)}
+                    value={(() => {
+                      const seconds = Math.round(marketingAnalytics.avgSessionDuration);
+                      const minutes = Math.floor(seconds / 60);
+                      const remainingSeconds = seconds % 60;
+                      return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`;
+                    })()}
                     icon={UserIcon}
                     color="orange"
                   />
@@ -702,23 +879,42 @@ export default function EstadisticasPage() {
                     </h3>
                     <div className="space-y-3">
                       {marketingAnalytics.popularPages.map((page, index) => (
-                        <div
+                        <a
                           key={index}
-                          className="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          href={`https://lexhoy.com${page.path}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all group"
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                               {page.title}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{page.path}</p>
                           </div>
-                          <div className="text-right ml-4">
-                            <p className="text-sm font-semibold text-gray-900">
-                              {page.pageviews.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-gray-500">vistas</p>
+                          <div className="text-right ml-4 flex items-center gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {page.pageviews.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-gray-500">vistas</p>
+                            </div>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                              />
+                            </svg>
                           </div>
-                        </div>
+                        </a>
                       ))}
                     </div>
                   </div>
