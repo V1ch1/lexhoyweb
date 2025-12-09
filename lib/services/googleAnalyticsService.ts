@@ -27,27 +27,47 @@ export class GoogleAnalyticsService {
   private propertyId: string;
 
   constructor() {
-    // Usar archivo de credenciales JSON
-    const keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-      './google-credentials.json';
-
-    // Solo inicializar si tenemos property ID y el archivo existe
+    // Solo inicializar si tenemos property ID
     if (!process.env.GOOGLE_ANALYTICS_PROPERTY_ID) {
       console.warn('[GoogleAnalytics] GOOGLE_ANALYTICS_PROPERTY_ID not set, service disabled');
       this.propertyId = '';
+      // @ts-ignore - client will be undefined but we handle it in methods
       return;
     }
 
     try {
-      this.client = new BetaAnalyticsDataClient({
-        keyFilename,
-      });
+      // Opción 1: Usar variables de entorno individuales (Vercel/Production)
+      if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+        this.client = new BetaAnalyticsDataClient({
+          credentials: {
+            client_email: process.env.GOOGLE_CLIENT_EMAIL,
+            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          },
+        });
+        console.log('[GoogleAnalytics] Initialized with environment variables');
+      } 
+      // Opción 2: Usar archivo de credenciales (desarrollo local)
+      else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        this.client = new BetaAnalyticsDataClient({
+          keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+        });
+        console.log('[GoogleAnalytics] Initialized with credentials file from GOOGLE_APPLICATION_CREDENTIALS');
+      }
+      else {
+        // No hay credenciales disponibles
+        console.error('[GoogleAnalytics] No credentials found. Please set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY environment variables, or GOOGLE_APPLICATION_CREDENTIALS for local development.');
+        this.propertyId = '';
+        // @ts-ignore - client will be undefined but we handle it in methods
+        return;
+      }
+      
       this.propertyId = `properties/${process.env.GOOGLE_ANALYTICS_PROPERTY_ID}`;
     } catch (error) {
-      console.warn('[GoogleAnalytics] Failed to initialize client:', error);
+      console.error('[GoogleAnalytics] Failed to initialize client:', error);
       this.propertyId = '';
     }
   }
+
 
   /**
    * Obtener métricas generales
