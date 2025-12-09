@@ -105,9 +105,13 @@ export async function PATCH(
       fecha_respuesta: new Date().toISOString(),
     };
     
-    // Añadir notas si es rechazo o revocación
-    if ((accion === "rechazar" || accion === "revocar") && motivo) {
-      updateData.notas_respuesta = motivo;
+    // Añadir notas si es rechazo, revocación, o si se modifica a rechazado/cancelada
+    if (motivo) {
+      if (accion === "rechazar" || accion === "revocar") {
+        updateData.notas_respuesta = motivo;
+      } else if (accion === "modificar" && (nuevoEstado === "rechazado" || nuevoEstado === "cancelada")) {
+        updateData.notas_respuesta = motivo;
+      }
     }
     
     const { error: updateError } = await supabase
