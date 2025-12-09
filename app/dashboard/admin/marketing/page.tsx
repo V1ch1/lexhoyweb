@@ -222,14 +222,6 @@ export default function AdminMarketingPage() {
                 key={option.href}
                 className={`${colors.bg} rounded-xl shadow-sm border-2 ${colors.border} p-6 hover:shadow-md transition-shadow relative`}
               >
-                {option.comingSoon && (
-                  <div className="absolute top-4 right-4">
-                    <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded-full">
-                      Próximamente
-                    </span>
-                  </div>
-                )}
-
                 <div className="flex items-start mb-4">
                   <div
                     className={`p-3 rounded-lg ${colors.bg} border ${colors.border}`}
@@ -249,30 +241,23 @@ export default function AdminMarketingPage() {
                 </p>
 
                 <button
-                  onClick={() => !option.comingSoon && router.push(option.href)}
-                  disabled={option.comingSoon}
-                  className={`w-full ${
-                    option.comingSoon
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : colors.button
-                  } text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2`}
+                  onClick={() => router.push(option.href)}
+                  className={`w-full ${colors.button} text-white px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2`}
                 >
-                  {option.comingSoon ? "Próximamente" : "Acceder"}
-                  {!option.comingSoon && (
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
+                  Acceder
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </button>
               </div>
             );

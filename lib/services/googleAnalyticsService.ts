@@ -31,17 +31,39 @@ export class GoogleAnalyticsService {
     const keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
       './google-credentials.json';
 
-    this.client = new BetaAnalyticsDataClient({
-      keyFilename,
-    });
+    // Solo inicializar si tenemos property ID y el archivo existe
+    if (!process.env.GOOGLE_ANALYTICS_PROPERTY_ID) {
+      console.warn('[GoogleAnalytics] GOOGLE_ANALYTICS_PROPERTY_ID not set, service disabled');
+      this.propertyId = '';
+      return;
+    }
 
-    this.propertyId = `properties/${process.env.GOOGLE_ANALYTICS_PROPERTY_ID}`;
+    try {
+      this.client = new BetaAnalyticsDataClient({
+        keyFilename,
+      });
+      this.propertyId = `properties/${process.env.GOOGLE_ANALYTICS_PROPERTY_ID}`;
+    } catch (error) {
+      console.warn('[GoogleAnalytics] Failed to initialize client:', error);
+      this.propertyId = '';
+    }
   }
 
   /**
    * Obtener métricas generales
    */
   async getOverviewMetrics(days: number = 30): Promise<AnalyticsMetrics> {
+    if (!this.propertyId || !this.client) {
+      // Retornar datos vacíos si no está configurado
+      return {
+        visitors: { today: 0, week: 0, month: 0 },
+        sessions: { today: 0, week: 0, month: 0 },
+        pageviews: { today: 0, week: 0, month: 0 },
+        bounceRate: 0,
+        avgSessionDuration: 0,
+      };
+    }
+
     const endDate = 'today';
     const startDate = `${days}daysAgo`;
 
@@ -76,6 +98,10 @@ export class GoogleAnalyticsService {
    * Obtener fuentes de tráfico
    */
   async getTrafficSources(days: number = 30): Promise<TrafficSource[]> {
+    if (!this.propertyId || !this.client) {
+      return [];
+    }
+
     const [response] = await this.client.runReport({
       property: this.propertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'today' }],
@@ -106,6 +132,10 @@ export class GoogleAnalyticsService {
    * Obtener páginas más populares
    */
   async getPopularPages(days: number = 30): Promise<PopularPage[]> {
+    if (!this.propertyId || !this.client) {
+      return [];
+    }
+
     const [response] = await this.client.runReport({
       property: this.propertyId,
       dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'today' }],

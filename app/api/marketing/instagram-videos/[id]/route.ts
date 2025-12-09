@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 // PUT - Actualizar vídeo
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -27,7 +27,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabaseAdmin
       .from("instagram_videos")
@@ -51,7 +51,7 @@ export async function PUT(
 // DELETE - Eliminar vídeo
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -72,7 +72,7 @@ export async function DELETE(
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabaseAdmin
       .from("instagram_videos")
