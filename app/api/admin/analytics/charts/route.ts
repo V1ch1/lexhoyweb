@@ -61,9 +61,9 @@ export async function GET(request: Request) {
       const grouped: { [key: string]: number } = {};
       
       // Inicializar todos los días con 0
-      for (let i = 0; i < days; i++) {
+      for (let i = 0; i <= days; i++) {
         const date = new Date();
-        date.setDate(date.getDate() - (days - i - 1));
+        date.setDate(date.getDate() - (days - i));
         const dateStr = date.toISOString().split("T")[0];
         grouped[dateStr] = 0;
       }
@@ -87,9 +87,9 @@ export async function GET(request: Request) {
       const grouped: { [key: string]: number } = {};
       
       // Inicializar todos los días con 0
-      for (let i = 0; i < days; i++) {
+      for (let i = 0; i <= days; i++) {
         const date = new Date();
-        date.setDate(date.getDate() - (days - i - 1));
+        date.setDate(date.getDate() - (days - i));
         const dateStr = date.toISOString().split("T")[0];
         grouped[dateStr] = 0;
       }

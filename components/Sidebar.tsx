@@ -141,7 +141,7 @@ const Sidebar = () => {
                     }`}
                   >
                     <ChartBarIcon className="h-5 w-5" />
-                    <span className="font-playfair text-sm">📊 Estadísticas</span>
+                    <span className="font-playfair text-sm">Estadísticas</span>
                   </button>
                 </li>
 

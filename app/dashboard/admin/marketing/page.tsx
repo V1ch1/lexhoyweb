@@ -69,14 +69,22 @@ export default function AdminMarketingPage() {
       color: "indigo",
     },
     {
-      title: "Estadísticas",
-      subtitle: "Métricas y análisis",
+      title: "🎬 Vídeos Instagram",
+      subtitle: "Galería de contenido visual",
       description:
-        "Visualiza estadísticas de rendimiento de tus entradas de blog y campañas de marketing.",
+        "Explora nuestra galería de vídeos legales publicados en Instagram. Contenido educativo y profesional.",
       icon: ChartBarIcon,
-      href: "/dashboard/marketing/estadisticas",
-      color: "orange",
-      comingSoon: true,
+      href: "/dashboard/marketing/videos-instagram",
+      color: "purple",
+    },
+    {
+      title: "🔄 Sincronizar Instagram",
+      subtitle: "Importar vídeos automáticamente",
+      description:
+        "Sincroniza automáticamente los vídeos de @lexhoynoticias desde Instagram a la galería.",
+      icon: PlusCircleIcon,
+      href: "/dashboard/admin/marketing/videos/sync",
+      color: "indigo",
     },
   ];
 

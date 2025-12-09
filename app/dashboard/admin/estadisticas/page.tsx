@@ -61,7 +61,17 @@ interface DespachosAnalytics {
   byProvincia: Array<{ name: string; value: number }>;
 }
 
-type TabType = "general" | "tendencias" | "leads" | "despachos";
+interface MarketingAnalytics {
+  visitors: { today: number; week: number; month: number };
+  sessions: { today: number; week: number; month: number };
+  pageviews: { today: number; week: number; month: number };
+  bounceRate: number;
+  avgSessionDuration: number;
+  trafficSources: Array<{ source: string; sessions: number; percentage: number }>;
+  popularPages: Array<{ path: string; title: string; pageviews: number; avgTime: number }>;
+}
+
+type TabType = "general" | "tendencias" | "leads" | "despachos" | "marketing";
 
 export default function EstadisticasPage() {
   const router = useRouter();
@@ -71,8 +81,13 @@ export default function EstadisticasPage() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [leadsAnalytics, setLeadsAnalytics] = useState<LeadsAnalytics | null>(null);
   const [despachosAnalytics, setDespachosAnalytics] = useState<DespachosAnalytics | null>(null);
+  const [marketingAnalytics, setMarketingAnalytics] = useState<MarketingAnalytics | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [marketingLoading, setMarketingLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(30);
+  const [customDateRange, setCustomDateRange] = useState<{start: string; end: string} | null>(null);
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
 
   // Cargar estadísticas
   useEffect(() => {
@@ -81,9 +96,17 @@ export default function EstadisticasPage() {
     const loadStats = async () => {
       setStatsLoading(true);
       try {
+        // Calcular días según el rango personalizado o el período seleccionado
+        let days = selectedPeriod;
+        if (customDateRange) {
+          const start = new Date(customDateRange.start);
+          const end = new Date(customDateRange.end);
+          days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
         const [overviewRes, chartsRes, leadsRes, despachosRes] = await Promise.all([
           fetch("/api/admin/analytics/overview"),
-          fetch(`/api/admin/analytics/charts?days=${selectedPeriod}`),
+          fetch(`/api/admin/analytics/charts?days=${days}`),
           fetch("/api/admin/analytics/leads"),
           fetch("/api/admin/analytics/despachos"),
         ]);
@@ -100,7 +123,7 @@ export default function EstadisticasPage() {
     };
 
     loadStats();
-  }, [user?.id, user?.role, selectedPeriod]);
+  }, [user?.id, user?.role, selectedPeriod, customDateRange]);
 
   if (isLoading || !user) {
     return (
@@ -118,11 +141,57 @@ export default function EstadisticasPage() {
     return null;
   }
 
+  // Cargar estadísticas de marketing cuando se selecciona el tab o cambian los filtros
+  useEffect(() => {
+    if (activeTab === "marketing") {
+      loadMarketingStats();
+    }
+  }, [activeTab, selectedPeriod, customDateRange]);
+
+  const loadMarketingStats = async () => {
+    setMarketingLoading(true);
+    try {
+      // Calcular días según el rango personalizado o el período seleccionado
+      let days = selectedPeriod;
+      if (customDateRange) {
+        const start = new Date(customDateRange.start);
+        const end = new Date(customDateRange.end);
+        days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      const [overviewRes, contentRes] = await Promise.all([
+        fetch(`/api/marketing/analytics/overview?days=${days}`),
+        fetch(`/api/marketing/analytics/content?days=${days}`),
+      ]);
+
+      if (overviewRes.ok && contentRes.ok) {
+        const overview = await overviewRes.json();
+        const content = await contentRes.json();
+        
+        setMarketingAnalytics({
+          ...overview,
+          ...content,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading marketing stats:", error);
+    } finally {
+      setMarketingLoading(false);
+    }
+  };
+
   const tabs = [
     { id: "general" as TabType, name: "📊 General", icon: ChartBarIcon },
     { id: "tendencias" as TabType, name: "📈 Tendencias", icon: ChartBarIcon },
     { id: "leads" as TabType, name: "📋 Leads", icon: ClipboardDocumentListIcon },
     { id: "despachos" as TabType, name: "🏢 Despachos", icon: BuildingOfficeIcon },
+    { id: "marketing" as TabType, name: "🌐 LexHoy.com", icon: ChartBarIcon },
+  ];
+
+  const periodOptions = [
+    { value: 7, label: "7 días" },
+    { value: 30, label: "30 días" },
+    { value: 90, label: "90 días" },
   ];
 
   return (
@@ -140,20 +209,70 @@ export default function EstadisticasPage() {
           </div>
 
           {/* Selector de período */}
-          <div className="flex gap-2">
-            {[7, 30, 90].map((days) => (
-              <button
-                key={days}
-                onClick={() => setSelectedPeriod(days)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
-                  selectedPeriod === days
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {days} días
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Período:</label>
+            <div className="flex gap-2">
+              {periodOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setSelectedPeriod(option.value);
+                    setCustomDateRange(null);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    selectedPeriod === option.value && !customDateRange
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+              <div className="flex items-center gap-1 border-l border-gray-300 pl-2">
+                <input
+                  type="date"
+                  value={tempStartDate}
+                  onChange={(e) => setTempStartDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-gray-500 text-xs">→</span>
+                <input
+                  type="date"
+                  value={tempEndDate}
+                  onChange={(e) => setTempEndDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={() => {
+                    if (tempStartDate && tempEndDate) {
+                      setCustomDateRange({
+                        start: tempStartDate,
+                        end: tempEndDate
+                      });
+                    }
+                  }}
+                  disabled={!tempStartDate || !tempEndDate}
+                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Aplicar
+                </button>
+                {customDateRange && (
+                  <button
+                    onClick={() => {
+                      setCustomDateRange(null);
+                      setTempStartDate('');
+                      setTempEndDate('');
+                    }}
+                    className="px-2 py-1.5 text-gray-600 hover:text-red-600 transition-colors"
+                    title="Limpiar fechas"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -416,6 +535,213 @@ export default function EstadisticasPage() {
                   data={despachosAnalytics.byProvincia}
                   color="#10b981"
                 />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Marketing (LexHoy.com) */}
+        {activeTab === "marketing" && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              📊 Estadísticas de LexHoy.com
+            </h2>
+            
+            {marketingLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+
+            {!marketingLoading && marketingAnalytics && (
+              <>
+                {/* KPIs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <KPICard
+                    title="Visitantes (Mes)"
+                    value={marketingAnalytics.visitors.month}
+                    icon={UserGroupIcon}
+                    color="blue"
+                  />
+                  <KPICard
+                    title="Sesiones (Mes)"
+                    value={marketingAnalytics.sessions.month}
+                    icon={ChartBarIcon}
+                    color="green"
+                  />
+                  <KPICard
+                    title="Páginas Vistas"
+                    value={marketingAnalytics.pageviews.month}
+                    icon={ClipboardDocumentListIcon}
+                    color="purple"
+                  />
+                  <KPICard
+                    title="Duración Promedio"
+                    value={Math.round(marketingAnalytics.avgSessionDuration)}
+                    icon={UserIcon}
+                    color="orange"
+                  />
+                </div>
+
+                {/* Métricas por período */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Visitantes
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Hoy</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {marketingAnalytics.visitors.today.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Última semana</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {marketingAnalytics.visitors.week.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Último mes</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {marketingAnalytics.visitors.month.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Sesiones
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Hoy</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {marketingAnalytics.sessions.today.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Última semana</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {marketingAnalytics.sessions.week.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Último mes</span>
+                        <span className="text-2xl font-bold text-green-600">
+                          {marketingAnalytics.sessions.month.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Páginas Vistas
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Hoy</span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {marketingAnalytics.pageviews.today.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Última semana</span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {marketingAnalytics.pageviews.week.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Último mes</span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          {marketingAnalytics.pageviews.month.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tráfico y Contenido */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Fuentes de Tráfico */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      🌐 Fuentes de Tráfico (Top 10)
+                    </h3>
+                    <div className="space-y-3">
+                      {marketingAnalytics.trafficSources.map((source, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium text-gray-700">
+                                {source.source}
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                {source.sessions.toLocaleString()} ({source.percentage}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full"
+                                style={{ width: `${source.percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Páginas Populares */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      📄 Páginas Más Visitadas (Top 10)
+                    </h3>
+                    <div className="space-y-3">
+                      {marketingAnalytics.popularPages.map((page, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {page.title}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{page.path}</p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {page.pageviews.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-500">vistas</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {!marketingLoading && !marketingAnalytics && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                  ⚠️ Configuración Pendiente
+                </h3>
+                <p className="text-yellow-800 mb-4">
+                  Para ver las estadísticas de LexHoy.com, necesitas habilitar la Google Analytics Data API.
+                </p>
+                <a
+                  href="https://console.developers.google.com/apis/api/analyticsdata.googleapis.com/overview?project=897658015460"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Habilitar API →
+                </a>
               </div>
             )}
           </div>
