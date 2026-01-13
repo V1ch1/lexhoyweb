@@ -34,11 +34,10 @@ export async function POST(request: NextRequest) {
 
     // 2. Parsear body
     const body = await request.json();
-    console.log("📥 Webhook recibido desde LexHoy.com:", {
-      nombre: body.nombre,
-      email: body.correo || body.email,
-      post: body.tituloPost || body.titulo_post,
-    });
+    
+    // 🔍 LOG DE DEBUGGING DETALLADO
+    console.log("📥 Webhook recibido - RAW BODY:", JSON.stringify(body, null, 2));
+    console.log("🔍 Claves recibidas:", Object.keys(body));
 
     // 3. Validar datos requeridos
     const requiredFields = ["nombre", "cuerpoMensaje", "urlPagina", "tituloPost"];
@@ -55,6 +54,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Helper para buscar valor insensible a mayúsculas/minúsculas
+    const findField = (keys: string[]) => {
+      for (const key of keys) {
+        if (body[key]) return body[key];
+        if (body[key.toLowerCase()]) return body[key.toLowerCase()];
+      }
+      return undefined;
+    };
+
     // Normalizar nombres de campos (WordPress puede enviar snake_case o camelCase)
     const leadInput = {
       nombre: body.nombre || body.name,
@@ -70,10 +78,17 @@ export async function POST(request: NextRequest) {
       aceptaTerminos: body.acepta_terminos || body.aceptaTerminos || body.checkbox || false,
       aceptaPrivacidad: body.acepta_privacidad || body.aceptaPrivacidad || true,
       
-      // ✅ Nuevos campos de ubicación
-      ciudad: body.ciudad || body.localidad || body.city,
-      provincia: body.provincia || body.province || body.state,
+      // ✅ Nuevos campos de ubicación (búsqueda robusta)
+      ciudad: findField(['ciudad', 'localidad', 'city', 'locality', 'town']),
+      provincia: findField(['provincia', 'province', 'state', 'region']),
     };
+
+    console.log("📍 Ubicación detectada:", { 
+        ciudadRaw: body.ciudad || body.localidad,
+        provinciaRaw: body.provincia,
+        ciudadExtracted: leadInput.ciudad, 
+        provinciaExtracted: leadInput.provincia 
+    });
 
     // ✅ Concatenar ubicación al mensaje para asegurarnos que la IA lo detecte
     if (leadInput.ciudad || leadInput.provincia) {
