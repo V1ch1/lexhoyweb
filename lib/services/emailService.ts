@@ -112,7 +112,7 @@ export class EmailService {
     }
   }
 
-  private static getEmailTemplate(options: {
+  public static getEmailTemplate(options: {
     title: string;
     message: string;
     details: string;

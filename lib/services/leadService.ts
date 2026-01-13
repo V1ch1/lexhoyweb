@@ -190,8 +190,28 @@ export class LeadService {
           console.log(`✅ Notificaciones enviadas a ${despachoAdmins.length} despachos`);
         }
 
-        // Notificar a super_admin (solo dashboard, para monitoreo)
+        // Notificar a super_admin (email + dashboard)
         if (superAdmins && superAdmins.length > 0) {
+          // Enviar email a todos los super admins
+          await EmailService.sendToSuperAdmins({
+            subject: `🎯 Nuevo Lead: ${analysis.especialidad} (${analysis.urgencia})`,
+            html: EmailService.getEmailTemplate({
+              title: 'Nuevo Lead Recibido',
+              message: `Se ha procesado un nuevo lead de <strong>${analysis.especialidad}</strong> con urgencia <strong>${analysis.urgencia}</strong>.`,
+              details: `
+                <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                  <p><strong>Cliente:</strong> ${data.nombre}</p>
+                  <p><strong>Ubicación:</strong> ${data.ciudad || '-'}, ${data.provincia || '-'}</p>
+                  <p><strong>Calidad:</strong> ${analysis.puntuacionCalidad}/100</p>
+                  <p><strong>Resumen:</strong> ${analysis.resumen}</p>
+                </div>
+              `,
+              ctaText: 'Ver Lead en Dashboard',
+              ctaUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/admin/leads/${data.id}`,
+              highlight: true
+            })
+          });
+
           await Promise.allSettled(
             superAdmins.map((admin) =>
               NotificationService.create({
@@ -209,7 +229,7 @@ export class LeadService {
             )
           );
           
-          console.log(`✅ Notificaciones dashboard enviadas a ${superAdmins.length} super admins`);
+          console.log(`✅ Notificaciones (email+dashboard) enviadas a ${superAdmins.length} super admins`);
         }
       }
 
