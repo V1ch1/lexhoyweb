@@ -126,7 +126,7 @@ export async function POST(req: Request) {
         provincia: analysis.provincia,
         ciudad: analysis.ciudad,
         urgencia: analysis.urgencia,
-        resumen_ia: analysis.resumenIA,
+        resumen_ia: analysis.resumen,
         precio_estimado: analysis.precioEstimado,
         palabras_clave: analysis.palabrasClave,
         estado: cumpleCalidad ? "procesado" : "descartado",
