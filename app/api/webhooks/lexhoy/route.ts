@@ -69,7 +69,17 @@ export async function POST(request: NextRequest) {
       utmCampaign: body.utm_campaign || body.utmCampaign,
       aceptaTerminos: body.acepta_terminos || body.aceptaTerminos || body.checkbox || false,
       aceptaPrivacidad: body.acepta_privacidad || body.aceptaPrivacidad || true,
+      
+      // ✅ Nuevos campos de ubicación
+      ciudad: body.ciudad || body.localidad || body.city,
+      provincia: body.provincia || body.province || body.state,
     };
+
+    // ✅ Concatenar ubicación al mensaje para asegurarnos que la IA lo detecte
+    if (leadInput.ciudad || leadInput.provincia) {
+        const ubicacionInfo = `\n\n--- Información de Ubicación ---\nCiudad: ${leadInput.ciudad || 'No especificada'}\nProvincia: ${leadInput.provincia || 'No especificada'}`;
+        leadInput.cuerpoMensaje += ubicacionInfo;
+    }
 
     // Validar email
     if (!leadInput.correo || !leadInput.correo.includes("@")) {

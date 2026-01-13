@@ -58,6 +58,8 @@ export interface CreateLeadInput {
   utmCampaign?: string;
   aceptaTerminos?: boolean;
   aceptaPrivacidad?: boolean;
+  ciudad?: string;
+  provincia?: string;
 }
 
 export class LeadService {
@@ -75,6 +77,8 @@ export class LeadService {
         cuerpoMensaje: input.cuerpoMensaje,
         urlPagina: input.urlPagina,
         tituloPost: input.tituloPost,
+        ciudad: input.ciudad,
+        provincia: input.provincia,
       };
 
       const analysis = await AILeadService.processLead(leadData);
@@ -105,23 +109,23 @@ export class LeadService {
           cuerpo_mensaje: input.cuerpoMensaje,
           url_pagina: input.urlPagina,
           titulo_post: input.tituloPost,
-          fuente: input.fuente || "lexhoy.com",
+          fuente: input.fuente || "web",
           utm_source: input.utmSource,
           utm_medium: input.utmMedium,
           utm_campaign: input.utmCampaign,
+          ciudad: input.ciudad || analysis.ciudad,
+          provincia: input.provincia || analysis.provincia,
           especialidad: analysis.especialidad,
-          provincia: analysis.provincia,
-          ciudad: analysis.ciudad,
           urgencia: analysis.urgencia,
-          resumen_ia: analysis.resumenIA,
+          resumen_ia: analysis.resumen,
           precio_estimado: analysis.precioEstimado,
-          palabras_clave: analysis.palabrasClave,
-          estado,
-          precio_base: precioBase,
+          precio_base: precioBase || 50, // Precio por defecto 50€ si no hay IA
+          estado: estado,
           puntuacion_calidad: analysis.puntuacionCalidad,
           nivel_detalle: analysis.nivelDetalle,
-          acepta_terminos: input.aceptaTerminos ?? false,
-          acepta_privacidad: input.aceptaPrivacidad ?? false,
+          palabras_clave: analysis.palabrasClave,
+          acepta_terminos: input.aceptaTerminos,
+          acepta_privacidad: input.aceptaPrivacidad,
           procesado_at: new Date().toISOString(),
         })
         .select()
