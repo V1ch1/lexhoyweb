@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/daily-summary",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/keep-alive",
+      "schedule": "0 4 * * *"
     }
   ]
 }
