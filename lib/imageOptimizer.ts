@@ -261,43 +261,45 @@ export class ImageOptimizer {
       // Optimizar la imagen primero
       const optimized = await this.optimizeProfileImage(file);
 
-      // Generar nombre único para el archivo
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
-      const fileName = despachoId
-        ? `${path}/${despachoId}-${timestamp}.webp`
-        : `${path}/${timestamp}-${random}.webp`;
+      // Crear FormData con el archivo y opciones
+      const formData = new FormData();
+      // Si tenemos despachoId, podemos pasarlo al path o usarlo para prefijo pero el backend se encarga o podemos darle un path custom
+      const customPath = despachoId ? `${path}/${despachoId}` : path;
+      
+      // Añadir al FormData (asumimos un nombre ficticio para mantener la compatibilidad con File nativo de formData)
+      const optimizedFile = new File([optimized.blob], "foto.webp", { type: "image/webp" });
+      formData.append("file", optimizedFile);
+      formData.append("bucket", bucket);
+      formData.append("path", customPath);
 
-      // Convertir blob a ArrayBuffer para subirlo correctamente
-      const arrayBuffer = await optimized.blob.arrayBuffer();
+      // Obtener el JWT de la sesión
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      // Subir a Supabase Storage usando ArrayBuffer
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, arrayBuffer, {
-          contentType: "image/webp",
-          cacheControl: "3600",
-          upsert: true,
-        });
+      // Hacer petición POST a nuestro nuevo endpoint backend
+      const response = await fetch("/api/upload-foto", {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
 
-      if (error) {
-        console.error("❌ Error al subir imagen a Supabase:", error);
-        throw new Error(`Error al subir imagen: ${error.message}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error("❌ Error devuelto por la API de subida:", data.error || data);
+        throw new Error(`Error al subir imagen: ${data.error || "Desconocido"}`);
       }
 
-      // Obtener URL pública
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(bucket).getPublicUrl(fileName);
-
-      console.log("✅ Imagen subida a Supabase:", {
-        url: publicUrl,
+      console.log("✅ Imagen subida a Supabase con bypass RLS:", {
+        url: data.url,
         size: this.formatFileSize(optimized.size),
         dimensions: `${optimized.width}x${optimized.height}px`,
       });
 
       return {
-        url: publicUrl,
+        url: data.url,
         size: optimized.size,
       };
     } catch (error) {

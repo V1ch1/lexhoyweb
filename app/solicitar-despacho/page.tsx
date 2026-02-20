@@ -1,14 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-
-// Función segura para obtener el JWT
-function getJWT() {
-  if (typeof window !== "undefined") {
-    return window.localStorage.getItem("supabase_jwt") || "";
-  }
-  return "";
-}
+import { supabase } from "@/lib/supabase";
 
 interface Despacho {
   id: number;
@@ -41,12 +34,14 @@ export default function SolicitarDespacho() {
     setError(null);
     setSuccess(null);
     try {
-      const token = getJWT();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
       const res = await fetch(
         `/api/despachos/wordpress/buscar?query=${encodeURIComponent(query)}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         }
       );
@@ -84,17 +79,14 @@ export default function SolicitarDespacho() {
       }
       const objectId = despacho.meta?.object_id || `lexhoy-${despacho.id}`;
 
-      // Obtener el JWT de forma segura
-      const token = getJWT();
-      if (!token) throw new Error("No se pudo obtener el token de sesión");
+      // Obtener el JWT y el usuario de la sesión de Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token || !session?.user) throw new Error("No se pudo obtener el token de sesión o usuario no autenticado");
 
-      // Simular datos de usuario (puedes adaptar esto si tienes contexto de usuario)
-      const userId = window.localStorage.getItem("supabase_user_id") || "";
-      const userEmail =
-        window.localStorage.getItem("supabase_user_email") || "";
-      const userName = window.localStorage.getItem("supabase_user_name") || "";
-      if (!userId || !userEmail || !userName)
-        throw new Error("No se encontró información de usuario");
+      const userId = session.user.id;
+      const userEmail = session.user.email;
+      const userName = session.user.user_metadata?.first_name || session.user.email?.split('@')[0] || "Usuario";
 
       // Guardar la solicitud en Supabase usando el objectId como despachoId
       const res = await fetch("/api/solicitar-despacho", {
@@ -107,7 +99,7 @@ export default function SolicitarDespacho() {
           userId,
           despachoId: objectId,
           userEmail,
-          userName,
+          userName: userName,
           despachoNombre,
           despachoLocalidad,
           despachoProvincia,

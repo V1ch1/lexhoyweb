@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,27 +19,7 @@ export async function GET(
   try {
     const { id: despachoId } = await params;
 
-    // Obtener token de autenticación
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Verificar usuario
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const { user, error: authError } = await requireAuth();
 
     if (authError || !user) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
@@ -61,11 +42,11 @@ export async function GET(
     // Verificar permisos: super_admin o propietario del despacho
     const { data: userData } = await supabase
       .from("users")
-      .select("role")
+      .select("rol")
       .eq("id", user.id)
       .single();
 
-    const isSuperAdmin = userData?.role === "super_admin";
+    const isSuperAdmin = userData?.rol === "super_admin";
 
     // Verificar si es propietario por user_despachos
     const { data: userDespacho } = await supabase
@@ -131,27 +112,7 @@ export async function PUT(
     const { id: despachoId } = await params;
     const body = await request.json();
 
-    // Obtener token de autenticación
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Verificar usuario
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const { user, error: authError } = await requireAuth();
 
     if (authError || !user) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
@@ -174,11 +135,11 @@ export async function PUT(
     // Verificar permisos: super_admin o propietario del despacho
     const { data: userData } = await supabase
       .from("users")
-      .select("role")
+      .select("rol")
       .eq("id", user.id)
       .single();
 
-    const isSuperAdmin = userData?.role === "super_admin";
+    const isSuperAdmin = userData?.rol === "super_admin";
 
     // Verificar si es propietario por user_despachos
     const { data: userDespacho } = await supabase
@@ -268,16 +229,17 @@ export async function PUT(
     let wpSynced = false;
     if (despachoActualizado.object_id) {
       try {
-        const syncResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/despachos/${despachoId}/sync`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+          const authHeader = request.headers.get("cookie");
+          const syncResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/despachos/${despachoId}/sync`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(authHeader ? { Cookie: authHeader } : {}),
+              },
+            }
+          );
 
         if (syncResponse.ok) {
           wpSynced = true;
@@ -322,27 +284,8 @@ export async function DELETE(
   try {
     // Await params en Next.js 15
     const { id } = await params;
-    // Obtener token de autenticación
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
 
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Verificar usuario
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const { user, error: authError } = await requireAuth();
 
     if (authError || !user) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });

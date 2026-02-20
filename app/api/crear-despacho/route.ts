@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "@/lib/api-auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,27 +13,7 @@ const supabase = createClient(
  */
 export async function POST(request: Request) {
   try {
-    // Obtener token de autenticación
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
-
-    if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Verificar usuario
-    const supabaseAuth = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    );
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const { user, error: authError } = await requireAuth();
 
     if (authError || !user) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });

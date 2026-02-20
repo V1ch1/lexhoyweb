@@ -3,16 +3,17 @@ import { supabase, supabaseAdmin } from "@/lib/supabase";
 import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-11-17.clover",
-});
+export const dynamic = "force-dynamic";
 
 export async function POST(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await context.params;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-11-17.clover",
+    });
+    const { id: leadId } = await params;
     
     // Verificar autenticación
     const session = await auth();
@@ -21,8 +22,6 @@ export async function POST(
     if (!user?.id) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
-
-    const leadId = params.id;
 
     // Obtener información del lead
     const { data: lead, error: leadError } = await supabaseAdmin

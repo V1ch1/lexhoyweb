@@ -231,10 +231,15 @@ export default function CrearDespachoPage() {
             : sede.web,
       }));
 
+      // Obtener el JWT de la sesión
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const response = await fetch("/api/crear-despacho", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: "include",
         body: JSON.stringify({

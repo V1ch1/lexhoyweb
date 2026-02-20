@@ -137,6 +137,7 @@ export function DespachosList({
       // 4. Actualizamos la lista
       await fetchDespachos();
       setShowDeleteConfirm(false);
+      toast.success("Despacho eliminado correctamente.");
     } catch (error: unknown) {
       console.error("Error al eliminar el despacho:", error);
 

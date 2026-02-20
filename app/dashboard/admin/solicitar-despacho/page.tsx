@@ -1,12 +1,7 @@
 "use client";
-// Función segura para obtener el JWT
-function getJWT() {
-  if (typeof window !== "undefined") {
-    return window.localStorage.getItem("supabase_jwt") || "";
-  }
-  return "";
-}
+
 import React, { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface Despacho {
   id: number;
@@ -37,13 +32,15 @@ export default function SolicitarDespacho() {
     setLoading(true);
     setError(null);
     try {
-      // Obtener el JWT de forma segura
-      const token = getJWT();
+      // Obtener el JWT de la sesión de Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
       const res = await fetch(
         `/api/despachos/wordpress/buscar?query=${encodeURIComponent(query)}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         }
       );
