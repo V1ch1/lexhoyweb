@@ -257,9 +257,15 @@ export default function CrearDespachoPage() {
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        router.push("/dashboard/despachos/mis-despachos");
-      }, 2000);
+      
+      if (data.syncError) {
+        // We show it as an alert or error so the user knows WP sync failed
+        setError(`El despacho se ha creado localmente, pero ha fallado la sincronización con WordPress: ${data.syncError}`);
+      } else {
+        setTimeout(() => {
+          router.push("/dashboard/despachos/mis-despachos");
+        }, 2000);
+      }
     } catch (err) {
       console.error("Error al crear despacho:", err);
       setError(

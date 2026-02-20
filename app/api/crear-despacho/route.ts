@@ -343,6 +343,7 @@ export async function POST(request: Request) {
       wordpressId: syncResult.wordpressId,
       objectId: syncResult.objectId,
       sincronizado: syncResult.success,
+      syncError: syncResult.success ? null : syncResult.error,
       sedesCreadas: !sedesError,
       sedesError: sedesError
         ? {
